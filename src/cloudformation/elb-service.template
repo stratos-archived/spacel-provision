@@ -1,0 +1,521 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Space Elevator service",
+  "Parameters": {
+    "Orbit": {
+      "Description": "Name of Orbit.",
+      "Type": "String"
+    },
+    "Service": {
+      "Description": "Name of Service.",
+      "Type": "String"
+    },
+    "VpcId": {
+      "Description": "VPC id",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "BastionSecurityGroup": {
+      "Description": "Security group for bastion instances",
+      "Type": "AWS::EC2::SecurityGroup::Id"
+    },
+    "PublicElbSubnet01": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "First public subnet for ELBs."
+    },
+    "PrivateElbSubnet01": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "First private subnet for ELBs."
+    },
+    "PrivateInstanceSubnet01": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "First private subnet for instances."
+    },
+    "ElbScheme": {
+      "Description": "Scheme for ELB",
+      "Type": "String",
+      "Default": "internet-facing",
+      "AllowedValues": ["internet-facing", "internal"]
+    },
+    "HealthCheckTarget": {
+      "Description": "Target for HealthCheck.",
+      "Type": "String",
+      "Default": "TCP:80",
+      "AllowedPattern": "(TCP|HTTP|HTTPS|SSL):(.*?)"
+    },
+    "VirtualHost": {
+      "Type": "String",
+      "Description": "DNS hostname"
+    },
+    "VirtualHostDomain": {
+      "Type": "String",
+      "Description": "DNS TLD"
+    },
+    "Ami": {
+      "Description": "Space Elevator AMI",
+      "Type": "AWS::EC2::Image::Id"
+    },
+    "InstanceType": {
+      "Description": "Worker instance type",
+      "Default": "t2.nano",
+      "Type": "String"
+    },
+    "InstanceMin": {
+      "Description": "The minimum number of instances in autoscaling group",
+      "Type": "Number",
+      "Default": "2"
+    },
+    "InstanceMax": {
+      "Description": "The maximum number of instances in autoscaling group",
+      "Type": "Number",
+      "Default": "3"
+    },
+    "VolumeSupport": {
+      "Description": "Support for provisioning EBS volumes from instances",
+      "Type": "String",
+      "Default": "false",
+      "AllowedValues": ["true", "false"]
+    },
+    "UserData": {
+      "Description": "JSON snippet for user data.",
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "Conditions": {
+    "ElbPublic": {
+      "Fn::Equals": [
+        {"Ref": "ElbScheme"},
+        "internet-facing"
+      ]
+    },
+    "ElbPrivate": {
+      "Fn::Equals": [
+        {"Ref": "ElbScheme"},
+        "internal"
+      ]
+    },
+    "AddVolumePermissions": {
+      "Fn::Equals": [
+        {"Ref": "VolumeSupport"},
+        "true"
+      ]
+    }
+  },
+  "Resources": {
+    "PublicElb": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Condition": "ElbPublic",
+      "Properties": {
+        "Scheme": "internet-facing",
+        "Subnets": [
+          {"Ref": "PublicElbSubnet01"}
+        ],
+        "HealthCheck": {
+          "HealthyThreshold": "2",
+          "Interval": "5",
+          "Target": {"Ref": "HealthCheckTarget"},
+          "Timeout": "2",
+          "UnhealthyThreshold": "3"
+        },
+        "SecurityGroups": [
+          {"Ref": "ElbSg"}
+        ],
+        "Listeners": [
+        ],
+        "CrossZone": "true",
+        "ConnectionDrainingPolicy": {
+          "Enabled": true,
+          "Timeout": 60
+        }
+      }
+    },
+    "PrivateElb": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Condition": "ElbPrivate",
+      "Properties": {
+        "Scheme": "internal",
+        "Subnets": [
+          {"Ref": "PrivateElbSubnet01"}
+        ],
+        "HealthCheck": {
+          "HealthyThreshold": "2",
+          "Interval": "5",
+          "Target": {"Ref": "HealthCheckTarget"},
+          "Timeout": "2",
+          "UnhealthyThreshold": "3"
+        },
+        "SecurityGroups": [
+          {"Ref": "ElbSg"}
+        ],
+        "Listeners": [
+          {
+            "InstancePort": "80",
+            "LoadBalancerPort": "80",
+            "Protocol": "HTTP",
+            "InstanceProtocol": "HTTP"
+          }
+        ],
+        "CrossZone": "true",
+        "ConnectionDrainingPolicy": {
+          "Enabled": true,
+          "Timeout": 60
+        }
+      }
+    },
+    "ElbSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "ELB security group",
+        "VpcId": {"Ref": "VpcId"},
+        "SecurityGroupIngress": []
+      }
+    },
+    "Sg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Instance security group",
+        "VpcId": {"Ref": "VpcId"},
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "SourceSecurityGroupId": {"Ref": "BastionSecurityGroup"}
+          }
+        ]
+      }
+    },
+    "DnsRecord": {
+      "Type": "AWS::Route53::RecordSetGroup",
+      "Properties": {
+        "HostedZoneName": {"Ref": "VirtualHostDomain"},
+        "Comment": "Alias for ELB",
+        "RecordSets": [
+          {
+            "Name": {"Ref": "VirtualHost"},
+            "Type": "A",
+            "SetIdentifier": {
+              "Fn::Join": [
+                "-", [{"Ref": "AWS::StackName"}, {"Ref": "AWS::Region"}]
+              ]
+            },
+            "Region": {"Ref": "AWS::Region"},
+            "AliasTarget": {
+              "Fn::If": [
+                "ElbPublic",
+                {
+                  "HostedZoneId": {
+                    "Fn::GetAtt": ["PublicElb", "CanonicalHostedZoneNameID"]
+                  },
+                  "DNSName": {
+                    "Fn::GetAtt": ["PublicElb", "CanonicalHostedZoneName"]
+                  }
+                },
+                {
+                  "HostedZoneId": {
+                    "Fn::GetAtt": ["PrivateElb", "CanonicalHostedZoneNameID"]
+                  },
+                  "DNSName": {
+                    "Fn::GetAtt": ["PrivateElb", "DNSName"]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": ["ec2.amazonaws.com"]
+              },
+              "Action": ["sts:AssumeRole"]
+            }
+          ]
+        }
+      }
+    },
+    "InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {"Ref": "Role"}
+        ]
+      }
+    },
+    "ElbHealthPolicy": {
+      "DependsOn": "Role",
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "ElbHealth",
+        "Roles": [{"Ref": "Role"}],
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "elasticloadbalancing:DescribeInstanceHealth",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "SignalPolicy": {
+      "DependsOn": "Role",
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "SignalCloudFormation",
+        "Roles": [{"Ref": "Role"}],
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "cloudformation:SignalResource",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "VolumePolicy": {
+      "DependsOn": "Role",
+      "Condition": "AddVolumePermissions",
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "VolumeSupport",
+        "Roles": [{"Ref": "Role"}],
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem"
+              ],
+              "Resource": {
+                "Fn::Join": [
+                  "", [
+                    "arn:aws:dynamodb:",
+                    {"Ref": "AWS::Region"},
+                    ":",
+                    {"Ref": "AWS::AccountId"},
+                    ":table/volumes"
+                  ]
+                ]
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:CreateSnapshot",
+                "ec2:CreateTags",
+                "ec2:CreateVolume",
+                "ec2:DeleteVolume",
+                "ec2:DescribeInstances",
+                "ec2:DescribeSnapshots",
+                "ec2:DescribeVolumes"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:AttachVolume",
+                "ec2:DetachVolume"
+              ],
+              "Resource": {
+                "Fn::Join": [
+                  "", [
+                    "arn:aws:ec2:",
+                    {"Ref": "AWS::Region"},
+                    ":",
+                    {"Ref": "AWS::AccountId"},
+                    ":volume/*"
+                  ]
+                ]
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:AttachVolume",
+                "ec2:DetachVolume"
+              ],
+              "Resource": {
+                "Fn::Join": [
+                  "", [
+                    "arn:aws:ec2:",
+                    {"Ref": "AWS::Region"},
+                    ":",
+                    {"Ref": "AWS::AccountId"},
+                    ":instance/*"
+                  ]
+                ]
+              },
+              "Condition": {
+                "StringEquals": {
+                  "ec2:InstanceProfile": {
+                    "Fn::GetAtt": ["InstanceProfile", "Arn"]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "DynamoSshPolicy": {
+      "DependsOn": "Role",
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "DynamoSSh",
+        "Roles": [{"Ref": "Role"}],
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:BatchGetItem"
+              ],
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "", [
+                      "arn:aws:dynamodb:",
+                      {"Ref": "AWS::Region"},
+                      ":",
+                      {"Ref": "AWS::AccountId"},
+                      ":table/",
+                      {"Ref": "Orbit"},
+                      "-users"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "", [
+                      "arn:aws:dynamodb:",
+                      {"Ref": "AWS::Region"},
+                      ":",
+                      {"Ref": "AWS::AccountId"},
+                      ":table/",
+                      {"Ref": "Orbit"},
+                      "-services"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "Lc": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": false,
+        "ImageId": {"Ref": "Ami"},
+        "InstanceType": {"Ref": "InstanceType"},
+        "IamInstanceProfile": {"Ref": "InstanceProfile"},
+        "InstanceMonitoring": "false",
+        "KeyName": "meofthecloud",
+        "SecurityGroups": [
+          {"Ref": "Sg"}
+        ],
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {"VolumeSize": "8"}
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "", [
+                "{\"elb\":\"",
+                {
+                  "Fn::If": [
+                    "ElbPublic",
+                    {"Ref": "PublicElb"},
+                    {"Ref": "PrivateElb"}
+                  ]
+                },
+                "\",\"orbit\":\"",
+                {"Ref":"Orbit"},
+                "\",\"name\":\"",
+                {"Ref":"Service"},
+                "\",\"cloudformation_signal\":{\"",
+                {"Ref": "AWS::StackName"},
+                "\":\"Asg\"}",
+                {"Ref": "UserData"},
+                "}"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "Asg": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "Cooldown": "300",
+        "MinSize": {"Ref": "InstanceMin"},
+        "MaxSize": {"Ref": "InstanceMax"},
+        "HealthCheckGracePeriod": "600",
+        "HealthCheckType": "ELB",
+        "VPCZoneIdentifier": [
+          {"Ref": "PrivateInstanceSubnet01"}
+        ],
+        "LaunchConfigurationName": {"Ref": "Lc"},
+        "LoadBalancerNames": [
+          {
+            "Fn::If": [
+              "ElbPublic",
+              {"Ref": "PublicElb"},
+              {"Ref": "PrivateElb"}
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {"Ref": "AWS::StackName"},
+            "PropagateAtLaunch": true
+          }
+        ]
+      },
+      "CreationPolicy": {
+        "ResourceSignal": {
+          "Count": {"Ref": "InstanceMin"},
+          "Timeout": "PT10M"
+        }
+      },
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": 0,
+          "WaitOnResourceSignals": "true",
+          "PauseTime": "PT10M"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "Elb": {
+      "Value": {
+        "Fn::If": [
+          "ElbPublic",
+          {"Ref": "PublicElb"},
+          {"Ref": "PrivateElb"}
+        ]
+      }
+    }
+  }
+}

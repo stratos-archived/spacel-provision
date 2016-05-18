@@ -1,0 +1,251 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Bastion host for accessing an orbit",
+  "Parameters": {
+    "Orbit": {
+      "Description": "Name of Orbit.",
+      "Type": "String"
+    },
+    "VpcId": {
+      "Description": "VPC id",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "PublicInstanceSubnet01": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "First subnet."
+    },
+    "InstanceType": {
+      "Type": "String",
+      "Default": "t2.nano",
+      "Description": "Instance type for bastion instances."
+    },
+    "InstanceCount": {
+      "Description": "Number of bastion instances.",
+      "Type": "Number",
+      "Default": "1"
+    },
+    "InstanceCountMinusOne": {
+      "Description": "One less than the number of bastion instances..",
+      "Type": "Number",
+      "Default": "0"
+    },
+    "Ami": {
+      "Type": "AWS::EC2::Image::Id",
+      "Description": "AMI for bastion instances."
+    },
+    "BastionSource": {
+      "Type": "String",
+      "Description": "IP block that can connect to bastion host.",
+      "Default": "0.0.0.0/0"
+    }
+  },
+  "Resources": {
+    "Sg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Bastion Security Group",
+        "VpcId": {"Ref": "VpcId"},
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": {"Ref": "BastionSource"}
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {"Ref": "AWS::StackName"}
+          }
+        ]
+      }
+    },
+    "Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": ["ec2.amazonaws.com"]
+              },
+              "Action": ["sts:AssumeRole"]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "AssociateEIP",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:AssociateAddress",
+                    "ec2:DescribeAddresses"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "SignalCloudFormation",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "cloudformation:SignalResource",
+                  "Resource": "*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "DynamoSsh",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:Scan"
+                  ],
+                  "Resource": {
+                    "Fn::Join": [
+                      "", [
+                        "arn:aws:dynamodb:",
+                        {"Ref": "AWS::Region"},
+                        ":",
+                        {"Ref": "AWS::AccountId"},
+                        ":table/",
+                        {"Ref": "Orbit"},
+                        "-services"
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:BatchGetItem"
+                  ],
+                  "Resource": {
+                    "Fn::Join": [
+                      "", [
+                        "arn:aws:dynamodb:",
+                        {"Ref": "AWS::Region"},
+                        ":",
+                        {"Ref": "AWS::AccountId"},
+                        ":table/",
+                        {"Ref": "Orbit"},
+                        "-users"
+                      ]
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/"
+      }
+    },
+    "InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {"Ref": "Role"}
+        ]
+      }
+    },
+    "Lc": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "InstanceType": {"Ref": "InstanceType"},
+        "ImageId": {"Ref": "Ami"},
+        "SecurityGroups": [{"Ref": "Sg"}],
+        "AssociatePublicIpAddress": "true",
+        "IamInstanceProfile": {"Ref": "InstanceProfile"},
+        "KeyName": "meofthecloud",
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "", [
+                "{\"eips\":[\"",
+                {
+                  "Fn::Join": [
+                    "\",\"", [
+                      {"Fn::GetAtt": ["ElasticIp01", "AllocationId"]}
+                    ]
+                  ]
+                },
+                "\"],",
+                "\"orbit\":\"",
+                {"Ref":"Orbit"},
+                "\",",
+                "\"bastion\":true,",
+                "\"cloudformation_signal\":{\"",
+                {"Ref": "AWS::StackName"},
+                "\":\"Asg\"}",
+                "}", "\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "Asg": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "MinSize": {"Ref": "InstanceCount"},
+        "MaxSize": {"Ref": "InstanceCount"},
+        "LaunchConfigurationName": {"Ref": "Lc"},
+        "VPCZoneIdentifier": [
+          {"Ref": "PublicInstanceSubnet01"}
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {"Ref": "AWS::StackName"},
+            "PropagateAtLaunch": true
+          },
+          {
+            "Key": "LaunchConfiguration",
+            "Value": {"Ref": "Lc"},
+            "PropagateAtLaunch": true
+          }
+        ]
+      },
+      "CreationPolicy": {
+        "ResourceSignal": {
+          "Count": {"Ref": "InstanceCount"},
+          "Timeout": "PT10M"
+        }
+      },
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": {"Ref": "InstanceCountMinusOne"},
+          "WaitOnResourceSignals": "true",
+          "PauseTime": "PT5M"
+        }
+      }
+    },
+    "ElasticIp01": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    }
+  },
+  "Outputs": {
+    "ElasticIp01": {
+      "Value": {"Ref": "ElasticIp01"}
+    },
+    "BastionSecurityGroup": {
+      "Value": {"Ref": "Sg"}
+    }
+  }
+}
