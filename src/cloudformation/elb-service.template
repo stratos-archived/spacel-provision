@@ -426,7 +426,6 @@
         "InstanceType": {"Ref": "InstanceType"},
         "IamInstanceProfile": {"Ref": "InstanceProfile"},
         "InstanceMonitoring": "false",
-        "KeyName": "meofthecloud",
         "SecurityGroups": [
           {"Ref": "Sg"}
         ],

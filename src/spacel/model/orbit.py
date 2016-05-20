@@ -71,6 +71,9 @@ class Orbit(object):
     def bastion_sg(self, region):
         return self._bastion_sgs.get(region)
 
+    def bastion_eips(self, region):
+        return self._bastion_eips.get(region)
+
     def public_instance_subnets(self, region):
         return self._public_instance_subnets.get(region, ())
 
@@ -88,6 +91,8 @@ class Orbit(object):
             return self._from_cf_vpc(region, cf_outputs)
         elif suffix == 'bastion':
             return self._from_cf_bastion(region, cf_outputs)
+        elif suffix == 'tables':
+            return
         else:
             logger.warn('Unknown suffix: %s', suffix)
 

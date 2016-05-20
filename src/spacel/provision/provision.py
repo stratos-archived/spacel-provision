@@ -25,6 +25,10 @@ class CloudProvisioner(object):
         self._orbit_stack(orbit, 'tables')
         self._orbit_stack(orbit, 'bastion')
 
+        for region in orbit.regions:
+            bastion_eips = sorted(orbit.bastion_eips(region).values())
+            logger.debug('Bastions: %s - %s', region, ' '.join(bastion_eips))
+
     def app(self, app):
         app_name = app.full_name
         updates = {}
