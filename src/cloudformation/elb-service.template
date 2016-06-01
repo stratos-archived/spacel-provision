@@ -307,7 +307,9 @@
                     {"Ref": "AWS::Region"},
                     ":",
                     {"Ref": "AWS::AccountId"},
-                    ":table/volumes"
+                    ":table/",
+                    {"Ref": "Orbit"},
+                    "-volumes"
                   ]
                 ]
               }
