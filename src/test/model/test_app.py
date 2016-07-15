@@ -72,5 +72,5 @@ class TestSpaceDockerService(unittest.TestCase):
                                      })
         self.assertIn('-p 9200:9200', service.unit_file)
         self.assertIn('-p 9300:9300', service.unit_file)
-        self.assertIn(' %s ' % CONTAINER, service.unit_file)
+        self.assertIn(' %s' % CONTAINER, service.unit_file)
         self.assertIn('elasticsearch.service', service.name)

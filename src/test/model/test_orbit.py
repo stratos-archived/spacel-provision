@@ -12,7 +12,6 @@ NETWORK = '192.168.0.0/16'
 class TestOrbit(unittest.TestCase):
     def setUp(self):
         self.params = {
-            'name': NAME,
             'regions': (REGION, REGION2),
             'defaults': {
                 PRIVATE_NETWORK: NETWORK,
@@ -22,7 +21,7 @@ class TestOrbit(unittest.TestCase):
                 BASTION_INSTANCE_COUNT: 2
             }
         }
-        self.orbit = Orbit(self.params)
+        self.orbit = Orbit(NAME, self.params)
 
     def test_get_value_param_defaults(self):
         network = self.orbit.get_param(REGION2, PRIVATE_NETWORK)

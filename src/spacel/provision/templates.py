@@ -14,11 +14,21 @@ logger = logging.getLogger('orbit')
 
 
 class TemplateCache(object):
+    """
+    Loads base templates from disk and tailors: to orbit, region, and/or
+    application.
+    """
+
     def __init__(self):
         self._cache = {}
         self._ami = AmiFinder()
 
     def get(self, template):
+        """
+        Load raw template.
+        :param template: Template name.
+        :return: JSON-decoded template.
+        """
         cached = self._cache.get(template)
         if cached:
             return cached
@@ -29,17 +39,13 @@ class TemplateCache(object):
             self._cache[template] = loaded
             return loaded
 
-    def for_orbit(self, suffix, orbit, region):
-        if suffix == 'vpc':
-            return self.vpc(orbit, region)
-        elif suffix == 'bastion':
-            return self.bastion(orbit, region)
-        elif suffix == 'tables':
-            return self.tables(orbit)
-        else:
-            logger.warn('Unknown template suffix: %s', suffix)
-
     def vpc(self, orbit, region):
+        """
+        Get customized template for VPC.
+        :param orbit:  Orbit.
+        :param region: Region.
+        :return: VPC template.
+        """
         vpc_template = self.get('vpc')
         params = vpc_template['Parameters']
 
@@ -164,6 +170,12 @@ class TemplateCache(object):
         return None
 
     def bastion(self, orbit, region):
+        """
+        Get customized template for bastion hosts.
+        :param orbit: Orbit.
+        :param region: Region.
+        :return: Bastion template.
+        """
         bastion_template = self.get('asg-bastion')
 
         params = bastion_template['Parameters']
@@ -210,6 +222,12 @@ class TemplateCache(object):
         return bastion_template
 
     def tables(self, orbit):
+        """
+        Get customized template for DynamoDb tables.
+        :param orbit: Orbit.
+        :return: DynamoDb tables.
+        """
+
         tables_template = self.get('tables')
         params = tables_template['Parameters']
         params['Orbit']['Default'] = orbit.name
@@ -341,6 +359,7 @@ class TemplateCache(object):
             user_data += ', "volumes":' + json.dumps(app.volumes)
         return user_data
 
+    @staticmethod
     @staticmethod
     def _base64(some_string):
         return base64.b64encode(some_string).decode('utf-8').strip()

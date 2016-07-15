@@ -1,4 +1,5 @@
 import boto3
+from collections import defaultdict
 import logging
 
 logger = logging.getLogger('spacel')
@@ -6,12 +7,11 @@ logger = logging.getLogger('spacel')
 
 class ClientCache(object):
     """
-    Lazy instantiation container for EC2 client.
+    Lazy instantiation container for AWS clients.
     """
 
     def __init__(self):
-        self._cloudformation = {}
-        self._ec2 = {}
+        self._clients = defaultdict(dict)
 
     def ec2(self, region):
         """
@@ -19,19 +19,22 @@ class ClientCache(object):
         :param region:  AWS region.
         :return: EC2 Client.
         """
-        cached = self._ec2.get(region)
-        if cached:
-            return cached
-        logger.debug('Connecting to EC2 in %s.', region)
-        ec2 = boto3.client('ec2', region)
-        self._ec2[region] = ec2
-        return ec2
+        return self._client('ec2', region)
 
     def cloudformation(self, region):
-        cached = self._cloudformation.get(region)
+        """
+        Get CloudFormation client.
+        :param region:  AWS region.
+        :return: CloudFormation Client.
+        """
+        return self._client('cloudformation', region)
+
+    def _client(self, client_type, region):
+        client_cache = self._clients[client_type]
+        cached = client_cache.get(region)
         if cached:
             return cached
-        logger.debug('Connecting to CloudFormation in %s.', region)
-        cloudformation = boto3.client('cloudformation', region)
-        self._cloudformation[region] = cloudformation
-        return cloudformation
+        logger.debug('Connecting to %s in %s.', client_type, region)
+        client = boto3.client(client_type, region)
+        client_cache[region] = client
+        return client

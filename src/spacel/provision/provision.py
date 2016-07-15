@@ -129,32 +129,3 @@ class CloudProvisioner(object):
     @staticmethod
     def _describe_stack(cf, stack_name):
         return cf.describe_stacks(StackName=stack_name)['Stacks'][0]
-
-    def _azs(self, orbit):
-        for region in orbit.regions:
-            ec2 = self._clients.ec2(region)
-            try:
-                vpcs = ec2.describe_vpcs()
-                vpc_id = vpcs['Vpcs'][0]['VpcId']
-                invalid_az = region + '-zzz'
-                ec2.create_subnet(VpcId=vpc_id, CidrBlock='172.31.192.0/20',
-                                  AvailabilityZone=invalid_az)
-            except ClientError as e:
-                message = e.response['Error'].get('Message')
-                if not message or 'Subnets can currently only be created in ' \
-                                  'the following availability zones' not in message:
-                    raise e
-            message_split = message.split(region)
-            # Invalid region is echoed back, every mention after that is an AZ:
-            azs = sorted([region + s[0] for s in message_split[2:]])
-            orbit.set_azs(region, azs)
-
-    @staticmethod
-    def _impatient(waiter):
-        """
-        Reduce delay on waiter.
-        :param waiter: Waiter.
-        """
-        # Default polls every 30 seconds; 5 makes more sense to me:
-        waiter.config.delay /= 6
-        waiter.config.max_attempts *= 6

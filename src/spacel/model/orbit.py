@@ -45,9 +45,6 @@ class Orbit(object):
     def regions(self):
         return self._params.get('regions', ())
 
-    def set_azs(self, region, azs):
-        self._azs[region] = azs
-
     def azs(self, region):
         return self._azs.get(region, ())
 
@@ -71,8 +68,9 @@ class Orbit(object):
     def bastion_sg(self, region):
         return self._bastion_sgs.get(region)
 
+    # TODO: why isn't this a tuple like subnets?
     def bastion_eips(self, region):
-        return self._bastion_eips.get(region)
+        return self._bastion_eips.get(region, {})
 
     def public_instance_subnets(self, region):
         return self._public_instance_subnets.get(region, ())
@@ -85,58 +83,3 @@ class Orbit(object):
 
     def private_elb_subnets(self, region):
         return self._private_elb_subnets.get(region, ())
-
-    def update_from_cf(self, suffix, region, cf_outputs):
-        if suffix == 'vpc':
-            return self._from_cf_vpc(region, cf_outputs)
-        elif suffix == 'bastion':
-            return self._from_cf_bastion(region, cf_outputs)
-        elif suffix == 'tables':
-            return
-        else:
-            logger.warn('Unknown suffix: %s', suffix)
-
-    def _from_cf_vpc(self, region, cf_outputs):
-        logger.debug('Updating %s from VPC CloudFormation.', self.name)
-        pub_instance = {}
-        pub_elb = {}
-        priv_instance = {}
-        priv_elb = {}
-        for output in cf_outputs:
-            key = output['OutputKey']
-            value = output['OutputValue']
-            if key.startswith('PrivateInstanceSubnet'):
-                priv_instance[key[-2:]] = value
-            elif key.startswith('PrivateElbSubnet'):
-                priv_elb[key[-2:]] = value
-            elif key.startswith('PublicInstanceSubnet'):
-                pub_instance[key[-2:]] = value
-            elif key.startswith('PublicElbSubnet'):
-                pub_elb[key[-2:]] = value
-            elif key.startswith('PublicNatSubnet'):
-                pass
-            elif key.startswith('NatEip'):
-                self._nat_eips[region][key[-2:]] = value
-            elif key.startswith('VpcId'):
-                self._vpc_ids[region] = value
-            else:
-                logger.warn('Unrecognized output key: %s', key)
-
-        self._public_instance_subnets[region] = self._key_sorted(pub_instance)
-        self._public_elb_subnets[region] = self._key_sorted(pub_elb)
-        self._private_instance_subnets[region] = self._key_sorted(priv_instance)
-        self._private_elb_subnets[region] = self._key_sorted(priv_elb)
-
-    def _from_cf_bastion(self, region, cf_outputs):
-        logger.debug('Updating %s from Bastion CloudFormation.', self.name)
-        for output in cf_outputs:
-            key = output['OutputKey']
-            value = output['OutputValue']
-            if key.startswith('ElasticIp'):
-                self._bastion_eips[region][key[-2:]] = value
-            elif key.startswith('BastionSecurityGroup'):
-                self._bastion_sgs[region] = value
-
-    @staticmethod
-    def _key_sorted(subnets):
-        return [value for (key, value) in sorted(subnets.items())]
