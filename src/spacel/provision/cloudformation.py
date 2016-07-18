@@ -3,7 +3,7 @@ import json
 import logging
 import re
 
-logger = logging.getLogger('')
+logger = logging.getLogger('spacel')
 
 CAPABILITIES = ('CAPABILITY_IAM',)
 INVALID_STATE_MESSAGE = re.compile('.* is in ([A-Z_]*) state and can not'

@@ -65,6 +65,6 @@ if __name__ == '__main__':
                         format='%(asctime)s - %(levelname)s - %(message)s')
     logging.getLogger('boto3').setLevel(logging.CRITICAL)
     logging.getLogger('botocore').setLevel(logging.CRITICAL)
-    logging.getLogger('orbit').setLevel(logging.DEBUG)
+    logging.getLogger('spacel').setLevel(logging.DEBUG)
 
     main(sys.argv)

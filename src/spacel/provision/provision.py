@@ -7,7 +7,7 @@ import re
 from spacel.aws import ClientCache
 from spacel.provision.templates import TemplateCache
 
-logger = logging.getLogger('orbit')
+logger = logging.getLogger('spacel')
 
 CAPABILITIES = ('CAPABILITY_IAM',)
 INVALID_STATE_MESSAGE = re.compile('.* is in ([A-Z_]*) state and can not'

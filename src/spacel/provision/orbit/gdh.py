@@ -3,7 +3,7 @@ import logging
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              key_sorted)
 
-logger = logging.getLogger('orbit')
+logger = logging.getLogger('spacel')
 
 
 class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):

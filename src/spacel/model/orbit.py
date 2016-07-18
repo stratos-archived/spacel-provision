@@ -1,7 +1,7 @@
 from collections import defaultdict
 import logging
 
-logger = logging.getLogger('space-elevator')
+logger = logging.getLogger('spacel')
 
 DEFAULT = 'defaults'
 

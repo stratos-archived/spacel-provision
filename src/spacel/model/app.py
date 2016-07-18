@@ -1,6 +1,6 @@
 import logging
 
-logger = logging.getLogger('spacel)')
+logger = logging.getLogger('spacel')
 
 
 class SpaceApp(object):

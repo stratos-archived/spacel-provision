@@ -1,4 +1,28 @@
+import json
+import logging
+from urllib.request import urlopen
+
+SPACEL_URL = 'https://ami.pbl.io/spacel/%s.json'
+
+logger = logging.getLogger('spacel')
+
+
 class AmiFinder(object):
+    def __init__(self):
+        self._channel = 'latest'
+        self._cache = {}
+
     def spacel_ami(self, region):
-        # TODO: parse+cache: https://ami.pbl.io/spacel/latest.json
-        return 'ami-d06b81bd'
+        ami = self._ami(SPACEL_URL, region)
+        logger.debug('Found SpaceL AMI %s in %s', ami, region)
+        return ami
+
+    def _ami(self, url, region):
+        url %= self._channel
+        manifest = self._cache.get(url)
+        if not manifest:
+            logger.debug('AMI manifest %s not cached, fetching...', url)
+            opened = urlopen(url)
+            manifest = json.loads(opened.read().decode('utf-8'))
+            self._cache[url] = manifest
+        return manifest.get(region)

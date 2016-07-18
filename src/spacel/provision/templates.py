@@ -10,7 +10,7 @@ from spacel.model.orbit import (BASTION_INSTANCE_TYPE,
                                 NAT_PER_AZ,
                                 PRIVATE_NETWORK)
 
-logger = logging.getLogger('orbit')
+logger = logging.getLogger('spacel')
 
 
 class TemplateCache(object):
