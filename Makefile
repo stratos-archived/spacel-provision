@@ -19,4 +19,10 @@ build/venv/bin/activate: requirements.txt
 		pip install -r src/test/requirements.txt; \
 	)
 
-.PHONY: test
+composetest:
+	-docker-compose kill
+	-docker-compose rm -f
+	docker-compose build
+	docker-compose run test
+
+.PHONY: composetest test
