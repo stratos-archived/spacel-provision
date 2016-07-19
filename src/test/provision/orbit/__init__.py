@@ -6,3 +6,7 @@ IP_ADDRESS = '127.0.0.1'
 
 def cf_outputs(outputs):
     return [{'OutputKey': k, 'OutputValue': v} for k, v in outputs.items()]
+
+
+def cf_parameters(params):
+    return [{'ParameterKey': k, 'ParameterValue': v} for k, v in params.items()]

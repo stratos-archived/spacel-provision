@@ -7,6 +7,7 @@ from spacel.provision.orbit.provider import ProviderOrbitFactory
 from test.provision.orbit import (NAME, REGION)
 
 TEST_PROVIDER = 'test'
+REGION_LIST = [REGION]
 
 
 class TestProviderOrbitFactory(unittest.TestCase):
@@ -16,8 +17,9 @@ class TestProviderOrbitFactory(unittest.TestCase):
         self.orbit_factory = ProviderOrbitFactory({
             TEST_PROVIDER: self.provider
         })
+
         self.orbit = Orbit(NAME, {
-            REGIONS: (REGION,),
+            REGIONS: REGION_LIST,
             DEFAULTS: {
                 PROVIDER: TEST_PROVIDER
             }
@@ -25,7 +27,8 @@ class TestProviderOrbitFactory(unittest.TestCase):
 
     def test_get_orbit(self):
         self.orbit_factory.get_orbit(self.orbit)
-        self.provider.get_orbit.assert_called_once_with(self.orbit)
+        self.provider.get_orbit.assert_called_once_with(self.orbit,
+                                                        regions=REGION_LIST)
 
     def test_get_orbit_provider_not_found(self):
         self.orbit._params[DEFAULTS][PROVIDER] = 'does-not-exist'

@@ -2,10 +2,11 @@ from botocore.exceptions import ClientError
 from mock import MagicMock
 import unittest
 
+from spacel.aws import ClientCache
 from spacel.model import Orbit
-from spacel.provision.provision import ClientCache
 from spacel.provision.orbit.gdh import GitDeployHooksOrbitFactory
-from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs)
+from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs,
+                                  cf_parameters)
 
 PARENT_NAME = 'daddy'
 STACK_ID = 'arn:cloudformation:123456'
@@ -58,6 +59,11 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
         }, 'CreateSubnet')
 
     def test_orbit_from_child(self):
+        params = {
+            'Az1': 'us-west-2a',
+            'Az2': 'us-west-2b',
+            'Az3': 'us-west-2c',
+        }
         outputs = {
             'PrivateSubnet01': 'subnet-000001',
             'PrivateSubnet02': 'subnet-000002',
@@ -71,6 +77,7 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
         }
 
         self.orbit_factory._orbit_from_child(self.orbit, REGION, NAME,
+                                             cf_parameters(params),
                                              cf_outputs(outputs))
 
         self.assertEquals(['subnet-000001', 'subnet-000002'],
@@ -82,3 +89,5 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
         self.assertEquals(['subnet-000101'],
                           self.orbit.public_elb_subnets(REGION))
         self.assertEquals(VPC_ID, self.orbit.vpc_id(REGION))
+        self.assertEquals(['us-west-2a', 'us-west-2b', 'us-west-2c'],
+                          self.orbit.azs(REGION))

@@ -15,21 +15,22 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
         super(SpaceElevatorOrbitFactory, self).__init__(clients)
         self._templates = templates
 
-    def get_orbit(self, orbit):
-        self._azs(orbit)
-        self._orbit_stack(orbit, 'vpc')
-        self._orbit_stack(orbit, 'tables')
-        self._orbit_stack(orbit, 'bastion')
+    def get_orbit(self, orbit, regions=None):
+        regions = regions or orbit.regions
+        self._azs(orbit, regions)
+        self._orbit_stack(orbit, regions, 'vpc')
+        self._orbit_stack(orbit, regions, 'tables')
+        self._orbit_stack(orbit, regions, 'bastion')
 
         for region in orbit.regions:
             bastion_eips = sorted(orbit.bastion_eips(region).values())
             logger.debug('Bastions: %s - %s', region, ' '.join(bastion_eips))
 
-    def _orbit_stack(self, orbit, stack_suffix):
+    def _orbit_stack(self, orbit, regions, stack_suffix):
         stack_name = '%s-%s' % (orbit.name, stack_suffix)
 
         updates = {}
-        for region in orbit.regions:
+        for region in regions:
             logger.debug('Provisioning %s in %s.', stack_name, region)
             if stack_suffix == 'vpc':
                 template = self._templates.vpc(orbit, region)
@@ -49,7 +50,7 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
         logger.debug('Provisioned %s in %s.', stack_name, region)
 
         # Refresh model from CF:
-        for region in orbit.regions:
+        for region in regions:
             cf = self._clients.cloudformation(region)
             cf_stack = self._describe_stack(cf, stack_name)
             cf_outputs = cf_stack.get('Outputs', {})
@@ -62,8 +63,8 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
             else:  # pragma: no cover
                 logger.warn('Unknown suffix: %s', stack_suffix)
 
-    def _azs(self, orbit):
-        for region in orbit.regions:
+    def _azs(self, orbit, regions):
+        for region in regions:
             ec2 = self._clients.ec2(region)
             try:
                 vpcs = ec2.describe_vpcs()

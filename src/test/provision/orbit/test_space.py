@@ -33,7 +33,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.orbit_factory._azs = MagicMock()
         self.orbit_factory._orbit_stack = MagicMock()
 
-        self.orbit_factory.get_orbit(self.orbit)
+        self.orbit_factory.get_orbit(self.orbit, self.orbit.regions)
 
         self.orbit_factory._azs.assert_called_once()
         self.assertEquals(3, self.orbit_factory._orbit_stack.call_count)
@@ -44,7 +44,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.orbit_factory._orbit_from_vpc = MagicMock()
         self.orbit_factory._orbit_from_bastion = MagicMock()
 
-        self.orbit_factory._orbit_stack(self.orbit, 'vpc')
+        self.orbit_factory._orbit_stack(self.orbit, self.orbit.regions, 'vpc')
 
         self.templates.vpc.assert_called_once_with(self.orbit, REGION)
         self.orbit_factory._wait_for_updates.assert_called_once()
@@ -57,7 +57,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.orbit_factory._orbit_from_vpc = MagicMock()
         self.orbit_factory._orbit_from_bastion = MagicMock()
 
-        self.orbit_factory._orbit_stack(self.orbit, 'bastion')
+        self.orbit_factory._orbit_stack(self.orbit, self.orbit.regions,
+                                        'bastion')
 
         self.templates.vpc.assert_not_called()
         self.templates.bastion.assert_called_once_with(self.orbit, REGION)
@@ -71,7 +72,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.orbit_factory._orbit_from_vpc = MagicMock()
         self.orbit_factory._orbit_from_bastion = MagicMock()
 
-        self.orbit_factory._orbit_stack(self.orbit, 'tables')
+        self.orbit_factory._orbit_stack(self.orbit, self.orbit.regions,
+                                        'tables')
 
         self.templates.tables.assert_called_once_with(self.orbit)
         self.orbit_factory._orbit_from_vpc.assert_not_called()
@@ -81,7 +83,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.orbit_factory._stack = MagicMock()
         self.orbit_factory._wait_for_updates = MagicMock()
 
-        self.orbit_factory._orbit_stack(self.orbit, 'kaboom')
+        self.orbit_factory._orbit_stack(self.orbit, self.orbit.regions,
+                                        'kaboom')
 
         self.orbit_factory._stack.assert_not_called()
         self.orbit_factory._wait_for_updates.assert_not_called()
@@ -91,7 +94,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
             'us-east-1zzz is invalid. Subnets can currently only be created in '
             'the following availability zones: us-east-1a, us-east-1b')
 
-        self.orbit_factory._azs(self.orbit)
+        self.orbit_factory._azs(self.orbit, self.orbit.regions)
 
         self.clients.ec2.assert_called_once_with(REGION)
         self.ec2.create_subnet.assert_called_once()
@@ -99,7 +102,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
 
     def test_azs_error(self):
         self._create_subnet_error('Kaboom')
-        self.assertRaises(ClientError, self.orbit_factory._azs, self.orbit)
+        self.assertRaises(ClientError, self.orbit_factory._azs, self.orbit,
+                          self.orbit.regions)
 
     def _create_subnet_error(self, message):
         self.ec2.create_subnet.side_effect = ClientError({

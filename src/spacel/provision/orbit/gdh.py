@@ -15,8 +15,9 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
         super(GitDeployHooksOrbitFactory, self).__init__(clients)
         self._stack_name = parent_stack
 
-    def get_orbit(self, orbit):
-        for region in orbit.regions:
+    def get_orbit(self, orbit, regions=None):
+        regions = regions or orbit.regions
+        for region in regions:
             cf = self._clients.cloudformation(region)
 
             # Check for parent in region:
@@ -38,12 +39,22 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
                                  ['PhysicalResourceId'])
             logger.debug('Querying %s for outputs...', child_resource_id)
             child_stack = self._describe_stack(cf, child_resource_id)
+            parameters = child_stack.get('Parameters', ())
             outputs = child_stack.get('Outputs', ())
 
-            self._orbit_from_child(orbit, region, name, outputs)
+            self._orbit_from_child(orbit, region, name, parameters, outputs)
 
     @staticmethod
-    def _orbit_from_child(orbit, region, name, cf_outputs):
+    def _orbit_from_child(orbit, region, name, cf_parameters, cf_outputs):
+        # Map parameters onto orbit model:
+        azs = []
+        for parameter in cf_parameters:
+            key = parameter['ParameterKey']
+            value = parameter['ParameterValue']
+            if key.startswith('Az'):
+                azs.append(value)
+        orbit._azs[region] = sorted(azs)
+
         # Map outputs onto orbit model:
         private_subnets = {}
         public_subnets = {}
