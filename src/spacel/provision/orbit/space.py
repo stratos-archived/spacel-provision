@@ -41,14 +41,11 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
                 logger.warn('Unknown orbit template: %s', stack_suffix)
                 return
 
-            updated = self._stack(stack_name, region, template)
-            if updated:
-                updates[region] = updated
+            updates[region] = self._stack(stack_name, region, template)
 
-        if updates:
-            logger.debug('Requested %s in %s, waiting for provisioning...',
-                         stack_name, region)
-            self._wait_for_updates(stack_name, updates)
+        logger.debug('Requested %s in %s, waiting for provisioning...',
+                     stack_name, region)
+        self._wait_for_updates(stack_name, updates)
         logger.debug('Provisioned %s in %s.', stack_name, region)
 
         # Refresh model from CF:

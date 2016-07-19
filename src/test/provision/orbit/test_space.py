@@ -2,9 +2,9 @@ from botocore.exceptions import ClientError
 from mock import MagicMock
 import unittest
 
+from spacel.aws import ClientCache
 from spacel.model import Orbit
 from spacel.provision.templates import TemplateCache
-from spacel.provision.provision import ClientCache
 from spacel.provision.orbit.space import SpaceElevatorOrbitFactory
 
 from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs)
@@ -47,7 +47,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.orbit_factory._orbit_stack(self.orbit, 'vpc')
 
         self.templates.vpc.assert_called_once_with(self.orbit, REGION)
-        self.orbit_factory._wait_for_updates.assert_not_called()
+        self.orbit_factory._wait_for_updates.assert_called_once()
         self.orbit_factory._orbit_from_vpc.assert_called_once()
         self.orbit_factory._orbit_from_bastion.assert_not_called()
 

@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger('spacel')
 
-DEFAULT = 'defaults'
+DEFAULTS = 'defaults'
 
 PRIVATE_NETWORK = 'private-network'
 
@@ -11,6 +11,8 @@ BASTION_INSTANCE_COUNT = 'bastion-instance-count'
 BASTION_INSTANCE_TYPE = 'bastion-instance-type'
 BASTION_SOURCE = 'bastion-source'
 NAT_PER_AZ = 'nat-per-az'
+PROVIDER = 'provider'
+REGIONS = 'regions'
 
 
 class Orbit(object):
@@ -19,7 +21,8 @@ class Orbit(object):
         BASTION_INSTANCE_COUNT: 1,
         BASTION_INSTANCE_TYPE: 't2.nano',
         BASTION_SOURCE: '0.0.0.0/0',
-        NAT_PER_AZ: False
+        NAT_PER_AZ: False,
+        PROVIDER: 'spacel'
     }
 
     def __init__(self, name, params):
@@ -43,7 +46,7 @@ class Orbit(object):
 
     @property
     def regions(self):
-        return self._params.get('regions', ())
+        return self._params.get(REGIONS, ())
 
     def azs(self, region):
         return self._azs.get(region, ())
@@ -55,7 +58,7 @@ class Orbit(object):
             if region_value is not None:
                 return region_value
 
-        defaults_map = self._params.get(DEFAULT)
+        defaults_map = self._params.get(DEFAULTS)
         if defaults_map:
             defaults_value = defaults_map.get(key)
             if defaults_value is not None:

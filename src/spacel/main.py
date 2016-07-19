@@ -1,9 +1,13 @@
 import sys
 import logging
 
+from spacel.aws import ClientCache
+
 from spacel.model import SpaceApp, Orbit
 from spacel.model.orbit import PRIVATE_NETWORK
+from spacel.provision.orbit import ProviderOrbitFactory
 from spacel.provision.provision import CloudProvisioner
+from spacel.provision.templates import TemplateCache
 
 
 def main(args):
@@ -55,8 +59,13 @@ def main(args):
     }
     app = SpaceApp('elasticsearch', orbit, app_params)
 
-    provisioner = CloudProvisioner()
-    provisioner.orbit(orbit)
+    clients = ClientCache()
+    templates = TemplateCache()
+
+    orbit_factory = ProviderOrbitFactory.get(clients, templates)
+    orbit_factory.get_orbit(orbit)
+
+    provisioner = CloudProvisioner(clients, templates)
     provisioner.app(app)
 
 
