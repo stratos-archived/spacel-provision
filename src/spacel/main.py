@@ -14,7 +14,8 @@ def main(args):
     # FIXME: this is a stub for driving spacel-agent tests
 
     # These should be set outside the application repository
-    orbit_params = {
+    orbit_json = {
+        'name': 'develop',
         'regions': ('us-east-1', 'us-west-2'),
         'us-west-2': {
             'provider': 'gdh'
@@ -23,7 +24,7 @@ def main(args):
             PRIVATE_NETWORK: '10.200'
         }
     }
-    orbit = Orbit('develop', orbit_params)
+    orbit = Orbit(orbit_json)
 
     # These should be read from the application repository:
     app_params = {

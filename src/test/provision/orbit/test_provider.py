@@ -18,7 +18,8 @@ class TestProviderOrbitFactory(unittest.TestCase):
             TEST_PROVIDER: self.provider
         })
 
-        self.orbit = Orbit(NAME, {
+        self.orbit = Orbit({
+            'name': NAME,
             REGIONS: REGION_LIST,
             DEFAULTS: {
                 PROVIDER: TEST_PROVIDER

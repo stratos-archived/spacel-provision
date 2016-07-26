@@ -25,8 +25,8 @@ class Orbit(object):
         PROVIDER: 'spacel'
     }
 
-    def __init__(self, name, params):
-        self.name = name
+    def __init__(self, params):
+        self.name = params.get('name', 'test')
         self._params = params
 
         # Queried from EC2:

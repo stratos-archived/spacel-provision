@@ -22,7 +22,8 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
             }
         }
         self.clients.cloudformation.return_value = self.cloudformation
-        self.orbit = Orbit(NAME, {
+        self.orbit = Orbit({
+            'name': NAME,
             'regions': (REGION,)
         })
 

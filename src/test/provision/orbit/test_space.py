@@ -21,7 +21,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.clients = MagicMock(spec=ClientCache)
         self.ec2 = MagicMock()
         self.clients.ec2.return_value = self.ec2
-        self.orbit = Orbit(NAME, {
+        self.orbit = Orbit({
+            'name': NAME,
             'regions': (REGION,)
         })
         self.orbit_factory = SpaceElevatorOrbitFactory(self.clients,
