@@ -6,7 +6,7 @@ logger = logging.getLogger('spacel')
 COSTS = {
     'AWS::AutoScaling::AutoScalingGroup	': {
         'Add': 2,
-        'Modify': 2,
+        'Modify': 300,
         'Delete': 2
     },
     'AWS::AutoScaling::LaunchConfiguration': {

@@ -255,10 +255,17 @@ class TemplateCache(object):
         params['UserData']['Default'] = self._user_data(params, app)
         params['Ami']['Default'] = self._ami.spacel_ami(region)
 
-        # FIXME: from params
-        # TODO: support multiple hostnames
-        params['VirtualHost']['Default'] = 'test.mycloudand.me'
-        params['VirtualHostDomain']['Default'] = 'mycloudand.me.'
+        if app.hostnames:
+            # TODO: support multiple hostnames
+            app_hostname = app.hostnames[0]
+            domain = app_hostname.split('.')
+            domain = '.'.join(domain[-2:]) + '.'
+            params['VirtualHostDomain']['Default'] = domain
+            params['VirtualHost']['Default'] = app_hostname
+        else:
+            params['VirtualHostDomain']['Default'] = orbit.domain + '.'
+            generated_dns = '%s-%s.%s' % (app.name, orbit.name, orbit.domain)
+            params['VirtualHost']['Default'] = generated_dns
 
         # Expand ELB to all AZs:
         public_elb_subnets = orbit.public_elb_subnets(region)

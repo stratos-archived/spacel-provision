@@ -17,6 +17,7 @@ def main(args):
     # These should be set outside the application repository
     orbit_json = {
         'name': 'develop',
+        'domain': 'pebbledev.com',
         'regions': ('us-east-1',),
         'us-west-2': {
             'provider': 'gdh'
@@ -29,7 +30,7 @@ def main(args):
 
     # These should be read from the application repository:
     app_params = {
-        'hostnames': ('test.mycloudand.me',),
+        'hostnames': ('spacel-test.pebbledev.com',),
         # 'scheme': 'internal',
         'health_check': 'HTTP:9200/',
         'instance_type': 't2.nano',
@@ -71,7 +72,7 @@ def main(args):
     orbit_factory = ProviderOrbitFactory.get(clients, change_sets, templates)
     orbit_factory.get_orbit(orbit)
 
-    provisioner = CloudProvisioner(clients, templates)
+    provisioner = CloudProvisioner(clients, change_sets, templates)
     provisioner.app(app)
 
 
