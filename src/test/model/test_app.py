@@ -10,7 +10,8 @@ SERVICE_NAME = 'elasticsearch'
 
 class TestSpaceApp(unittest.TestCase):
     def setUp(self):
-        self.orbit = Orbit('test-orbit', params={
+        self.orbit = Orbit({
+            'name': 'test-orbit',
             'regions': ORBIT_REGIONS
         })
 

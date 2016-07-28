@@ -3,12 +3,14 @@ from mock import MagicMock
 import unittest
 
 from spacel.aws import ClientCache
+from spacel.provision.changesets import ChangeSetEstimator
 from spacel.model import Orbit
 from spacel.provision.orbit.gdh import GitDeployHooksOrbitFactory
 from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs,
                                   cf_parameters)
 
 PARENT_NAME = 'daddy'
+DEPLOY_NAME = 'deploy'
 STACK_ID = 'arn:cloudformation:123456'
 
 
@@ -22,12 +24,16 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
             }
         }
         self.clients.cloudformation.return_value = self.cloudformation
-        self.orbit = Orbit(NAME, {
+        self.orbit = Orbit({
+            'name': NAME,
             'regions': (REGION,)
         })
 
+        self.change_sets = MagicMock(spec=ChangeSetEstimator)
         self.orbit_factory = GitDeployHooksOrbitFactory(self.clients,
-                                                        PARENT_NAME)
+                                                        self.change_sets,
+                                                        PARENT_NAME,
+                                                        DEPLOY_NAME)
         self.orbit_factory._describe_stack = MagicMock()
 
     def test_get_orbit(self):

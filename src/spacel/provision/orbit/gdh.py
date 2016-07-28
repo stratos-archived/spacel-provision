@@ -3,7 +3,7 @@ import logging
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              key_sorted)
 
-logger = logging.getLogger('spacel')
+logger = logging.getLogger('spacel.provision.orbit.gdh')
 
 
 class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
@@ -11,9 +11,10 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
     Queries existing orbital VPCs built by git-deploy.
     """
 
-    def __init__(self, clients, parent_stack):
-        super(GitDeployHooksOrbitFactory, self).__init__(clients)
+    def __init__(self, clients, change_sets, parent_stack, deploy_stack):
+        super(GitDeployHooksOrbitFactory, self).__init__(clients, change_sets)
         self._stack_name = parent_stack
+        self._deploy_stack_name = deploy_stack
 
     def get_orbit(self, orbit, regions=None):
         regions = regions or orbit.regions
@@ -43,6 +44,14 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
             outputs = child_stack.get('Outputs', ())
 
             self._orbit_from_child(orbit, region, name, parameters, outputs)
+
+            deploy_stack = self._describe_stack(cf, self._deploy_stack_name)
+            outputs = deploy_stack.get('Outputs', ())
+            for output in outputs:
+                key = output['OutputKey']
+                value = output['OutputValue']
+                if key == 'SecurityGroup':
+                    orbit._bastion_sgs[region] = value
 
     @staticmethod
     def _orbit_from_child(orbit, region, name, cf_parameters, cf_outputs):

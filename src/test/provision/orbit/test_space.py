@@ -4,6 +4,7 @@ import unittest
 
 from spacel.aws import ClientCache
 from spacel.model import Orbit
+from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.templates import TemplateCache
 from spacel.provision.orbit.space import SpaceElevatorOrbitFactory
 
@@ -19,12 +20,15 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.templates.bastion.return_value = {}
         self.templates.tables.return_value = {}
         self.clients = MagicMock(spec=ClientCache)
+        self.change_sets = MagicMock(spec=ChangeSetEstimator)
         self.ec2 = MagicMock()
         self.clients.ec2.return_value = self.ec2
-        self.orbit = Orbit(NAME, {
+        self.orbit = Orbit({
+            'name': NAME,
             'regions': (REGION,)
         })
         self.orbit_factory = SpaceElevatorOrbitFactory(self.clients,
+                                                       self.change_sets,
                                                        self.templates)
 
     def test_get_orbit(self):

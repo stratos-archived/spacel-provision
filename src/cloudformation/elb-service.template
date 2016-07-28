@@ -99,6 +99,16 @@
         {"Ref": "VolumeSupport"},
         "true"
       ]
+    },
+    "HasVirtualHost": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {"Ref": "VirtualHostDomain"},
+            ""
+          ]
+        }
+      ]
     }
   },
   "Resources": {
@@ -187,6 +197,7 @@
     },
     "DnsRecord": {
       "Type": "AWS::Route53::RecordSetGroup",
+      "Condition": "HasVirtualHost",
       "Properties": {
         "HostedZoneName": {"Ref": "VirtualHostDomain"},
         "Comment": "Alias for ELB",
@@ -450,9 +461,9 @@
                   ]
                 },
                 "\",\"orbit\":\"",
-                {"Ref":"Orbit"},
+                {"Ref": "Orbit"},
                 "\",\"name\":\"",
-                {"Ref":"Service"},
+                {"Ref": "Service"},
                 "\",\"cloudformation_signal\":{\"",
                 {"Ref": "AWS::StackName"},
                 "\":\"Asg\"}",

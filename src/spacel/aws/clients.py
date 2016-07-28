@@ -2,7 +2,7 @@ import boto3
 from collections import defaultdict
 import logging
 
-logger = logging.getLogger('spacel')
+logger = logging.getLogger('spacel.aws.clients')
 
 
 class ClientCache(object):

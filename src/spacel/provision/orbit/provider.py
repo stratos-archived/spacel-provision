@@ -5,7 +5,7 @@ from spacel.model.orbit import PROVIDER
 from spacel.provision.orbit.gdh import GitDeployHooksOrbitFactory
 from spacel.provision.orbit.space import SpaceElevatorOrbitFactory
 
-logger = logging.getLogger('spacel')
+logger = logging.getLogger('spacel.provision.orbit.provider')
 
 
 class ProviderOrbitFactory(object):
@@ -37,8 +37,11 @@ class ProviderOrbitFactory(object):
             provider.get_orbit(orbit, regions=provider_regions)
 
     @staticmethod
-    def get(clients, templates):
+    def get(clients, change_sets, templates):
         return ProviderOrbitFactory({
-            'spacel': SpaceElevatorOrbitFactory(clients, templates),
-            'gdh': GitDeployHooksOrbitFactory(clients, 'git-deploy')
+            'spacel': SpaceElevatorOrbitFactory(clients, change_sets,
+                                                templates),
+            'gdh': GitDeployHooksOrbitFactory(clients, change_sets,
+                                              'git-deploy',
+                                              'git-deploy-develop')
         })

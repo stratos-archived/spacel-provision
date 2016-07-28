@@ -3,7 +3,7 @@ import logging
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              key_sorted)
 
-logger = logging.getLogger('spacel')
+logger = logging.getLogger('spacel.provision.orbit.spacel')
 
 
 class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
@@ -11,8 +11,8 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
     Builds orbital VPCs based on Space Elevator templates.
     """
 
-    def __init__(self, clients, templates):
-        super(SpaceElevatorOrbitFactory, self).__init__(clients)
+    def __init__(self, clients, change_sets, templates):
+        super(SpaceElevatorOrbitFactory, self).__init__(clients, change_sets)
         self._templates = templates
 
     def get_orbit(self, orbit, regions=None):

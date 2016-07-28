@@ -5,6 +5,7 @@ from spacel.aws import ClientCache
 
 from spacel.model import SpaceApp, Orbit
 from spacel.model.orbit import PRIVATE_NETWORK
+from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.orbit import ProviderOrbitFactory
 from spacel.provision.provision import CloudProvisioner
 from spacel.provision.templates import TemplateCache
@@ -14,8 +15,10 @@ def main(args):
     # FIXME: this is a stub for driving spacel-agent tests
 
     # These should be set outside the application repository
-    orbit_params = {
-        'regions': ('us-east-1', 'us-west-2'),
+    orbit_json = {
+        'name': 'webops',
+        'domain': 'pebbledev.com',
+        'regions': ('us-west-2',),
         'us-west-2': {
             'provider': 'gdh'
         },
@@ -23,11 +26,11 @@ def main(args):
             PRIVATE_NETWORK: '10.200'
         }
     }
-    orbit = Orbit('develop', orbit_params)
+    orbit = Orbit(orbit_json)
 
     # These should be read from the application repository:
     app_params = {
-        'hostnames': ('test.mycloudand.me',),
+        # 'hostnames': ('spacel-test.pebbledev.com',),
         # 'scheme': 'internal',
         'health_check': 'HTTP:9200/',
         'instance_type': 't2.nano',
@@ -47,7 +50,7 @@ def main(args):
         },
         'public_ports': {
             9200: {
-                'sources': ('24.212.219.139/32', '54.148.229.21/32')
+                'sources': ('99.232.67.89/32', '54.148.229.21/32')
             }
         },
         'private_ports': {
@@ -64,17 +67,18 @@ def main(args):
 
     clients = ClientCache()
     templates = TemplateCache()
+    change_sets = ChangeSetEstimator()
 
-    orbit_factory = ProviderOrbitFactory.get(clients, templates)
+    orbit_factory = ProviderOrbitFactory.get(clients, change_sets, templates)
     orbit_factory.get_orbit(orbit)
 
-    provisioner = CloudProvisioner(clients, templates)
+    provisioner = CloudProvisioner(clients, change_sets, templates)
     provisioner.app(app)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+    log_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+    logging.basicConfig(level=logging.DEBUG, format=log_format)
     logging.getLogger('boto3').setLevel(logging.CRITICAL)
     logging.getLogger('botocore').setLevel(logging.CRITICAL)
     logging.getLogger('spacel').setLevel(logging.DEBUG)
