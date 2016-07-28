@@ -14,6 +14,9 @@ NAT_PER_AZ = 'nat-per-az'
 PROVIDER = 'provider'
 REGIONS = 'regions'
 
+GDH_PARENT = 'parent_stack'
+GDH_DEPLOY = 'deploy_stack'
+
 
 class Orbit(object):
     DEFAULT_VALUES = {

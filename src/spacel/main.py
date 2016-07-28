@@ -4,7 +4,7 @@ import logging
 from spacel.aws import ClientCache
 
 from spacel.model import SpaceApp, Orbit
-from spacel.model.orbit import PRIVATE_NETWORK
+from spacel.model.orbit import (GDH_DEPLOY, GDH_PARENT, PRIVATE_NETWORK)
 from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.orbit import ProviderOrbitFactory
 from spacel.provision.provision import CloudProvisioner
@@ -20,7 +20,9 @@ def main(args):
         'domain': 'pebbledev.com',
         'regions': ('us-west-2',),
         'us-west-2': {
-            'provider': 'gdh'
+            'provider': 'gdh',
+            GDH_PARENT: 'git-deploy',
+            GDH_DEPLOY: 'git-deploy-develop'
         },
         'defaults': {
             PRIVATE_NETWORK: '10.200'
