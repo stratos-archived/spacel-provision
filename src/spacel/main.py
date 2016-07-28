@@ -16,9 +16,9 @@ def main(args):
 
     # These should be set outside the application repository
     orbit_json = {
-        'name': 'develop',
+        'name': 'webops',
         'domain': 'pebbledev.com',
-        'regions': ('us-east-1',),
+        'regions': ('us-west-2',),
         'us-west-2': {
             'provider': 'gdh'
         },
@@ -30,7 +30,7 @@ def main(args):
 
     # These should be read from the application repository:
     app_params = {
-        'hostnames': ('spacel-test.pebbledev.com',),
+        # 'hostnames': ('spacel-test.pebbledev.com',),
         # 'scheme': 'internal',
         'health_check': 'HTTP:9200/',
         'instance_type': 't2.nano',

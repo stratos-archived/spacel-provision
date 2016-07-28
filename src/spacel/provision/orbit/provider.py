@@ -42,5 +42,6 @@ class ProviderOrbitFactory(object):
             'spacel': SpaceElevatorOrbitFactory(clients, change_sets,
                                                 templates),
             'gdh': GitDeployHooksOrbitFactory(clients, change_sets,
-                                              'git-deploy')
+                                              'git-deploy',
+                                              'git-deploy-develop')
         })

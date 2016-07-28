@@ -10,6 +10,7 @@ from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs,
                                   cf_parameters)
 
 PARENT_NAME = 'daddy'
+DEPLOY_NAME = 'deploy'
 STACK_ID = 'arn:cloudformation:123456'
 
 
@@ -31,7 +32,8 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
         self.orbit_factory = GitDeployHooksOrbitFactory(self.clients,
                                                         self.change_sets,
-                                                        PARENT_NAME)
+                                                        PARENT_NAME,
+                                                        DEPLOY_NAME)
         self.orbit_factory._describe_stack = MagicMock()
 
     def test_get_orbit(self):

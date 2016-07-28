@@ -9,7 +9,7 @@ logger = logging.getLogger('spacel.aws.ami')
 
 class AmiFinder(object):
     def __init__(self):
-        self._channel = 'latest'
+        self._channel = 'stable'
         self._cache = {}
 
     def spacel_ami(self, region):
