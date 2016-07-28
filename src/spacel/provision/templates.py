@@ -360,7 +360,6 @@ class TemplateCache(object):
         return user_data
 
     @staticmethod
-    @staticmethod
     def _base64(some_string):
         return base64.b64encode(some_string).decode('utf-8').strip()
 

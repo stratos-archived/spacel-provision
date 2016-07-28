@@ -11,8 +11,8 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
     Queries existing orbital VPCs built by git-deploy.
     """
 
-    def __init__(self, clients, parent_stack):
-        super(GitDeployHooksOrbitFactory, self).__init__(clients)
+    def __init__(self, clients, change_sets, parent_stack):
+        super(GitDeployHooksOrbitFactory, self).__init__(clients, change_sets)
         self._stack_name = parent_stack
 
     def get_orbit(self, orbit, regions=None):

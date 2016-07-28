@@ -4,7 +4,7 @@ from urllib.request import urlopen
 
 SPACEL_URL = 'https://ami.pbl.io/spacel/%s.json'
 
-logger = logging.getLogger('spacel')
+logger = logging.getLogger('spacel.aws.ami')
 
 
 class AmiFinder(object):

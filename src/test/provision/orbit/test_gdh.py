@@ -3,6 +3,7 @@ from mock import MagicMock
 import unittest
 
 from spacel.aws import ClientCache
+from spacel.provision.changesets import ChangeSetEstimator
 from spacel.model import Orbit
 from spacel.provision.orbit.gdh import GitDeployHooksOrbitFactory
 from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs,
@@ -27,7 +28,9 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
             'regions': (REGION,)
         })
 
+        self.change_sets = MagicMock(spec=ChangeSetEstimator)
         self.orbit_factory = GitDeployHooksOrbitFactory(self.clients,
+                                                        self.change_sets,
                                                         PARENT_NAME)
         self.orbit_factory._describe_stack = MagicMock()
 
