@@ -2,6 +2,7 @@ from botocore.exceptions import ClientError
 import logging
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              key_sorted)
+from spacel.model.orbit import GDH_DEPLOY, GDH_PARENT
 
 logger = logging.getLogger('spacel.provision.orbit.gdh')
 
@@ -11,14 +12,14 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
     Queries existing orbital VPCs built by git-deploy.
     """
 
-    def __init__(self, clients, change_sets, parent_stack, deploy_stack):
+    def __init__(self, clients, change_sets):
         super(GitDeployHooksOrbitFactory, self).__init__(clients, change_sets)
-        self._stack_name = parent_stack
-        self._deploy_stack_name = deploy_stack
 
     def get_orbit(self, orbit, regions=None):
         regions = regions or orbit.regions
         for region in regions:
+            parent_stack_name = orbit.get_param(region, GDH_PARENT)
+            deploy_stack_name = orbit.get_param(region, GDH_DEPLOY)
             cf = self._clients.cloudformation(region)
 
             # Check for parent in region:
@@ -26,7 +27,7 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
             logger.debug('Querying %s in %s...', name, region)
             try:
                 parent_resource = cf.describe_stack_resource(
-                    StackName=self._stack_name, LogicalResourceId=name)
+                    StackName=parent_stack_name, LogicalResourceId=name)
             except ClientError as e:
                 e_message = e.response['Error'].get('Message', '')
                 if 'does not exist' in e_message:
@@ -45,7 +46,7 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
 
             self._orbit_from_child(orbit, region, name, parameters, outputs)
 
-            deploy_stack = self._describe_stack(cf, self._deploy_stack_name)
+            deploy_stack = self._describe_stack(cf, deploy_stack_name)
             outputs = deploy_stack.get('Outputs', ())
             for output in outputs:
                 key = output['OutputKey']

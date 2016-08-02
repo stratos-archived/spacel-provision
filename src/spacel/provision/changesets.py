@@ -4,7 +4,7 @@ logger = logging.getLogger('spacel')
 
 # These could always use tuning:
 COSTS = {
-    'AWS::AutoScaling::AutoScalingGroup	': {
+    'AWS::AutoScaling::AutoScalingGroup': {
         'Add': 2,
         'Modify': 300,
         'Delete': 2

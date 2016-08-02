@@ -4,8 +4,8 @@ logger = logging.getLogger('spacel')
 
 
 class SpaceApp(object):
-    def __init__(self, name, orbit, params={}):
-        self.name = name
+    def __init__(self, orbit, params={}):
+        self.name = params.get('name', 'test')
         self.orbit = orbit
         regions = params.get('regions')
         if regions:

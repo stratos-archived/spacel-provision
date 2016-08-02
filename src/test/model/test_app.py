@@ -16,18 +16,18 @@ class TestSpaceApp(unittest.TestCase):
         })
 
     def test_constructor_default_regions(self):
-        app = SpaceApp('test', self.orbit)
+        app = SpaceApp(self.orbit)
         self.assertEqual(ORBIT_REGIONS, app.regions)
 
     def test_constructor_custom_regions(self):
-        app = SpaceApp('test', self.orbit, {
+        app = SpaceApp(self.orbit, {
             'regions': ('us-east-1', 'us-west-1')
         })
         # us-west-1 is blocked since it's not in the orbit:
         self.assertEqual(['us-east-1'], app.regions)
 
     def test_public_ports_default(self):
-        app = SpaceApp('test', self.orbit)
+        app = SpaceApp(self.orbit)
 
         self.assertEqual(1, len(app.public_ports))
         self.assertEqual('HTTP', app.public_ports[80].scheme)
@@ -35,7 +35,7 @@ class TestSpaceApp(unittest.TestCase):
 
     def test_public_ports_custom_sources(self):
         custom_sources = ('10.0.0.0/8', '192.168.0.0/16')
-        app = SpaceApp('test', self.orbit, {
+        app = SpaceApp(self.orbit, {
             'public_ports': {
                 80: {
                     'sources': custom_sources
@@ -47,7 +47,7 @@ class TestSpaceApp(unittest.TestCase):
         self.assertEquals(custom_sources, app.public_ports[80].sources)
 
     def test_services_docker(self):
-        app = SpaceApp('test', self.orbit, {
+        app = SpaceApp(self.orbit, {
             'services': {
                 SERVICE_NAME: {
                     'image': CONTAINER,
@@ -61,6 +61,10 @@ class TestSpaceApp(unittest.TestCase):
 
         self.assertEqual(1, len(app.services))
         self.assertIsNotNone(app.services[SERVICE_NAME].unit_file)
+
+    def test_full_name(self):
+        app = SpaceApp(self.orbit, {})
+        self.assertEquals(app.full_name, 'test-orbit-test')
 
 
 class TestSpaceDockerService(unittest.TestCase):
