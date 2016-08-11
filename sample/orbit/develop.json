@@ -1,0 +1,15 @@
+{
+  "name": "develop",
+  "domain": "pebbledev.com",
+  "regions": [
+    "us-west-2"
+  ],
+  "us-west-2": {
+    "provider": "gdh",
+    "parent_stack": "git-deploy",
+    "deploy_stack": "git-deploy-develop"
+  },
+  "defaults": {
+    "private-network": "10.200"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "health_check": "HTTP:9200/",
+  "instance_type": "t2.nano",
+  "instance_min": 1,
+  "instance_max": 1,
+  "services": {
+    "elasticsearch": {
+      "image": "pwagner/elasticsearch-aws",
+      "ports": {
+        "9200": 9200,
+        "9300": 9300
+      },
+      "volumes": {
+        "/mnt/esdata": "/usr/share/elasticsearch/data"
+      }
+    }
+  },
+  "public_ports": {
+    "9200": {
+      "sources": ["99.232.67.89/32", "54.148.229.21/32"]
+    }
+  },
+  "private_ports": {
+    "9300": ["TCP"]
+  },
+  "volumes": {
+    "esdata": {
+      "count": 2,
+      "size": 10
+    }
+  }
+}

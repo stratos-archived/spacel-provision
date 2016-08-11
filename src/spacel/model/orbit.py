@@ -5,12 +5,12 @@ logger = logging.getLogger('spacel')
 
 DEFAULTS = 'defaults'
 
-PRIVATE_NETWORK = 'private-network'
+PRIVATE_NETWORK = 'private_network'
 
-BASTION_INSTANCE_COUNT = 'bastion-instance-count'
-BASTION_INSTANCE_TYPE = 'bastion-instance-type'
-BASTION_SOURCE = 'bastion-source'
-NAT_PER_AZ = 'nat-per-az'
+BASTION_INSTANCE_COUNT = 'bastion_instance_count'
+BASTION_INSTANCE_TYPE = 'bastion_instance_type'
+BASTION_SOURCE = 'bastion_source'
+NAT_PER_AZ = 'nat_per_az'
 PROVIDER = 'provider'
 REGIONS = 'regions'
 

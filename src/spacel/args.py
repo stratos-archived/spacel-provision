@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 import boto3
 import json
 import logging
+import os
 from splitstream import splitfile
 import sys
 from urllib.error import HTTPError
@@ -77,6 +78,9 @@ def read_manifest(name, label, in_split):
         except StopIteration:
             logger.warn('Unable to read %s manifest from stdin.', label)
             return None
+    elif os.path.isfile(name):
+        with open(name, 'rb') as file_in:
+            json_body = file_in.read()
     else:
         logger.warn('Invalid input URL for %s: %s', label, name)
         return None
