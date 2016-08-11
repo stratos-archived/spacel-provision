@@ -13,7 +13,7 @@ REGION = 'us-east-1'
 class TestBastionTemplate(unittest.TestCase):
     def setUp(self):
         self.ami_finder = MagicMock(spec=AmiFinder)
-        self.cache = BastionTemplate({}, self.ami_finder)
+        self.cache = BastionTemplate(self.ami_finder)
         base_template = self.cache.get('asg-bastion')
         self.base_resources = len(base_template['Resources'])
         self.orbit = Orbit({})

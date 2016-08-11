@@ -12,7 +12,7 @@ REGION = 'us-east-1'
 class TestAppTemplate(unittest.TestCase):
     def setUp(self):
         self.ami_finder = MagicMock(spec=AmiFinder)
-        self.cache = AppTemplate({}, self.ami_finder)
+        self.cache = AppTemplate(self.ami_finder)
         base_template = self.cache.get('elb-service')
         self.base_resources = len(base_template['Resources'])
         self.orbit = Orbit({

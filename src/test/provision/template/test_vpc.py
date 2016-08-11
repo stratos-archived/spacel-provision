@@ -1,7 +1,5 @@
-from mock import MagicMock
 import unittest
 
-from spacel.aws import AmiFinder
 from spacel.model import Orbit
 from spacel.provision.template.vpc import VpcTemplate
 
@@ -10,8 +8,7 @@ REGION = 'us-east-1'
 
 class TestVpcTemplate(unittest.TestCase):
     def setUp(self):
-        self.ami_finder = MagicMock(spec=AmiFinder)
-        self.cache = VpcTemplate({}, self.ami_finder)
+        self.cache = VpcTemplate()
         base_template = self.cache.get('vpc')
         self.base_resources = len(base_template['Resources'])
         self.orbit = Orbit({})

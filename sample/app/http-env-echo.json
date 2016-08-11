@@ -1,0 +1,20 @@
+{
+  "name": "http-env-echo",
+  "health_check": "HTTP:80/",
+  "instance_type": "t2.nano",
+  "instance_min": 1,
+  "instance_max": 1,
+  "services": {
+    "http-env-echo": {
+      "image": "pwagner/http-env-echo",
+      "ports": {
+        "80": 8080
+      }
+    }
+  },
+  "public_ports": {
+    "80": {
+      "sources": ["0.0.0.0/0"]
+    }
+  }
+}

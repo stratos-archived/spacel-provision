@@ -5,8 +5,8 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class VpcTemplate(BaseTemplateCache):
-    def __init__(self, template_cache, ami_finder):
-        super(VpcTemplate, self).__init__(template_cache, ami_finder)
+    def __init__(self):
+        super(VpcTemplate, self).__init__()
 
     def vpc(self, orbit, region):
         """

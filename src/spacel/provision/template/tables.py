@@ -2,8 +2,8 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class TablesTemplate(BaseTemplateCache):
-    def __init__(self, template_cache, ami_finder):
-        super(TablesTemplate, self).__init__(template_cache, ami_finder)
+    def __init__(self):
+        super(TablesTemplate, self).__init__()
 
     def tables(self, orbit):
         """

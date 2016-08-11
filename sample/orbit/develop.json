@@ -2,6 +2,7 @@
   "name": "develop",
   "domain": "pebbledev.com",
   "regions": [
+    "us-east-1",
     "us-west-2"
   ],
   "us-west-2": {
@@ -10,6 +11,6 @@
     "deploy_stack": "git-deploy-develop"
   },
   "defaults": {
-    "private-network": "10.200"
+    "private_network": "10.200"
   }
 }

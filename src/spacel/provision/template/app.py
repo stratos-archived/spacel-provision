@@ -6,8 +6,8 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, template_cache, ami_finder):
-        super(AppTemplate, self).__init__(template_cache, ami_finder)
+    def __init__(self, ami_finder):
+        super(AppTemplate, self).__init__(ami_finder=ami_finder)
 
     def app(self, app, region):
         app_template = self.get('elb-service')

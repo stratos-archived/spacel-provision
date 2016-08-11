@@ -20,7 +20,7 @@ GDH_DEPLOY = 'deploy_stack'
 
 class Orbit(object):
     DEFAULT_VALUES = {
-        PRIVATE_NETWORK: '192.168.0.0/16',
+        PRIVATE_NETWORK: '192.168',
         BASTION_INSTANCE_COUNT: 1,
         BASTION_INSTANCE_TYPE: 't2.nano',
         BASTION_SOURCE: '0.0.0.0/0',

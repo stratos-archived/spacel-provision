@@ -1,4 +1,5 @@
 {
+  "name": "elasticsearch",
   "health_check": "HTTP:9200/",
   "instance_type": "t2.nano",
   "instance_min": 1,
@@ -25,7 +26,7 @@
   },
   "volumes": {
     "esdata": {
-      "count": 2,
+      "count": 1,
       "size": 10
     }
   }

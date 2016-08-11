@@ -1,7 +1,5 @@
-from mock import MagicMock
 import unittest
 
-from spacel.aws import AmiFinder
 from spacel.provision.template.base import BaseTemplateCache
 from test.provision.template import SUBNET_1, SUBNET_2, SUBNET_3, SUBNETS
 
@@ -10,8 +8,7 @@ NAME = 'test'
 
 class TestBaseTemplateCache(unittest.TestCase):
     def setUp(self):
-        self.ami_finder = MagicMock(spec=AmiFinder)
-        self.cache = BaseTemplateCache({}, self.ami_finder)
+        self.cache = BaseTemplateCache()
 
     def test_get_load(self):
         tables = self.cache.get('tables')

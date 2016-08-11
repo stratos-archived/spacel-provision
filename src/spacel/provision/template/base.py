@@ -9,8 +9,8 @@ class BaseTemplateCache(object):
     application.
     """
 
-    def __init__(self, template_cache, ami_finder):
-        self._cache = template_cache
+    def __init__(self, ami_finder=None):
+        self._cache = {}
         self._ami = ami_finder
 
     def get(self, template):
@@ -21,13 +21,13 @@ class BaseTemplateCache(object):
         """
         cached = self._cache.get(template)
         if cached:
-            return cached
+            return deepcopy(cached)
 
         template_path = os.path.join('cloudformation', '%s.template' % template)
         with open(template_path) as template_in:
             loaded = json.loads(template_in.read())
             self._cache[template] = loaded
-            return loaded
+            return deepcopy(loaded)
 
     @staticmethod
     def _get_name_tag(resource_props):

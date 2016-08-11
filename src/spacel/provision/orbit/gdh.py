@@ -63,7 +63,8 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
             value = parameter['ParameterValue']
             if key.startswith('Az'):
                 azs.append(value)
-        orbit._azs[region] = sorted(azs)
+        azs = sorted(azs)
+        orbit._azs[region] = azs
 
         # Map outputs onto orbit model:
         private_subnets = {}
@@ -94,3 +95,5 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
         orbit._private_instance_subnets[region] = private_subnets
         orbit._private_elb_subnets[region] = private_subnets
         logger.debug('Updated %s in %s.', name, region)
+        logger.debug('Azs: %s, %s public subnets, %s private subnets.',
+                     azs, len(public_subnets), len(private_subnets))
