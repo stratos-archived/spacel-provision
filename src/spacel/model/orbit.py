@@ -5,12 +5,12 @@ logger = logging.getLogger('spacel')
 
 DEFAULTS = 'defaults'
 
-PRIVATE_NETWORK = 'private-network'
+PRIVATE_NETWORK = 'private_network'
 
-BASTION_INSTANCE_COUNT = 'bastion-instance-count'
-BASTION_INSTANCE_TYPE = 'bastion-instance-type'
-BASTION_SOURCE = 'bastion-source'
-NAT_PER_AZ = 'nat-per-az'
+BASTION_INSTANCE_COUNT = 'bastion_instance_count'
+BASTION_INSTANCE_TYPE = 'bastion_instance_type'
+BASTION_SOURCE = 'bastion_source'
+NAT_PER_AZ = 'nat_per_az'
 PROVIDER = 'provider'
 REGIONS = 'regions'
 
@@ -20,7 +20,7 @@ GDH_DEPLOY = 'deploy_stack'
 
 class Orbit(object):
     DEFAULT_VALUES = {
-        PRIVATE_NETWORK: '192.168.0.0/16',
+        PRIVATE_NETWORK: '192.168',
         BASTION_INSTANCE_COUNT: 1,
         BASTION_INSTANCE_TYPE: 't2.nano',
         BASTION_SOURCE: '0.0.0.0/0',
