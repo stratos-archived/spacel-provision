@@ -3,7 +3,7 @@
   "health_check": "HTTP:80/",
   "instance_type": "t2.nano",
   "instance_min": 1,
-  "instance_max": 1,
+  "instance_max": 4,
   "services": {
     "http-env-echo": {
       "image": "pwagner/http-env-echo",
@@ -22,26 +22,28 @@
       "emailpete": {
         "type": "email",
         "addresses": ["pwagner@pebble.com"]
+      },
+      "more_instances": {
+        "type": "scaleup",
+        "adjustment": "200%"
+      },
+      "less_instances": {
+        "type": "scaledown",
+        "adjustment": "200%"
       }
     },
     "triggers": {
       "HighCpu": {
         "metric": "EC2/CPUUtilization",
         "threshold": ">85",
-        "duration": "10x60",
-        "endpoints": ["emailpete"]
-      },
-      "LotsOf400": {
-        "metric": "backend4xx",
-        "threshold": ">1",
-        "duration": "1x60",
-        "endpoints": ["emailpete"]
-      },
-      "TooSlow": {
-        "metric": "latency",
-        "threshold": ">10",
         "duration": "3x60",
-        "endpoints": ["emailpete"]
+        "endpoints": ["emailpete", "more_instances"]
+      },
+      "LowCpu": {
+        "metric": "EC2/CPUUtilization",
+        "threshold": "<15",
+        "duration": "3x60",
+        "endpoints": ["emailpete", "less_instances"]
       }
     }
   }

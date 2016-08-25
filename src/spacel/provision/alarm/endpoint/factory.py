@@ -2,6 +2,7 @@ import logging
 
 from spacel.provision.alarm.endpoint.email import EmailEndpoints
 from spacel.provision.alarm.endpoint.pagerduty import PagerDutyEndpoints
+from spacel.provision.alarm.endpoint.scale import ScaleEndpoints
 from spacel.provision.alarm.endpoint.slack import SlackEndpoints
 
 logger = logging.getLogger('spacel.provision.alarm.endpoint.factory')
@@ -40,5 +41,8 @@ class AlarmEndpointFactory(object):
         return AlarmEndpointFactory({
             'email': EmailEndpoints(),
             'pagerduty': PagerDutyEndpoints(pagerduty_default),
-            'slack': SlackEndpoints(lambda_uploader)
+            'slack': SlackEndpoints(lambda_uploader),
+            'scale': ScaleEndpoints(),
+            'scaledown': ScaleEndpoints(direction=-1),
+            'scaleup': ScaleEndpoints(direction=1)
         })
