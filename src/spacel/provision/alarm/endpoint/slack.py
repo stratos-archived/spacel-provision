@@ -2,13 +2,13 @@ import logging
 from urllib.parse import urlparse
 from spacel.provision import clean_name
 
-logger = logging.getLogger('spacel.provision.alarms.alerts.slack')
+logger = logging.getLogger('spacel.provision.alarm.endpoint.slack')
 
 
-class SlackAlerts(object):
+class SlackEndpoints(object):
     """
-    Dispatches alert via Slack.
-    Uses a Lambda function to transform SNS alert into Slack message.
+    Dispatches via Slack.
+    Uses a Lambda function to transform SNS payload into Slack message.
     Pattern by DeviaVir.
     """
 
@@ -17,12 +17,12 @@ class SlackAlerts(object):
 
     @staticmethod
     def resource_name(name):
-        return 'AlertSlack%sTopic' % clean_name(name)
+        return 'EndpointSlack%sTopic' % clean_name(name)
 
-    def add_alerts(self, template, name, params):
+    def add_endpoints(self, template, name, params):
         url = params.get('url')
         if not url:
-            logger.warn('Slack alert %s is missing "url".', name)
+            logger.warn('Slack endpoint %s is missing "url".', name)
             return False
 
         resources = template['Resources']
@@ -69,7 +69,7 @@ class SlackAlerts(object):
         topic_resource = self.resource_name(name)
 
         resource_base = clean_name(name)
-        function_resource = 'AlertSlack%sFunction' % resource_base
+        function_resource = 'EndpointSlack%sFunction' % resource_base
         resources[function_resource] = {
             'Type': 'AWS::Lambda::Function',
             'Properties': {
@@ -83,7 +83,7 @@ class SlackAlerts(object):
                 'Runtime': 'nodejs'
             }
         }
-        resources['AlertSlack%sPermission' % resource_base] = {
+        resources['EndpointSlack%sPermission' % resource_base] = {
             'Type': 'AWS::Lambda::Permission',
             'DependsOn': function_resource,
             'Properties': {

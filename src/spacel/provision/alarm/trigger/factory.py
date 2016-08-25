@@ -10,17 +10,18 @@ class TriggerFactory(object):
     def __init__(self):
         self._metrics = MetricDefinitions()
 
-    def add_triggers(self, template, triggers, alarm_resources):
+    def add_triggers(self, template, triggers, endpoint_resources):
         for name, params in triggers.items():
-            alerts = self._get_alerts(params)
-            if not alerts:
-                logger.warn('Trigger %s is missing "alerts".', name)
+            endpoints = self._get_endpoints(params)
+            if not endpoints:
+                logger.warn('Trigger %s is missing "endpoints".', name)
                 continue
 
-            alarm_actions = self._get_alarm_actions(alerts, alarm_resources,
-                                                    name)
-            if not alarm_actions:
-                logger.warn('Trigger %s has no valid "alerts".', name)
+            endpoint_actions = self._get_endpoint_actions(endpoints,
+                                                          endpoint_resources,
+                                                          name)
+            if not endpoint_actions:
+                logger.warn('Trigger %s has no valid "endpoints".', name)
                 continue
 
             metric = params.get('metric')
@@ -34,13 +35,13 @@ class TriggerFactory(object):
                 continue
 
             threshold_raw = self._get_param(params, defaults, 'threshold')
-            operator, thresh = self._parse_alarm_thresh(threshold_raw)
+            operator, thresh = self._parse_threshold(threshold_raw)
             if not operator or thresh is None:
                 logger.warn('Trigger %s has invalid "threshold".', name)
                 continue
 
             period_raw = self._get_param(params, defaults, 'period')
-            periods, period = self._parse_alarm_period(period_raw)
+            periods, period = self._parse_period(period_raw)
             if not periods or not period:
                 logger.warn('Trigger %s has invalid "period".', name)
                 continue
@@ -60,8 +61,8 @@ class TriggerFactory(object):
                 'Period': period,
                 'Statistic': alarm_stat,
                 'Threshold': thresh,
-                'AlarmActions': alarm_actions,
-                'OKActions': alarm_actions
+                'AlarmActions': endpoint_actions,
+                'OKActions': endpoint_actions
             }
 
             dimensions = defaults.get('dimensions')
@@ -79,26 +80,26 @@ class TriggerFactory(object):
         return threshold_raw
 
     @staticmethod
-    def _get_alerts(params):
-        alerts = params.get('alerts')
-        if isinstance(alerts, str):
-            alerts = (alerts,)
-        return alerts
+    def _get_endpoints(params):
+        endpoints = params.get('endpoints')
+        if isinstance(endpoints, str):
+            endpoints = (endpoints,)
+        return endpoints
 
     @staticmethod
-    def _get_alarm_actions(alerts, alert_resources, name):
-        alarm_actions = []
-        for alert in alerts:
-            alert_resource = alert_resources.get(alert)
-            if not alert_resource:
-                logger.warn('Trigger %s has invalid "alerts": %s',
-                            name, alert)
+    def _get_endpoint_actions(endpoints, endpoint_resources, name):
+        endpoint_actions = []
+        for endpoint in endpoints:
+            endpont_resource = endpoint_resources.get(endpoint)
+            if not endpont_resource:
+                logger.warn('Trigger %s has invalid "endpoints": %s',
+                            name, endpoint)
                 continue
-            alarm_actions.append({'Ref': alert_resource})
-        return alarm_actions
+            endpoint_actions.append({'Ref': endpont_resource})
+        return endpoint_actions
 
     @staticmethod
-    def _parse_alarm_thresh(threshold):
+    def _parse_threshold(threshold):
         if not threshold:
             return None, None
         match = re.match('([=><]+)([0-9]+)', threshold)
@@ -122,7 +123,7 @@ class TriggerFactory(object):
             return None, None
 
     @staticmethod
-    def _parse_alarm_period(period_raw):
+    def _parse_period(period_raw):
         if not period_raw or 'x' not in period_raw:
             return None, None
         periods, period = period_raw.split('x', 2)

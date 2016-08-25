@@ -3,17 +3,17 @@ import unittest
 RESOURCE_NAME = 'Test_Resource'
 
 
-class BaseAlertTest(unittest.TestCase):
+class BaseEndpointTest(unittest.TestCase):
     def setUp(self):
-        self.alert = None
+        self.endpoint = None
         self.resources = {}
         self.template = {
             'Resources': self.resources
         }
 
     def test_resource_name(self):
-        if self.alert:
-            resource_name = self.alert.resource_name(RESOURCE_NAME)
+        if self.endpoint:
+            resource_name = self.endpoint.resource_name(RESOURCE_NAME)
             self.assertEquals(self.topic_resource(), resource_name)
 
     def subscriptions(self):

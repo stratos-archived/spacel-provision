@@ -7,64 +7,69 @@ COSTS = {
     'AWS::AutoScaling::AutoScalingGroup': {
         'Add': 2,
         'Modify': 300,
-        'Delete': 2
+        'Remove': 2
     },
     'AWS::AutoScaling::LaunchConfiguration': {
         'Add': 2,
         'Modify': 2,
-        'Delete': 2
+        'Remove': 2
     },
     'AWS::CloudWatch::Alarm': {
         'Add': 15,
         'Modify': 15,
-        'Delete': 15
+        'Remove': 15
     },
     'AWS::DynamoDB::Table': {
         'Add': 30,
         'Modify': 5,
-        'Delete': 30
+        'Remove': 30
     },
     'AWS::EC2::EIP': {
         'Add': 15,
         'Modify': 5,
-        'Delete': 15
+        'Remove': 15
     },
     'AWS::EC2::NatGateway': {
         'Add': 60,
-        'Delete': 60
+        'Remove': 60
     },
     'AWS::EC2::Route': {
         'Add': 5,
         'Modify': 5,
-        'Delete': 5
+        'Remove': 5
     },
     'AWS::EC2::RouteTable': {
         'Add': 5,
         'Modify': 5,
-        'Delete': 5
+        'Remove': 5
     },
     'AWS::EC2::SecurityGroup': {
         'Add': 140,
         'Modify': 2,
-        'Delete': 5
+        'Remove': 5
     },
     'AWS::EC2::SubnetRouteTableAssociation': {
         'Add': 5,
-        'Delete': 5
+        'Remove': 5
     },
     'AWS::EC2::Subnet': {
         'Add': 5,
-        'Delete': 5
+        'Remove': 5
     },
     'AWS::IAM::Role': {
         'Add': 75,
         'Modify': 60,
-        'Delete': 75
+        'Remove': 75
     },
     'AWS::IAM::InstanceProfile': {
         'Add': 120,
         'Modify': 60,
-        'Delete': 120
+        'Remove': 120
+    },
+    'AWS::SNS::Topic': {
+        'Add': 15,
+        'Modify': 15,
+        'Remove': 15
     }
 }
 

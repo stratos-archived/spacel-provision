@@ -6,9 +6,9 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, ami_finder, alert_factory, trigger_factory):
+    def __init__(self, ami_finder, endpoint_factory, trigger_factory):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
-        self._alert_factory = alert_factory
+        self._endpoint_factory = endpoint_factory
         self._trigger_factory = trigger_factory
 
     def app(self, app, region):
@@ -119,10 +119,12 @@ class AppTemplate(BaseTemplateCache):
                     'VirtualName': 'ephemeral%d' % volume_index
                 })
 
-        app_alarms = app.alarms.get('alerts', {})
-        alerts = self._alert_factory.add_alerts(app_template, app_alarms)
+        app_endpoints = app.alarms.get('endpoints', {})
+        endpoints = self._endpoint_factory.add_endpoints(app_template,
+                                                         app_endpoints)
         app_triggers = app.alarms.get('triggers', {})
-        self._trigger_factory.add_triggers(app_template, app_triggers, alerts)
+        self._trigger_factory.add_triggers(app_template, app_triggers,
+                                           endpoints)
 
         return app_template
 

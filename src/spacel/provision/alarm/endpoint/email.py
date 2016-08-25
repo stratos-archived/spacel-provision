@@ -1,23 +1,23 @@
 import logging
 from spacel.provision import clean_name
 
-logger = logging.getLogger('spacel.provision.alarms.alerts.email')
+logger = logging.getLogger('spacel.provision.alarm.endpoint.email')
 
 
-class EmailAlerts(object):
+class EmailEndpoints(object):
     """
-    Dispatches alert via email.
+    Dispatches via email.
     This is built into SNS.
     """
 
     @staticmethod
     def resource_name(name):
-        return 'AlertEmail%sTopic' % clean_name(name)
+        return 'EndpointEmail%sTopic' % clean_name(name)
 
-    def add_alerts(self, template, name, params):
+    def add_endpoints(self, template, name, params):
         addresses = params.get('addresses')
         if not addresses:
-            logger.warn('Email alert %s is missing "addresses".', name)
+            logger.warn('Email endpoint %s is missing "addresses".', name)
             return False
         if isinstance(addresses, str):
             addresses = addresses.split(',')
@@ -32,7 +32,7 @@ class EmailAlerts(object):
                 'DisplayName': {'Fn::Join': [
                     ' ', [
                         {'Ref': 'AWS::StackName'},
-                        'CloudWatchEmailAlarms']
+                        'CloudWatchEmailEndpoint']
                 ]}
             }
         }

@@ -187,7 +187,7 @@ class MetricDefinitions(object):
     def _metric(self, aliases, data):
         for alias in aliases:
             alias_lower = alias.lower()
-            if alias_lower in self._metrics:
+            if alias_lower in self._metrics:  # pragma: no cover
                 logger.warn('Duplicate metric: %s', alias)
                 continue
             self._metrics[alias_lower] = data

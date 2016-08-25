@@ -1,22 +1,22 @@
 import logging
 from spacel.provision import clean_name
 
-logger = logging.getLogger('spacel.provision.alarms.alerts.pagerduty')
+logger = logging.getLogger('spacel.provision.alarm.endpoint.pagerduty')
 
 
-class PagerDutyAlerts(object):
+class PagerDutyEndpoints(object):
     """
-    Dispatches alert via PagerDuty.
+    Dispatches via PagerDuty.
     PagerDuty provides an SNS compatible WebHook.
     """
 
     def __init__(self, default_url):
         self._default_url = default_url
 
-    def add_alerts(self, template, name, params):
+    def add_endpoints(self, template, name, params):
         url = self._get_url(params)
         if not url:
-            logger.warn('PagerDuty alert %s is missing "url".', name)
+            logger.warn('PagerDuty endpoint %s is missing "url".', name)
             return False
 
         resources = template['Resources']
@@ -40,4 +40,4 @@ class PagerDutyAlerts(object):
 
     @staticmethod
     def resource_name(name):
-        return 'AlertPagerDuty%sTopic' % clean_name(name)
+        return 'EndpointPagerDuty%sTopic' % clean_name(name)

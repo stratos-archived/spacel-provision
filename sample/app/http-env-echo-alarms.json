@@ -18,7 +18,7 @@
     }
   },
   "alarms": {
-    "alerts": {
+    "endpoints": {
       "emailpete": {
         "type": "email",
         "addresses": ["pwagner@pebble.com"]
@@ -29,19 +29,19 @@
         "metric": "EC2/CPUUtilization",
         "threshold": ">85",
         "duration": "10x60",
-        "alerts": ["emailpete"]
+        "endpoints": ["emailpete"]
       },
       "LotsOf400": {
         "metric": "backend4xx",
         "threshold": ">1",
         "duration": "1x60",
-        "alerts": ["emailpete"]
+        "endpoints": ["emailpete"]
       },
       "TooSlow": {
         "metric": "latency",
         "threshold": ">10",
         "duration": "3x60",
-        "alerts": ["emailpete"]
+        "endpoints": ["emailpete"]
       }
     }
   }
