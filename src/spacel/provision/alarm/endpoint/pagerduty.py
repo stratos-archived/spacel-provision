@@ -1,5 +1,6 @@
 import logging
 from spacel.provision import clean_name
+from spacel.provision.alarm.actions import ACTIONS_NONE, ACTIONS_OK_ALARM
 
 logger = logging.getLogger('spacel.provision.alarm.endpoint.pagerduty')
 
@@ -17,7 +18,7 @@ class PagerDutyEndpoints(object):
         url = self._get_url(params)
         if not url:
             logger.warn('PagerDuty endpoint %s is missing "url".', name)
-            return False
+            return ACTIONS_NONE
 
         resources = template['Resources']
         resource_name = self.resource_name(name)
@@ -32,7 +33,7 @@ class PagerDutyEndpoints(object):
                 ]}
             }
         }
-        return True
+        return ACTIONS_OK_ALARM
 
     def _get_url(self, params):
         # TODO: PagerDuty smarts: if URL isn't found, lookup/register using API

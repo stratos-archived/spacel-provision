@@ -14,15 +14,13 @@ class TestPagerDutyEndpoints(BaseEndpointTest):
 
     def test_add_endpoints_invalid(self):
         self.endpoint = PagerDutyEndpoints(None)
-        endpoints = self.endpoint.add_endpoints(self.template, RESOURCE_NAME,
-                                                {})
-        self.assertFalse(endpoints)
+        actions = self.endpoint.add_endpoints(self.template, RESOURCE_NAME, {})
+        self.assertEquals(0, len(actions))
         self.assertEquals(0, len(self.resources))
 
     def test_add_endpoints(self):
-        endpoints = self.endpoint.add_endpoints(self.template, RESOURCE_NAME,
-                                                {})
-        self.assertTrue(endpoints)
+        actions = self.endpoint.add_endpoints(self.template, RESOURCE_NAME, {})
+        self.assertNotEquals(0, len(actions))
         self.assertEquals(1, len(self.resources))
         self.assertIn(self.topic_resource(), self.resources)
         self.assertEquals(1, len(self.subscriptions()))

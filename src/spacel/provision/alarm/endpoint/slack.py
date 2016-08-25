@@ -1,6 +1,7 @@
 import logging
 from urllib.parse import urlparse
 from spacel.provision import clean_name
+from spacel.provision.alarm.actions import ACTIONS_NONE, ACTIONS_OK_ALARM
 
 logger = logging.getLogger('spacel.provision.alarm.endpoint.slack')
 
@@ -23,7 +24,7 @@ class SlackEndpoints(object):
         url = params.get('url')
         if not url:
             logger.warn('Slack endpoint %s is missing "url".', name)
-            return False
+            return ACTIONS_NONE
 
         resources = template['Resources']
 
@@ -60,14 +61,13 @@ class SlackEndpoints(object):
             }
         }
 
+        # Upload to S3:
         slack_path = urlparse(url).path
         bucket, key = self._lambda_uploader.upload('sns-to-slack.js', {
             '__PATH__': slack_path
         })
 
-        # TODO: upload code to S3
         topic_resource = self.resource_name(name)
-
         resource_base = clean_name(name)
         function_resource = 'EndpointSlack%sFunction' % resource_base
         resources[function_resource] = {
@@ -116,4 +116,4 @@ class SlackEndpoints(object):
                 ]}
             }
         }
-        return True
+        return ACTIONS_OK_ALARM

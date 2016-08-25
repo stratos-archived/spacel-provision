@@ -11,21 +11,22 @@ class TestScaleEndpoints(BaseEndpointTest):
         return 'EndpointScaleTestResourcePolicy'
 
     def test_add_endpoints_invalid_adjustment(self):
-        endpoints = self.endpoint.add_endpoints(self.template, RESOURCE_NAME, {
+        actions = self.endpoint.add_endpoints(self.template, RESOURCE_NAME, {
             'adjustment': '0'
         })
-        self.assertFalse(endpoints)
+        self.assertEquals(0, len(actions))
 
     def test_add_endpoints_percentage(self):
-        endpoints = self.endpoint.add_endpoints(self.template, RESOURCE_NAME, {
+        actions = self.endpoint.add_endpoints(self.template, RESOURCE_NAME, {
             'adjustment': '200%'
         })
-        self.assertTrue(endpoints)
+        self.assertNotEquals(0, len(actions))
 
     def test_add_endpoints(self):
-        endpoints = self.endpoint.add_endpoints(self.template, RESOURCE_NAME, {
+        actions = self.endpoint.add_endpoints(self.template, RESOURCE_NAME, {
         })
-        self.assertTrue(endpoints)
+        self.assertNotEquals(0, len(actions))
+        self.assertTrue(actions)
 
     def test_calculate_adjustment_direction_down(self):
         self.endpoint = ScaleEndpoints(direction=-1)

@@ -1,5 +1,6 @@
 import logging
 from spacel.provision import clean_name
+from spacel.provision.alarm.actions import ACTION_ALARM, ACTIONS_NONE
 
 logger = logging.getLogger('spacel.provision.alarm.endpoint.scale')
 
@@ -23,7 +24,7 @@ class ScaleEndpoints(object):
         adjustment = self._calculate_adjustment(adjustment)
         if not adjustment:
             logger.warn('Scaling endpoint %s has invalid "adjustment".', name)
-            return False
+            return ACTIONS_NONE
 
         cooldown = params.get('cooldown', '300')
 
@@ -38,7 +39,7 @@ class ScaleEndpoints(object):
                 'ScalingAdjustment': adjustment
             }
         }
-        return True
+        return ACTION_ALARM,
 
     def _calculate_adjustment(self, adjustment):
         if self._direction is not None:

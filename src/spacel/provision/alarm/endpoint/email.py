@@ -1,5 +1,6 @@
 import logging
 from spacel.provision import clean_name
+from spacel.provision.alarm.actions import ACTIONS_NONE, ACTIONS_OK_ALARM
 
 logger = logging.getLogger('spacel.provision.alarm.endpoint.email')
 
@@ -18,7 +19,7 @@ class EmailEndpoints(object):
         addresses = params.get('addresses')
         if not addresses:
             logger.warn('Email endpoint %s is missing "addresses".', name)
-            return False
+            return ACTIONS_NONE
         if isinstance(addresses, str):
             addresses = addresses.split(',')
 
@@ -36,4 +37,4 @@ class EmailEndpoints(object):
                 ]}
             }
         }
-        return True
+        return ACTIONS_OK_ALARM
