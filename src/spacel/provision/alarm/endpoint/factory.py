@@ -28,9 +28,12 @@ class AlarmEndpointFactory(object):
                             name, sorted(self._factories.keys()))
                 continue
 
-            valid = factory.add_endpoints(template, name, params)
-            if valid:
-                endpoint_resources[name] = factory.resource_name(name)
+            actions = factory.add_endpoints(template, name, params)
+            if actions:
+                endpoint_resources[name] = {
+                    'name': factory.resource_name(name),
+                    'actions': actions
+                }
             else:
                 logger.debug('Endpoint %s was invalid.', name)
         logger.debug('Built endpoints: %s', endpoint_resources)

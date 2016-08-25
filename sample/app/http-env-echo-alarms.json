@@ -25,11 +25,11 @@
       },
       "more_instances": {
         "type": "scaleup",
-        "adjustment": "200%"
+        "adjustment": "100%"
       },
       "less_instances": {
         "type": "scaledown",
-        "adjustment": "200%"
+        "adjustment": "50%"
       }
     },
     "triggers": {

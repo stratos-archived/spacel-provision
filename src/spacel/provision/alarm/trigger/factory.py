@@ -1,6 +1,9 @@
 import logging
 import re
 from spacel.provision import clean_name
+from spacel.provision.alarm.actions import (ACTION_ALARM,
+                                            ACTION_INSUFFICIENT_DATA,
+                                            ACTION_OK)
 from spacel.provision.alarm.trigger.metrics import MetricDefinitions
 
 logger = logging.getLogger('spacel.provision.alarm.trigger.factory')
@@ -17,10 +20,10 @@ class TriggerFactory(object):
                 logger.warn('Trigger %s is missing "endpoints".', name)
                 continue
 
-            endpoint_actions = self._get_endpoint_actions(endpoints,
-                                                          endpoint_resources,
-                                                          name)
-            if not endpoint_actions:
+            alarm, insufficient, ok = self._get_endpoint_actions(endpoints,
+                                                                 endpoint_resources,
+                                                                 name)
+            if not alarm and not insufficient and not ok:
                 logger.warn('Trigger %s has no valid "endpoints".', name)
                 continue
 
@@ -60,11 +63,14 @@ class TriggerFactory(object):
                 'EvaluationPeriods': periods,
                 'Period': period,
                 'Statistic': alarm_stat,
-                'Threshold': thresh,
-                'AlarmActions': endpoint_actions,
-                'OKActions': endpoint_actions
+                'Threshold': thresh
             }
-
+            if alarm:
+                alarm_properties['AlarmActions'] = alarm
+            if insufficient:
+                alarm_properties['InsufficientDataActions'] = insufficient
+            if ok:
+                alarm_properties['OKActions'] = ok
             dimensions = defaults.get('dimensions')
             if dimensions:
                 alarm_properties['Dimensions'] = dimensions
@@ -88,15 +94,26 @@ class TriggerFactory(object):
 
     @staticmethod
     def _get_endpoint_actions(endpoints, endpoint_resources, name):
-        endpoint_actions = []
+        alarm = []
+        insufficient_data = []
+        ok = []
+
         for endpoint in endpoints:
-            endpont_resource = endpoint_resources.get(endpoint)
-            if not endpont_resource:
+            endpoint_resource = endpoint_resources.get(endpoint)
+            if not endpoint_resource:
                 logger.warn('Trigger %s has invalid "endpoints": %s',
                             name, endpoint)
                 continue
-            endpoint_actions.append({'Ref': endpont_resource})
-        return endpoint_actions
+            resource_ref = {'Ref': endpoint_resource['name']}
+
+            resource_actions = set(endpoint_resource['actions'])
+            if ACTION_ALARM in resource_actions:
+                alarm.append(resource_ref)
+            if ACTION_INSUFFICIENT_DATA in resource_actions:
+                insufficient_data.append(resource_ref)
+            if ACTION_OK in resource_actions:
+                ok.append(resource_ref)
+        return alarm, insufficient_data, ok
 
     @staticmethod
     def _parse_threshold(threshold):
