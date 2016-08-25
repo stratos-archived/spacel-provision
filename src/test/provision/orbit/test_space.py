@@ -5,7 +5,7 @@ import unittest
 from spacel.aws import ClientCache
 from spacel.model import Orbit
 from spacel.provision.changesets import ChangeSetEstimator
-from spacel.provision.templates import TemplateCache
+from spacel.provision.template import VpcTemplate, BastionTemplate, TablesTemplate
 from spacel.provision.orbit.space import SpaceElevatorOrbitFactory
 
 from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs)
@@ -15,10 +15,12 @@ SECURITY_GROUP_ID = 'sg-123456'
 
 class TestSpaceElevatorOrbitFactory(unittest.TestCase):
     def setUp(self):
-        self.templates = MagicMock(spec=TemplateCache)
-        self.templates.vpc.return_value = {}
-        self.templates.bastion.return_value = {}
-        self.templates.tables.return_value = {}
+        self.vpc_template = MagicMock(spec=VpcTemplate)
+        self.vpc_template.vpc.return_value = {}
+        self.bastion_template = MagicMock(spec=BastionTemplate)
+        self.bastion_template.bastion.return_value = {}
+        self.tables_template = MagicMock(spec=TablesTemplate)
+        self.tables_template.tables.return_value = {}
         self.clients = MagicMock(spec=ClientCache)
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
         self.ec2 = MagicMock()
@@ -29,7 +31,9 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         })
         self.orbit_factory = SpaceElevatorOrbitFactory(self.clients,
                                                        self.change_sets,
-                                                       self.templates)
+                                                       self.vpc_template,
+                                                       self.bastion_template,
+                                                       self.tables_template)
 
     def test_get_orbit(self):
         self.orbit._bastion_eips[REGION] = {'01': IP_ADDRESS}
@@ -50,7 +54,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
 
         self.orbit_factory._orbit_stack(self.orbit, self.orbit.regions, 'vpc')
 
-        self.templates.vpc.assert_called_once_with(self.orbit, REGION)
+        self.vpc_template.vpc.assert_called_once_with(self.orbit, REGION)
         self.orbit_factory._wait_for_updates.assert_called_once()
         self.orbit_factory._orbit_from_vpc.assert_called_once()
         self.orbit_factory._orbit_from_bastion.assert_not_called()
@@ -64,8 +68,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.orbit_factory._orbit_stack(self.orbit, self.orbit.regions,
                                         'bastion')
 
-        self.templates.vpc.assert_not_called()
-        self.templates.bastion.assert_called_once_with(self.orbit, REGION)
+        self.vpc_template.vpc.assert_not_called()
+        self.bastion_template.bastion.assert_called_once_with(self.orbit, REGION)
         self.orbit_factory._wait_for_updates.assert_called_once()
         self.orbit_factory._orbit_from_vpc.assert_not_called()
         self.orbit_factory._orbit_from_bastion.assert_called_once()
@@ -79,7 +83,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.orbit_factory._orbit_stack(self.orbit, self.orbit.regions,
                                         'tables')
 
-        self.templates.tables.assert_called_once_with(self.orbit)
+        self.tables_template.tables.assert_called_once_with(self.orbit)
         self.orbit_factory._orbit_from_vpc.assert_not_called()
         self.orbit_factory._orbit_from_bastion.assert_not_called()
 

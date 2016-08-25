@@ -37,9 +37,9 @@ class ProviderOrbitFactory(object):
             provider.get_orbit(orbit, regions=provider_regions)
 
     @staticmethod
-    def get(clients, change_sets, templates):
+    def get(clients, change_sets, vpc, bastion, tables):
         return ProviderOrbitFactory({
             'spacel': SpaceElevatorOrbitFactory(clients, change_sets,
-                                                templates),
+                                                vpc, bastion, tables),
             'gdh': GitDeployHooksOrbitFactory(clients, change_sets)
         })

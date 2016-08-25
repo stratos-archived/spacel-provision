@@ -1,11 +1,14 @@
 import logging
 import sys
 
-from spacel.aws import ClientCache
+from spacel.aws import AmiFinder, ClientCache
 from spacel.args import parse_args
 from spacel.model import SpaceApp, Orbit
 from spacel.provision import (ChangeSetEstimator, CloudProvisioner,
-                              ProviderOrbitFactory, TemplateCache)
+                              ProviderOrbitFactory)
+
+from spacel.provision.template import (AppTemplate, BastionTemplate,
+                                       TablesTemplate, VpcTemplate)
 
 
 def main(args, in_stream):
@@ -17,13 +20,21 @@ def main(args, in_stream):
     app = SpaceApp(orbit, app_json)
 
     clients = ClientCache()
-    templates = TemplateCache()
     change_sets = ChangeSetEstimator()
 
-    orbit_factory = ProviderOrbitFactory.get(clients, change_sets, templates)
+    # Templates:
+    ami_finder = AmiFinder()
+    app_template = AppTemplate(ami_finder)
+    bastion_template = BastionTemplate(ami_finder)
+    tables_template = TablesTemplate()
+    vpc_template = VpcTemplate()
+
+    orbit_factory = ProviderOrbitFactory.get(clients, change_sets, vpc_template,
+                                             bastion_template,
+                                             tables_template)
     orbit_factory.get_orbit(orbit)
 
-    provisioner = CloudProvisioner(clients, change_sets, templates)
+    provisioner = CloudProvisioner(clients, change_sets, app_template)
     provisioner.app(app)
     return 0
 
