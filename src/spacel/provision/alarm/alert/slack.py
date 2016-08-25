@@ -1,6 +1,6 @@
 import logging
 from urllib.parse import urlparse
-from spacel.provision.alarm.alert import clean_name
+from spacel.provision import clean_name
 
 logger = logging.getLogger('spacel.provision.alarms.alerts.slack')
 

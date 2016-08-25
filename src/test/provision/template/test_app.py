@@ -4,7 +4,7 @@ import unittest
 from spacel.aws import AmiFinder
 from spacel.model import Orbit, SpaceApp, SpaceDockerService
 from spacel.provision.template.app import AppTemplate
-from spacel.provision.alarm import AlertFactory
+from spacel.provision.alarm import AlertFactory, TriggerFactory
 from test.provision.template import SUBNETS
 
 REGION = 'us-east-1'
@@ -13,8 +13,9 @@ REGION = 'us-east-1'
 class TestAppTemplate(unittest.TestCase):
     def setUp(self):
         self.ami_finder = MagicMock(spec=AmiFinder)
-        self.alert_factory = MagicMock(spec=AlertFactory)
-        self.cache = AppTemplate(self.ami_finder, self.alert_factory)
+        self.alerts = MagicMock(spec=AlertFactory)
+        self.triggers = MagicMock(spec=TriggerFactory)
+        self.cache = AppTemplate(self.ami_finder, self.alerts, self.triggers)
         base_template = self.cache.get('elb-service')
         self.base_resources = len(base_template['Resources'])
         self.orbit = Orbit({

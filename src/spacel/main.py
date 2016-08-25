@@ -10,7 +10,7 @@ from spacel.provision import (ChangeSetEstimator, CloudProvisioner,
 
 from spacel.provision.template import (AppTemplate, BastionTemplate,
                                        TablesTemplate, VpcTemplate)
-from spacel.provision.alarm import AlertFactory
+from spacel.provision.alarm import AlertFactory, TriggerFactory
 
 
 def main(args, in_stream):
@@ -29,10 +29,11 @@ def main(args, in_stream):
     lambda_up = LambdaUploader(clients, lambda_region, lambda_bucket)
     pagerduty_default = os.environ.get('WEBHOOKS_PAGERDUTY')
     alert_factory = AlertFactory.get(pagerduty_default, lambda_up)
+    trigger_factory = TriggerFactory()
 
     # Templates:
     ami_finder = AmiFinder()
-    app_template = AppTemplate(ami_finder, alert_factory)
+    app_template = AppTemplate(ami_finder, alert_factory, trigger_factory)
     bastion_template = BastionTemplate(ami_finder)
     tables_template = TablesTemplate()
     vpc_template = VpcTemplate()

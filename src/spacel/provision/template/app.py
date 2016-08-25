@@ -6,9 +6,10 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, ami_finder, alert_factory):
+    def __init__(self, ami_finder, alert_factory, trigger_factory):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
         self._alert_factory = alert_factory
+        self._trigger_factory = trigger_factory
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -119,7 +120,9 @@ class AppTemplate(BaseTemplateCache):
                 })
 
         app_alarms = app.alarms.get('alerts', {})
-        self._alert_factory.add_alerts(app_template, app_alarms)
+        alerts = self._alert_factory.add_alerts(app_template, app_alarms)
+        app_triggers = app.alarms.get('triggers', {})
+        self._trigger_factory.add_triggers(app_template, app_triggers, alerts)
 
         return app_template
 

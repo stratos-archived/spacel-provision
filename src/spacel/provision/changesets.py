@@ -14,6 +14,11 @@ COSTS = {
         'Modify': 2,
         'Delete': 2
     },
+    'AWS::CloudWatch::Alarm': {
+        'Add': 15,
+        'Modify': 15,
+        'Delete': 15
+    },
     'AWS::DynamoDB::Table': {
         'Add': 30,
         'Modify': 5,
