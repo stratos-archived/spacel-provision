@@ -13,10 +13,35 @@ class MetricDefinitions(object):
         logger.debug('Loaded %d metric definitions.', len(self._metrics))
 
     def _ec2_metrics(self):
+        """
+        http://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ec2-metricscollected.html
+        :return:
+        """
         asg_dimensions = [{
             'Name': 'AutoScalingGroupName',
             'Value': {'Ref': 'Asg'}
         }]
+        self._metric([
+            'EC2/CPUCreditUsage'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'CPUCreditUsage',
+            'statistic': 'Maximum',
+            'threshold': '>5',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+        self._metric([
+            'EC2/CPUCreditBalance',
+            'cpucredits'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'CPUCreditBalance',
+            'statistic': 'Minimum',
+            'threshold': '<1',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
         self._metric([
             'EC2/CPUUtilization',
             'CPU'
@@ -29,7 +54,92 @@ class MetricDefinitions(object):
             'dimensions': asg_dimensions
         })
 
+        self._metric([
+            'EC2/DiskReadOps'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'DiskReadOps',
+            'statistic': 'Maximum',
+            'threshold': '>200',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+        self._metric([
+            'EC2/DiskWriteOps'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'DiskWriteOps',
+            'statistic': 'Maximum',
+            'threshold': '>200',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+        self._metric([
+            'EC2/DiskReadBytes'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'DiskReadBytes',
+            'statistic': 'Maximum',
+            'threshold': '>20971520',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+        self._metric([
+            'EC2/DiskWriteBytes'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'DiskWriteBytes',
+            'statistic': 'Maximum',
+            'threshold': '>20971520',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+        self._metric([
+            'EC2/NetworkIn'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'NetworkIn',
+            'statistic': 'Maximum',
+            'threshold': '>20971520',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+        self._metric([
+            'EC2/NetworkOut'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'NetworkOut',
+            'statistic': 'Average',
+            'threshold': '>20971520',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+        self._metric([
+            'EC2/NetworkPacketsIn'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'NetworkPacketsIn',
+            'statistic': 'Average',
+            'threshold': '>1000',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+        self._metric([
+            'EC2/NetworkPacketsOut'
+        ], {
+            'namespace': 'AWS/EC2',
+            'metricName': 'NetworkPacketsOut',
+            'statistic': 'Average',
+            'threshold': '>1000',
+            'period': '3x60',
+            'dimensions': asg_dimensions
+        })
+
     def _elb_metrics(self):
+        """
+        http://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/elb-metricscollected.html
+        :return:
+        """
         elb_dimensions = [{
             'Name': 'LoadBalancerName',
             'Value': {
@@ -42,7 +152,8 @@ class MetricDefinitions(object):
         }]
         self._metric([
             'ELB/UnHealthyHostCount',
-            'unhealthy hosts'
+            'unhealthyhosts',
+            'unhealthy'
         ], {
             'namespace': 'AWS/ELB',
             'metricName': 'UnHealthyHostCount',
@@ -53,7 +164,8 @@ class MetricDefinitions(object):
         })
         self._metric([
             'ELB/HealthyHostCount',
-            'healthyhosts'
+            'healthyhosts',
+            'healthy'
         ], {
             'namespace': 'AWS/ELB',
             'metricName': 'HealthyHostCount',
