@@ -6,8 +6,8 @@ from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
 
 class LambdaUploader(object):
-    def __init__(self, s3, bucket):
-        self._s3 = s3
+    def __init__(self, clients, region, bucket):
+        self._s3 = clients.s3(region)
         self._bucket = bucket
         self._cache = {}
 

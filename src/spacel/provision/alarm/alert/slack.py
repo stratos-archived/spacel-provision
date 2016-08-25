@@ -73,7 +73,7 @@ class SlackAlerts(object):
         resources[function_resource] = {
             'Type': 'AWS::Lambda::Function',
             'Properties': {
-                'Handler': 'slack.handler',
+                'Handler': 'index.handler',
                 'Role': {'Fn::GetAtt': ['LambdaRole', 'Arn']},
                 'Timeout': '3',
                 'Code': {
@@ -83,7 +83,7 @@ class SlackAlerts(object):
                 'Runtime': 'nodejs'
             }
         }
-        resources['AlertSlack%sPermission'] = {
+        resources['AlertSlack%sPermission' % resource_base] = {
             'Type': 'AWS::Lambda::Permission',
             'DependsOn': function_resource,
             'Properties': {

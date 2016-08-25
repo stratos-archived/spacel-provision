@@ -1,14 +1,16 @@
 import logging
+import os
 import sys
 
 from spacel.aws import AmiFinder, ClientCache
 from spacel.args import parse_args
 from spacel.model import SpaceApp, Orbit
 from spacel.provision import (ChangeSetEstimator, CloudProvisioner,
-                              ProviderOrbitFactory)
+                              LambdaUploader, ProviderOrbitFactory)
 
 from spacel.provision.template import (AppTemplate, BastionTemplate,
                                        TablesTemplate, VpcTemplate)
+from spacel.provision.alarm import AlertFactory
 
 
 def main(args, in_stream):
@@ -20,15 +22,22 @@ def main(args, in_stream):
     app = SpaceApp(orbit, app_json)
 
     clients = ClientCache()
-    change_sets = ChangeSetEstimator()
+
+    # Lambda function storage
+    lambda_bucket = os.environ.get('LAMBDA_BUCKET')
+    lambda_region = os.environ.get('LAMBDA_REGION', 'us-west-2')
+    lambda_up = LambdaUploader(clients, lambda_region, lambda_bucket)
+    pagerduty_default = os.environ.get('WEBHOOKS_PAGERDUTY')
+    alert_factory = AlertFactory.get(pagerduty_default, lambda_up)
 
     # Templates:
     ami_finder = AmiFinder()
-    app_template = AppTemplate(ami_finder)
+    app_template = AppTemplate(ami_finder, alert_factory)
     bastion_template = BastionTemplate(ami_finder)
     tables_template = TablesTemplate()
     vpc_template = VpcTemplate()
 
+    change_sets = ChangeSetEstimator()
     orbit_factory = ProviderOrbitFactory.get(clients, change_sets, vpc_template,
                                              bastion_template,
                                              tables_template)

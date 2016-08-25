@@ -6,8 +6,9 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, ami_finder):
+    def __init__(self, ami_finder, alert_factory):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
+        self._alert_factory = alert_factory
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -116,6 +117,9 @@ class AppTemplate(BaseTemplateCache):
                     'DeviceName': device,
                     'VirtualName': 'ephemeral%d' % volume_index
                 })
+
+        app_alarms = app.alarms.get('alerts', {})
+        self._alert_factory.add_alerts(app_template, app_alarms)
 
         return app_template
 
