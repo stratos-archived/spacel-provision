@@ -28,7 +28,10 @@ def main(args, in_stream):
     lambda_region = os.environ.get('LAMBDA_REGION', 'us-west-2')
     lambda_up = LambdaUploader(clients, lambda_region, lambda_bucket)
     pagerduty_default = os.environ.get('WEBHOOKS_PAGERDUTY')
-    endpoint_factory = AlarmEndpointFactory.get(pagerduty_default, lambda_up)
+    pagerduty_api_key = os.environ.get('PAGERDUTY_API_KEY')
+    endpoint_factory = AlarmEndpointFactory.get(pagerduty_default,
+                                                pagerduty_api_key,
+                                                lambda_up)
     trigger_factory = TriggerFactory()
 
     # Templates:
