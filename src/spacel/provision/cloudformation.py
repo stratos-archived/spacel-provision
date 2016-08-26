@@ -130,6 +130,7 @@ class BaseCloudFormationFactory(object):
             waiter = cf.get_waiter('stack_%s_complete' % update)
             self._impatient(waiter)
             waiter.wait(StackName=name)
+            logger.debug('Completed %s in %s.', name, region)
 
     @staticmethod
     def _impatient(waiter):

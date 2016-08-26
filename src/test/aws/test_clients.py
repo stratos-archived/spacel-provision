@@ -25,3 +25,14 @@ class TestClientCache(unittest.TestCase):
         self.clients.ec2(REGION)
         self.clients.ec2(REGION)
         self.assertEqual(1, mock_boto3.client.call_count)
+
+    @patch('spacel.aws.clients.boto3')
+    def test_s3(self, mock_boto3):
+        self.clients.s3(REGION)
+        mock_boto3.resource.assert_called_once_with('s3', REGION)
+
+    @patch('spacel.aws.clients.boto3')
+    def test_s3_cached(self, mock_boto3):
+        self.clients.s3(REGION)
+        self.clients.s3(REGION)
+        self.assertEqual(1, mock_boto3.resource.call_count)

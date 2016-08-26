@@ -247,7 +247,7 @@
       "Type": "AWS::EC2::NatGateway",
       "Properties": {
         "AllocationId": {"Fn::GetAtt": ["NatEip01", "AllocationId"]},
-        "SubnetId": {"Ref": "PublicInstanceSubnet01"}
+        "SubnetId": {"Ref": "PublicNatSubnet01"}
       }
     }
   },

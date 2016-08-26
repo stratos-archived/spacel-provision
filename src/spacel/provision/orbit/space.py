@@ -11,9 +11,11 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
     Builds orbital VPCs based on Space Elevator templates.
     """
 
-    def __init__(self, clients, change_sets, templates):
+    def __init__(self, clients, change_sets, vpc, bastion, tables):
         super(SpaceElevatorOrbitFactory, self).__init__(clients, change_sets)
-        self._templates = templates
+        self._vpc = vpc
+        self._bastion = bastion
+        self._tables = tables
 
     def get_orbit(self, orbit, regions=None):
         regions = regions or orbit.regions
@@ -33,17 +35,18 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
         for region in regions:
             logger.debug('Provisioning %s in %s.', stack_name, region)
             if stack_suffix == 'vpc':
-                template = self._templates.vpc(orbit, region)
+                template = self._vpc.vpc(orbit, region)
             elif stack_suffix == 'bastion':
-                template = self._templates.bastion(orbit, region)
+                template = self._bastion.bastion(orbit, region)
             elif stack_suffix == 'tables':
-                template = self._templates.tables(orbit)
+                template = self._tables.tables(orbit)
             else:
                 logger.warn('Unknown orbit template: %s', stack_suffix)
                 return
 
             updates[region] = self._stack(stack_name, region, template)
 
+        # FIXME: 'region' has the wrong value here
         logger.debug('Requested %s in %s, waiting for provisioning...',
                      stack_name, region)
         self._wait_for_updates(stack_name, updates)
