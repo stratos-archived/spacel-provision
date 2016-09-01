@@ -49,5 +49,5 @@ class TestAlarmEndpointFactory(unittest.TestCase):
                                                                params)
 
     def test_get(self):
-        endpoint_factory = AlarmEndpointFactory.get(None, None)
+        endpoint_factory = AlarmEndpointFactory.get(None, None, None)
         self.assertIsInstance(endpoint_factory, AlarmEndpointFactory)

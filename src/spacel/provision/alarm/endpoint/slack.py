@@ -112,7 +112,7 @@ class SlackEndpoints(object):
                 'DisplayName': {'Fn::Join': [
                     ' ', [
                         {'Ref': 'AWS::StackName'},
-                        'CloudWatchEmailAlarms']
+                        'CloudWatchSlackAlarms']
                 ]}
             }
         }

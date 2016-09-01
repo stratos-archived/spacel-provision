@@ -40,10 +40,11 @@ class AlarmEndpointFactory(object):
         return endpoint_resources
 
     @staticmethod
-    def get(pagerduty_default, lambda_uploader):
+    def get(pagerduty_default, pagerduty_api_key, lambda_uploader):
         return AlarmEndpointFactory({
             'email': EmailEndpoints(),
-            'pagerduty': PagerDutyEndpoints(pagerduty_default),
+            'pagerduty': PagerDutyEndpoints(pagerduty_default,
+                                            pagerduty_api_key),
             'slack': SlackEndpoints(lambda_uploader),
             'scale': ScaleEndpoints(),
             'scaledown': ScaleEndpoints(direction=-1),
