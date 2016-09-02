@@ -23,6 +23,7 @@ composetest:
 	-docker-compose kill
 	-docker-compose rm -f
 	docker-compose build
-	docker-compose run test
+	docker-compose run --rm test
+	docker-compose run --rm test-python2
 
 .PHONY: composetest test
