@@ -1,5 +1,5 @@
 import logging
-from urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse
 from spacel.provision import clean_name
 from spacel.provision.alarm.actions import ACTIONS_NONE, ACTIONS_OK_ALARM
 

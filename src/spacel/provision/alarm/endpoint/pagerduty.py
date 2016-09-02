@@ -1,7 +1,8 @@
 import json
 import logging
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
+import six
+from six.moves.urllib.request import Request, urlopen
+from six.moves.urllib.error import HTTPError
 
 from spacel.provision import clean_name
 from spacel.provision.alarm.actions import ACTIONS_NONE, ACTIONS_OK_ALARM
@@ -164,14 +165,19 @@ class PagerDutyEndpoints(object):
     def _pd_api(self, url, data=None, method='GET'):
         url = '%s/%s' % (PD_API_BASE, url)
         request_args = {
-            'method': method,
             'headers': dict(self._pd_headers)
         }
+        if six.PY3:
+            request_args['method'] = method
+
         if data is not None:
             request_args['data'] = json.dumps(data).encode('utf-8')
             request_args['headers']['Content-Type'] = APPLICATION_JSON
 
         request = Request(url, **request_args)
+        if six.PY2:
+            request.get_method = lambda: method
+
         try:
             response = urlopen(request)
             return json.loads(response.read().decode('utf-8'))

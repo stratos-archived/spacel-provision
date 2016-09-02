@@ -1,6 +1,6 @@
 import json
 import logging
-from urllib.request import urlopen
+from six.moves.urllib.request import urlopen
 
 SPACEL_URL = 'https://ami.pbl.io/spacel/%s.json'
 

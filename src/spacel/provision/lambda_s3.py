@@ -2,6 +2,7 @@ import codecs
 import hashlib
 from io import BytesIO
 import os
+import six
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
 
@@ -32,7 +33,11 @@ class LambdaUploader(object):
         # Hash script+endpoint (which is common across the environment)
         script_hasher = hashlib.sha1()
         script_hasher.update(encoded_script)
-        script_hash = str(codecs.encode(script_hasher.digest(), 'hex'), 'utf-8')
+        script_hash = codecs.encode(script_hasher.digest(), 'hex')
+        if six.PY2:
+            script_hash = str(script_hash)
+        else:
+            script_hash = str(script_hash, 'utf-8')
 
         # Package into zipfile:
         zip_buffer = BytesIO()
