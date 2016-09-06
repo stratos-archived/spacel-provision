@@ -38,15 +38,3 @@ class AlarmEndpointFactory(object):
                 logger.debug('Endpoint %s was invalid.', name)
         logger.debug('Built endpoints: %s', endpoint_resources)
         return endpoint_resources
-
-    @staticmethod
-    def get(pagerduty_default, pagerduty_api_key, lambda_uploader):
-        return AlarmEndpointFactory({
-            'email': EmailEndpoints(),
-            'pagerduty': PagerDutyEndpoints(pagerduty_default,
-                                            pagerduty_api_key),
-            'slack': SlackEndpoints(lambda_uploader),
-            'scale': ScaleEndpoints(),
-            'scaledown': ScaleEndpoints(direction=-1),
-            'scaleup': ScaleEndpoints(direction=1)
-        })

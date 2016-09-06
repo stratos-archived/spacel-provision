@@ -6,10 +6,9 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, ami_finder, endpoint_factory, trigger_factory):
+    def __init__(self, ami_finder, alarm_factory):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
-        self._endpoint_factory = endpoint_factory
-        self._trigger_factory = trigger_factory
+        self._alarm_factory = alarm_factory
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -119,13 +118,7 @@ class AppTemplate(BaseTemplateCache):
                     'VirtualName': 'ephemeral%d' % volume_index
                 })
 
-        app_endpoints = app.alarms.get('endpoints', {})
-        endpoints = self._endpoint_factory.add_endpoints(app_template,
-                                                         app_endpoints)
-        app_triggers = app.alarms.get('triggers', {})
-        self._trigger_factory.add_triggers(app_template, app_triggers,
-                                           endpoints)
-
+        self._alarm_factory.add_alarms(app_template, app.alarms)
         return app_template
 
     def _user_data(self, params, app):
