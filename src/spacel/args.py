@@ -3,11 +3,12 @@ import boto3
 import json
 import logging
 import os
+import six
 from splitstream import splitfile
 import sys
-from urllib.error import HTTPError
-from urllib.parse import urlparse
-from urllib.request import urlopen
+from six.moves.urllib.error import HTTPError
+from six.moves.urllib.parse import urlparse
+from six.moves.urllib.request import urlopen
 
 logger = logging.getLogger('spacel')
 
@@ -74,7 +75,7 @@ def read_manifest(name, label, in_split):
         json_body = s3.Object(bucket, key).get()['Body'].read()
     elif not url.scheme and url.path == '-':
         try:
-            json_body = in_split.__next__()
+            json_body = six.next(in_split)
         except StopIteration:
             logger.warn('Unable to read %s manifest from stdin.', label)
             return None

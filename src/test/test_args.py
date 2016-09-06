@@ -1,8 +1,8 @@
-from io import BytesIO
 from mock import MagicMock, call, patch
 import unittest
-from urllib.error import HTTPError
-from urllib.parse import urlparse
+from six import BytesIO
+from six.moves.urllib.error import HTTPError
+from six.moves.urllib.parse import urlparse
 
 from spacel.args import parse_args, parse_s3
 

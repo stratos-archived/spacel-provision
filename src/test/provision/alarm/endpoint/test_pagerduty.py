@@ -1,6 +1,6 @@
 from io import BytesIO
 from mock import MagicMock, patch, ANY
-from urllib.error import HTTPError
+from six.moves.urllib.error import HTTPError
 
 from spacel.provision.alarm.endpoint.pagerduty import (PagerDutyEndpoints,
                                                        INTEGRATION_TYPE)

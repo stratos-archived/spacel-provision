@@ -47,7 +47,3 @@ class TestAlarmEndpointFactory(unittest.TestCase):
         self.endpoint_factory.add_endpoints.assert_called_with(self.template,
                                                                ENDPOINT_NAME,
                                                                params)
-
-    def test_get(self):
-        endpoint_factory = AlarmEndpointFactory.get(None, None, None)
-        self.assertIsInstance(endpoint_factory, AlarmEndpointFactory)

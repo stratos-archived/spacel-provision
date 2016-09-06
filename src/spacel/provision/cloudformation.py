@@ -113,17 +113,25 @@ class BaseCloudFormationFactory(object):
                     return self._stack(name, region, json_template)
             raise e
 
+    def _delete_stack(self, name, region):
+        cf = self._clients.cloudformation(region)
+        cf.delete_stack(StackName=name)
+        return 'delete'
+
     @staticmethod
     def _describe_stack(cf, stack_name):
         return cf.describe_stacks(StackName=stack_name)['Stacks'][0]
 
     def _wait_for_updates(self, name, updates):
+        start = time.time()
+        waited = False
         for region, update in updates.items():
             if not update:
                 continue
             if update == 'failed':
                 logger.debug('Update failed for %s in %s...', name, region)
                 continue
+            waited = True
 
             cf = self._clients.cloudformation(region)
             logger.debug('Waiting for %s in %s...', name, region)
@@ -131,6 +139,9 @@ class BaseCloudFormationFactory(object):
             self._impatient(waiter)
             waiter.wait(StackName=name)
             logger.debug('Completed %s in %s.', name, region)
+
+        if waited:
+            logger.info('Completed all updates in %i seconds.', time.time() - start)
 
     @staticmethod
     def _impatient(waiter):

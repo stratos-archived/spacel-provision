@@ -9,3 +9,9 @@ services:
       dockerfile: Dockerfile.test
     volumes:
       - ./build:/build
+  test-python2:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: 2
