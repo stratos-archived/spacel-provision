@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='spacel-provision',
-      version='0.1.0',
+      version='0.2.0',
       description='Space Elevator provisioner',
       long_description=open('README.md').read(),
       url='https://github.com/pebble/spacel-provision',
