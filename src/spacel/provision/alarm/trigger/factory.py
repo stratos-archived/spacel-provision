@@ -34,8 +34,15 @@ class TriggerFactory(object):
 
             defaults = self._metrics.get(metric)
             if not defaults:
-                logger.warn('Trigger %s has invalid "metric".', name)
-                continue
+                namespace = params.get('namespace')
+                if not namespace:
+                    logger.warn('Trigger %s has invalid "metric".', name)
+                    continue
+                defaults = {
+                    'namespace': namespace,
+                    'metricName': metric,
+                    'dimensions': params.get('dimensions')
+                }
 
             threshold_raw = self._get_param(params, defaults, 'threshold')
             operator, thresh = self._parse_threshold(threshold_raw)
@@ -51,6 +58,9 @@ class TriggerFactory(object):
 
             alarm_description = 'Alarm %s' % name
             alarm_stat = self._get_param(params, defaults, 'statistic')
+            if not alarm_stat:
+                logger.warn('Trigger %s has invalid "statistic".', name)
+                continue
 
             trigger_name = 'Alarm%s' % clean_name(name)
             resources = template['Resources']
@@ -73,7 +83,9 @@ class TriggerFactory(object):
                 alarm_properties['OKActions'] = ok
             dimensions = defaults.get('dimensions')
             if dimensions:
-                alarm_properties['Dimensions'] = dimensions
+                alarm_properties['Dimensions'] = [
+                    {'Name': k, 'Value': v} for k, v in dimensions.items()
+                ]
 
             resources[trigger_name] = {
                 'Type': 'AWS::CloudWatch::Alarm',

@@ -54,6 +54,24 @@ class TestTriggerFactory(unittest.TestCase):
         self._add_triggers()
         self.assertEquals(0, len(self.resources))
 
+    def test_add_triggers_full_custom_invalid(self):
+        self.params['namespace'] = 'AWS/SQS'
+        self.params['metric'] = 'ApproximateNumberOfMessagesVisible'
+        self._add_triggers()
+        self.assertEquals(0, len(self.resources))
+
+    def test_add_triggers_full_custom(self):
+        self.params['namespace'] = 'AWS/SQS'
+        self.params['metric'] = 'ApproximateNumberOfMessagesVisible'
+        self.params['dimensions'] = {
+            'QueueName': 'test-queue'
+        }
+        self.params['statistic'] = 'Average'
+        self._add_triggers()
+        self.assertEquals(1, len(self.resources))
+        alarm_params = self.resources['Alarmtest']['Properties']
+        self.assertIn('Dimensions', alarm_params)
+
     def test_add_triggers(self):
         self._add_triggers()
         self.assertEquals(1, len(self.resources))
