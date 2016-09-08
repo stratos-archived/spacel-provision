@@ -12,6 +12,8 @@ class BaseTemplateCache(object):
     def __init__(self, ami_finder=None):
         self._cache = {}
         self._ami = ami_finder
+        file_path = os.path.dirname(os.path.realpath(__file__))
+        self._path = os.path.join(file_path, '..', '..', 'cloudformation')
 
     def get(self, template):
         """
@@ -23,7 +25,7 @@ class BaseTemplateCache(object):
         if cached:
             return deepcopy(cached)
 
-        template_path = os.path.join('cloudformation', '%s.template' % template)
+        template_path = os.path.join(self._path, '%s.template' % template)
         with open(template_path) as template_in:
             loaded = json.loads(template_in.read())
             self._cache[template] = loaded

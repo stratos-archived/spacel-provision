@@ -10,5 +10,11 @@ setup(name='spacel-provision',
       license='MIT',
       package_dir={'': 'src'},
       packages=find_packages('src', exclude=['test']),
+      package_data={
+          'spacel': [
+              'cloudformation/*.template'
+          ]
+      },
+      include_package_data=True,
       install_requires=open('requirements.txt').read().splitlines(),
       zip_safe=True)
