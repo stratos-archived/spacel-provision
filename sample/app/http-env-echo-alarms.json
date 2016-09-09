@@ -36,14 +36,36 @@
       "HighCpu": {
         "metric": "EC2/CPUUtilization",
         "threshold": ">85",
-        "duration": "3x60",
-        "endpoints": ["emailpete", "more_instances"]
+        "period": "3x60",
+        "endpoints": ["emailpete"]
       },
       "LowCpu": {
         "metric": "EC2/CPUUtilization",
         "threshold": "<15",
-        "duration": "3x60",
-        "endpoints": ["emailpete", "less_instances"]
+        "period": "3x60",
+        "endpoints": ["emailpete"]
+      },
+      "QueueDeep": {
+        "namespace": "AWS/SQS",
+        "metric": "ApproximateNumberOfMessagesVisible",
+        "threshold": ">=5",
+        "period": "3x60",
+        "statistic": "Average",
+        "dimensions": {
+          "QueueName": "pwagner-test"
+        },
+        "endpoints": ["more_instances"]
+      },
+      "QueueShallow": {
+        "namespace": "AWS/SQS",
+        "metric": "ApproximateNumberOfMessagesVisible",
+        "threshold": "<5",
+        "period": "3x60",
+        "statistic": "Average",
+        "dimensions": {
+          "QueueName": "pwagner-test"
+        },
+        "endpoints": ["less_instances"]
       }
     }
   }

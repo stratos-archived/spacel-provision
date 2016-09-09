@@ -17,10 +17,9 @@ class MetricDefinitions(object):
         http://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ec2-metricscollected.html
         :return:
         """
-        asg_dimensions = [{
-            'Name': 'AutoScalingGroupName',
-            'Value': {'Ref': 'Asg'}
-        }]
+        asg_dimensions = {
+            'AutoScalingGroupName': {'Ref': 'Asg'}
+        }
         self._metric([
             'EC2/CPUCreditUsage'
         ], {
@@ -140,16 +139,15 @@ class MetricDefinitions(object):
         http://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/elb-metricscollected.html
         :return:
         """
-        elb_dimensions = [{
-            'Name': 'LoadBalancerName',
-            'Value': {
+        elb_dimensions = {
+            'LoadBalancerName': {
                 'Fn::If': [
                     'ElbPublic',
                     {'Ref': 'PublicElb'},
                     {'Ref': 'PrivateElb'}
                 ]
             }
-        }]
+        }
         self._metric([
             'ELB/UnHealthyHostCount',
             'unhealthyhosts',
@@ -269,16 +267,11 @@ class MetricDefinitions(object):
             'statistic': 'Average',
             'threshold': '>85',
             'period': '10x60',
-            'dimensions': [{
-                'Name': 'AutoScalingGroupName',
-                'Value': {'Ref': 'Asg'}
-            }, {
-                'Name': 'Filesystem',
-                'Value': '-'
-            }, {
-                'Name': 'MountPath',
-                'Value': '/'
-            }]
+            'dimensions': {
+                'AutoScalingGroupName': {'Ref': 'Asg'},
+                'Filesystem': '-',
+                'MountPath': '/'
+            }
         })
         self._metric([
             'System/MemoryUtilization',
@@ -290,10 +283,9 @@ class MetricDefinitions(object):
             'statistic': 'Average',
             'threshold': '>85',
             'period': '10x60',
-            'dimensions': [{
-                'Name': 'AutoScalingGroupName',
-                'Value': {'Ref': 'Asg'}
-            }]
+            'dimensions': {
+                'AutoScalingGroupName': {'Ref': 'Asg'}
+            }
         })
 
     def _metric(self, aliases, data):
