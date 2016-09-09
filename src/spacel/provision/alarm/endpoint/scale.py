@@ -1,4 +1,6 @@
 import logging
+from six import string_types
+
 from spacel.provision import clean_name
 from spacel.provision.alarm.actions import ACTION_ALARM, ACTIONS_NONE
 
@@ -17,7 +19,7 @@ class ScaleEndpoints(object):
         adjustment = params.get('adjustment', 1)
 
         adjustment_type = 'ChangeInCapacity'
-        if isinstance(adjustment, str) and '%' in adjustment:
+        if isinstance(adjustment, string_types) and '%' in adjustment:
             adjustment_type = 'PercentChangeInCapacity'
             adjustment = int(adjustment.replace('%', ''))
 
@@ -42,9 +44,10 @@ class ScaleEndpoints(object):
         return ACTION_ALARM,
 
     def _calculate_adjustment(self, adjustment):
+        adjustment = int(adjustment)
         if self._direction is not None:
             adjustment = abs(adjustment) * self._direction
-        return int(adjustment)
+        return adjustment
 
     @staticmethod
     def resource_name(name):
