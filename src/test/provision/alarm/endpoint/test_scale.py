@@ -1,3 +1,4 @@
+from six import u
 from spacel.provision.alarm.endpoint.scale import ScaleEndpoints
 from test.provision.alarm.endpoint import RESOURCE_NAME, BaseEndpointTest
 
@@ -32,11 +33,15 @@ class TestScaleEndpoints(BaseEndpointTest):
         self.endpoint = ScaleEndpoints(direction=-1)
         self.assertEquals(-1, self.endpoint._calculate_adjustment(1))
         self.assertEquals(-1, self.endpoint._calculate_adjustment(-1))
+        self.assertEquals(-1, self.endpoint._calculate_adjustment(u('1')))
+        self.assertEquals(-1, self.endpoint._calculate_adjustment('1'))
 
     def test_calculate_adjustment_direction_up(self):
         self.endpoint = ScaleEndpoints(direction=1)
         self.assertEquals(1, self.endpoint._calculate_adjustment(1))
         self.assertEquals(1, self.endpoint._calculate_adjustment(-1))
+        self.assertEquals(1, self.endpoint._calculate_adjustment(u('1')))
+        self.assertEquals(1, self.endpoint._calculate_adjustment('1'))
 
     def test_calculate_adjustment_direction_undefined(self):
         self.assertEquals(1, self.endpoint._calculate_adjustment(1))
