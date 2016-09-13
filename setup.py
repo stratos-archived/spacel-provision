@@ -12,7 +12,8 @@ setup(name='spacel-provision',
       packages=find_packages('src', exclude=['test']),
       package_data={
           'spacel': [
-              'cloudformation/*.template'
+              'cloudformation/*.template',
+              'lambda/*.js'
           ]
       },
       include_package_data=True,

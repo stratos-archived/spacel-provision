@@ -1,23 +1,23 @@
-import codecs
-import hashlib
 from io import BytesIO
 import os
-import six
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
+from spacel.provision.s3.base import BaseUploader
 
-class LambdaUploader(object):
+
+class LambdaUploader(BaseUploader):
     def __init__(self, clients, region, bucket):
-        self._s3 = clients.s3(region)
-        self._bucket = bucket
+        super(LambdaUploader, self).__init__(clients, region, bucket)
         self._cache = {}
+        file_path = os.path.dirname(os.path.realpath(__file__))
+        self._path = os.path.join(file_path, '..', '..', 'lambda')
 
     def _load(self, template):
         cached = self._cache.get(template)
         if cached:
             return cached
 
-        template_path = os.path.join('lambda', template)
+        template_path = os.path.join(self._path, template)
         with open(template_path) as template_in:
             loaded = template_in.read()
             self._cache[template] = loaded
@@ -30,14 +30,8 @@ class LambdaUploader(object):
             script = script.replace(key, value)
         encoded_script = script.encode('utf-8')
 
-        # Hash script+endpoint (which is common across the environment)
-        script_hasher = hashlib.sha1()
-        script_hasher.update(encoded_script)
-        script_hash = codecs.encode(script_hasher.digest(), 'hex')
-        if six.PY2:
-            script_hash = str(script_hash)
-        else:
-            script_hash = str(script_hash, 'utf-8')
+        # Hash script
+        script_hash = self._hash(encoded_script)
 
         # Package into zipfile:
         zip_buffer = BytesIO()
@@ -50,7 +44,5 @@ class LambdaUploader(object):
 
         # Upload to S3:
         zip_path = '%s/%s.zip' % (name, script_hash)
-
-        s3_object = self._s3.Object(self._bucket, zip_path)
-        s3_object.put(Body=zip_buffer)
+        self._upload(zip_path, zip_buffer)
         return self._bucket, zip_path
