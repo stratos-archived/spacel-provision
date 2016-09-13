@@ -11,8 +11,9 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
     Builds orbital VPCs based on Space Elevator templates.
     """
 
-    def __init__(self, clients, change_sets, vpc, bastion, tables):
-        super(SpaceElevatorOrbitFactory, self).__init__(clients, change_sets)
+    def __init__(self, clients, change_sets, uploader, vpc, bastion, tables):
+        super(SpaceElevatorOrbitFactory, self).__init__(clients, change_sets,
+                                                        uploader)
         self._vpc = vpc
         self._bastion = bastion
         self._tables = tables

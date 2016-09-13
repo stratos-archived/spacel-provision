@@ -15,9 +15,9 @@ class BaseUploader(object):
             data = data.encode('utf-8')
         script_hasher.update(data)
         script_hash = codecs.encode(script_hasher.digest(), 'hex')
-        if six.PY2:
+        if six.PY2:  # pragma: no cover
             return str(script_hash)
-        else:
+        else:  # pragma: no cover
             return str(script_hash, 'utf-8')
 
     def _upload(self, path, body):

@@ -175,7 +175,7 @@ class PagerDutyEndpoints(object):
             request_args['headers']['Content-Type'] = APPLICATION_JSON
 
         request = Request(url, **request_args)
-        if six.PY2:
+        if six.PY2:  # pragma: no cover
             request.get_method = lambda: method
 
         try:

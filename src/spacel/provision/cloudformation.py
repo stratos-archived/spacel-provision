@@ -1,5 +1,4 @@
 from botocore.exceptions import ClientError
-import json
 import logging
 import re
 import time
@@ -24,15 +23,15 @@ class BaseCloudFormationFactory(object):
     Shared functionality for CloudFormation provisioning.
     """
 
-    def __init__(self, clients, change_sets, sleep_time=2):
+    def __init__(self, clients, change_sets, uploader, sleep_time=2):
         self._clients = clients
         self._change_sets = change_sets
         self._sleep_time = sleep_time
+        self._uploader = uploader
 
     def _stack(self, name, region, json_template, parameters={}):
         cf = self._clients.cloudformation(region)
-        template = json.dumps(json_template, indent=2)
-
+        template_url = self._uploader.upload(json_template, name)
         parameters = [{'ParameterKey': k, 'ParameterValue': v}
                       for k, v in parameters.items()]
 
@@ -42,7 +41,7 @@ class BaseCloudFormationFactory(object):
             cf.create_change_set(StackName=name,
                                  ChangeSetName=set_name,
                                  Parameters=parameters,
-                                 TemplateBody=template,
+                                 TemplateURL=template_url,
                                  Capabilities=CAPABILITIES)
 
             # Wait for change set to complete:
@@ -85,7 +84,7 @@ class BaseCloudFormationFactory(object):
                 cf.create_stack(
                     StackName=name,
                     Parameters=parameters,
-                    TemplateBody=template,
+                    TemplateURL=template_url,
                     Capabilities=CAPABILITIES
                 )
                 return 'create'
@@ -141,7 +140,8 @@ class BaseCloudFormationFactory(object):
             logger.debug('Completed %s in %s.', name, region)
 
         if waited:
-            logger.info('Completed all updates in %i seconds.', time.time() - start)
+            logger.info('Completed all updates in %i seconds.',
+                        time.time() - start)
 
     @staticmethod
     def _impatient(waiter):

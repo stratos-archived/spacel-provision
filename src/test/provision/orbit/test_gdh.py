@@ -7,6 +7,7 @@ from spacel.provision.changesets import ChangeSetEstimator
 from spacel.model import Orbit
 from spacel.model.orbit import (GDH_DEPLOY, GDH_PARENT)
 from spacel.provision.orbit.gdh import GitDeployHooksOrbitFactory
+from spacel.provision.s3 import TemplateUploader
 from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs,
                                   cf_parameters)
 
@@ -35,8 +36,10 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
         })
 
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
+        self.templates = MagicMock(spec=TemplateUploader)
         self.orbit_factory = GitDeployHooksOrbitFactory(self.clients,
-                                                        self.change_sets)
+                                                        self.change_sets,
+                                                        self.templates)
         self.orbit_factory._describe_stack = MagicMock()
 
     def test_get_orbit(self):

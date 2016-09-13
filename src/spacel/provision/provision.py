@@ -6,8 +6,8 @@ logger = logging.getLogger('spacel')
 
 
 class CloudProvisioner(BaseCloudFormationFactory):
-    def __init__(self, clients, change_sets, app):
-        super(CloudProvisioner, self).__init__(clients, change_sets)
+    def __init__(self, clients, change_sets, uploader, app):
+        super(CloudProvisioner, self).__init__(clients, change_sets, uploader)
         self._app = app
 
     def app(self, app):

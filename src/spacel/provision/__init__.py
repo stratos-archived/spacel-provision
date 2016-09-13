@@ -1,9 +1,9 @@
 import re
 
 from .changesets import ChangeSetEstimator
-from .s3.lambda_uploader import LambdaUploader
 from .orbit import ProviderOrbitFactory
 from .provision import CloudProvisioner
+from .s3 import LambdaUploader, TemplateUploader
 
 
 def clean_name(name):
