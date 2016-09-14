@@ -43,6 +43,10 @@ class Orbit(object):
         self._public_elb_subnets = defaultdict(dict)
         self._private_instance_subnets = defaultdict(dict)
         self._private_elb_subnets = defaultdict(dict)
+        self._private_cache_subnet_groups = {}
+        self._public_cache_subnet_groups = {}
+        self._private_rds_subnet_groups = {}
+        self._public_rds_subnet_groups = {}
 
         # Output from Bastion:
         self._bastion_eips = defaultdict(dict)
@@ -90,3 +94,15 @@ class Orbit(object):
 
     def private_elb_subnets(self, region):
         return self._private_elb_subnets.get(region, ())
+
+    def private_cache_subnet_group(self, region):
+        return self._private_cache_subnet_groups.get(region)
+
+    def public_cache_subnet_group(self, region):
+        return self._public_cache_subnet_groups.get(region)
+
+    def private_rds_subnet_group(self, region):
+        return self._private_rds_subnet_groups.get(region)
+
+    def public_rds_subnet_group(self, region):
+        return self._public_rds_subnet_groups.get(region)
