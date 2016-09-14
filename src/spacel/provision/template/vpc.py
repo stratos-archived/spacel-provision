@@ -62,8 +62,6 @@ class VpcTemplate(BaseTemplateCache):
                                                    'PublicNat',
                                                    40 + az_index)
             self._add_subnet(resources, outputs, az_index, az_param,
-                             'PublicCache', 60 + az_index)
-            self._add_subnet(resources, outputs, az_index, az_param,
                              'PublicRds', 80 + az_index)
             self._add_subnet(resources, outputs, az_index, az_param,
                              'PrivateInstance', 100 + az_index,
@@ -111,7 +109,6 @@ class VpcTemplate(BaseTemplateCache):
                                      az_index
             resources[private_route_resource] = private_default_route_clone
 
-        self._add_subnet_ids(resources, azs, 'PublicCache')
         self._add_subnet_ids(resources, azs, 'PrivateCache')
         self._add_subnet_ids(resources, azs, 'PublicRds')
         self._add_subnet_ids(resources, azs, 'PrivateRds')

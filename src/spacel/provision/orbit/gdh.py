@@ -96,7 +96,6 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
         orbit._private_instance_subnets[region] = private_subnets
         orbit._private_elb_subnets[region] = private_subnets
         orbit._private_cache_subnet_groups = private_subnets
-        orbit._public_cache_subnet_groups = public_subnets
         orbit._private_rds_subnet_groups = private_subnets
         orbit._public_rds_subnet_groups = public_subnets
         logger.debug('Updated %s in %s.', name, region)

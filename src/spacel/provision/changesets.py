@@ -54,7 +54,13 @@ COSTS = {
     },
     'AWS::EC2::Subnet': {
         'Add': 5,
+        'Modify': 5,
         'Remove': 5
+    },
+    'AWS::ElastiCache::ReplicationGroup': {
+        'Add': 120,
+        'Modify': 30,
+        'Remove': 60
     },
     'AWS::IAM::Role': {
         'Add': 75,

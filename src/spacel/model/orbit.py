@@ -44,7 +44,6 @@ class Orbit(object):
         self._private_instance_subnets = defaultdict(dict)
         self._private_elb_subnets = defaultdict(dict)
         self._private_cache_subnet_groups = {}
-        self._public_cache_subnet_groups = {}
         self._private_rds_subnet_groups = {}
         self._public_rds_subnet_groups = {}
 
@@ -97,9 +96,6 @@ class Orbit(object):
 
     def private_cache_subnet_group(self, region):
         return self._private_cache_subnet_groups.get(region)
-
-    def public_cache_subnet_group(self, region):
-        return self._public_cache_subnet_groups.get(region)
 
     def private_rds_subnet_group(self, region):
         return self._private_rds_subnet_groups.get(region)

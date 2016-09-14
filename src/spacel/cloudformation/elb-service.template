@@ -79,6 +79,21 @@
       "Description": "JSON snippet for user data.",
       "Type": "String",
       "Default": ""
+    },
+    "PrivateCacheSubnetGroup": {
+      "Description": "Private cache subnet group",
+      "Type": "String",
+      "Default": ""
+    },
+    "PublicRdsSubnetGroup": {
+      "Description": "Public RDS subnet group",
+      "Type": "String",
+      "Default": ""
+    },
+    "PrivateRdsSubnetGroup": {
+      "Description": "Private RDS subnet group",
+      "Type": "String",
+      "Default": ""
     }
   },
   "Conditions": {

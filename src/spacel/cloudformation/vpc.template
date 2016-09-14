@@ -117,24 +117,6 @@
         ]
       }
     },
-    "PublicCacheSubnet01": {
-      "Type": "AWS::EC2::Subnet",
-      "Properties": {
-        "VpcId": {"Ref": "VPC"},
-        "CidrBlock": {
-          "Fn::Join": ["", [{"Ref": "VpcCidr"}, ".61.0/24"]]
-        },
-        "AvailabilityZone": {"Ref": "Az01"},
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": {
-              "Fn::Join": ["-", [{"Ref": "AWS::StackName"}, "PublicCache01"]]
-            }
-          }
-        ]
-      }
-    },
     "PublicRdsSubnet01": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
@@ -194,13 +176,6 @@
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {"Ref": "PublicNatSubnet01"},
-        "RouteTableId": {"Ref": "PublicRouteTable"}
-      }
-    },
-    "PublicCacheSubnet01RouteTableAssociation": {
-      "Type": "AWS::EC2::SubnetRouteTableAssociation",
-      "Properties": {
-        "SubnetId": {"Ref": "PublicCacheSubnet01"},
         "RouteTableId": {"Ref": "PublicRouteTable"}
       }
     },
@@ -350,13 +325,6 @@
         "SubnetId": {"Ref": "PublicNatSubnet01"}
       }
     },
-    "PublicCacheSubnetGroup": {
-      "Type": "AWS::ElastiCache::SubnetGroup",
-      "Properties": {
-        "Description": "Public cache subnet group",
-        "SubnetIds": [{"Ref": "PublicCacheSubnet01"}]
-      }
-    },
     "PrivateCacheSubnetGroup": {
       "Type": "AWS::ElastiCache::SubnetGroup",
       "Properties": {
@@ -397,9 +365,6 @@
     },
     "NatEip01": {
       "Value": {"Ref": "NatEip01"}
-    },
-    "PublicCacheSubnetGroup": {
-      "Value": {"Ref": "PublicCacheSubnetGroup"}
     },
     "PrivateCacheSubnetGroup": {
       "Value": {"Ref": "PrivateCacheSubnetGroup"}

@@ -12,6 +12,7 @@ from spacel.provision import (ChangeSetEstimator, CloudProvisioner,
 from spacel.provision.template import (AppTemplate, BastionTemplate,
                                        TablesTemplate, VpcTemplate)
 from spacel.provision.alarm import AlarmFactory
+from spacel.provision.cache import CacheFactory
 
 
 def main(args, in_stream):
@@ -39,10 +40,12 @@ def main(args, in_stream):
     alarm_factory = AlarmFactory.get(pagerduty_default,
                                      pagerduty_api_key,
                                      lambda_up)
+    cache_factory = CacheFactory()
 
     # Templates:
     ami_finder = AmiFinder()
-    app_template = AppTemplate(ami_finder, alarm_factory)
+
+    app_template = AppTemplate(ami_finder, alarm_factory, cache_factory)
     bastion_template = BastionTemplate(ami_finder)
     tables_template = TablesTemplate()
     vpc_template = VpcTemplate()

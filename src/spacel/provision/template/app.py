@@ -6,9 +6,10 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, ami_finder, alarm_factory):
+    def __init__(self, ami_finder, alarm_factory, cache_factory):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
         self._alarm_factory = alarm_factory
+        self._cache_factory = cache_factory
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -22,6 +23,12 @@ class AppTemplate(BaseTemplateCache):
         params['Orbit']['Default'] = orbit.name
         params['Service']['Default'] = app.name
         params['BastionSecurityGroup']['Default'] = orbit.bastion_sg(region)
+        params['PrivateCacheSubnetGroup']['Default'] = \
+            orbit.private_cache_subnet_group(region)
+        params['PublicRdsSubnetGroup']['Default'] = \
+            orbit.public_rds_subnet_group(region)
+        params['PrivateRdsSubnetGroup']['Default'] = \
+            orbit.private_rds_subnet_group(region)
 
         # Inject parameters:
         params['ElbScheme']['Default'] = app.scheme
@@ -119,6 +126,7 @@ class AppTemplate(BaseTemplateCache):
                 })
 
         self._alarm_factory.add_alarms(app_template, app.alarms)
+        self._cache_factory.add_caches(app, app_template, app.caches)
         return app_template
 
     def _user_data(self, params, app):
