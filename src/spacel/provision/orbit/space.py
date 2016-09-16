@@ -11,8 +11,9 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
     Builds orbital VPCs based on Space Elevator templates.
     """
 
-    def __init__(self, clients, change_sets, vpc, bastion, tables):
-        super(SpaceElevatorOrbitFactory, self).__init__(clients, change_sets)
+    def __init__(self, clients, change_sets, uploader, vpc, bastion, tables):
+        super(SpaceElevatorOrbitFactory, self).__init__(clients, change_sets,
+                                                        uploader)
         self._vpc = vpc
         self._bastion = bastion
         self._tables = tables
@@ -109,6 +110,14 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
                 orbit._nat_eips[region][key[-2:]] = value
             elif key.startswith('VpcId'):
                 orbit._vpc_ids[region] = value
+            elif key == 'PublicRdsSubnetGroup':
+                orbit._public_rds_subnet_groups[region] = value
+            elif key == 'PrivateRdsSubnetGroup':
+                orbit._private_rds_subnet_groups[region] = value
+            elif key == 'PrivateCacheSubnetGroup':
+                orbit._private_cache_subnet_groups[region] = value
+            elif 'CacheSubnet' in key or 'RdsSubnet' in key:
+                pass
             else:
                 logger.warn('Unrecognized output key: %s', key)
 

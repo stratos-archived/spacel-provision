@@ -1,7 +1,7 @@
 from mock import MagicMock, ANY
 import unittest
 from spacel.aws import ClientCache
-from spacel.provision.lambda_s3 import LambdaUploader
+from spacel.provision.s3.lambda_uploader import LambdaUploader
 
 BUCKET = 'bucket'
 SAMPLE_SCRIPT = 'sns-to-slack.js'

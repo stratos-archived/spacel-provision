@@ -1,6 +1,6 @@
 from mock import MagicMock, ANY
 
-from spacel.provision.lambda_s3 import LambdaUploader
+from spacel.provision.s3.lambda_uploader import LambdaUploader
 from spacel.provision.alarm.endpoint.slack import SlackEndpoints
 from test.provision.alarm.endpoint import RESOURCE_NAME, BaseEndpointTest
 

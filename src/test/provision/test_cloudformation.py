@@ -6,6 +6,7 @@ from spacel.aws.clients import ClientCache
 from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              NO_CHANGES)
+from spacel.provision.s3.template_uploader import TemplateUploader
 
 NAME = 'test-stack'
 REGION = 'us-east-1'
@@ -19,9 +20,11 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         self.clients = MagicMock(spec=ClientCache)
         self.clients.cloudformation.return_value = self.cloudformation
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
+        self.templates = MagicMock(spec=TemplateUploader)
 
         self.cf_factory = BaseCloudFormationFactory(self.clients,
                                                     self.change_sets,
+                                                    self.templates,
                                                     sleep_time=0.00001)
 
     def test_stack_not_found(self):
@@ -36,7 +39,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         self.cloudformation.create_stack.assert_called_with(
             StackName=NAME,
             Parameters=ANY,
-            TemplateBody=ANY,
+            TemplateURL=ANY,
             Capabilities=ANY
         )
         self.change_sets.estimate.assert_not_called()
@@ -103,6 +106,16 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         self.cloudformation.get_waiter.assert_called_with(
             'stack_update_complete')
 
+    def test_stack_exception(self):
+        client_error = ClientError({'Error': {
+            'Message': 'Kaboom'
+        }}, 'CreateChangeSet')
+
+        self.cloudformation.create_change_set.side_effect = client_error
+
+        self.assertRaises(ClientError, self.cf_factory._stack, NAME, REGION,
+                          TEMPLATE)
+
     def test_stack_rollback_complete(self):
         rollback_complete = ClientError({'Error': {
             'Message': self._in_progress('ROLLBACK_COMPLETE')
@@ -118,6 +131,10 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         self.assertIsNone(result)
         self.cloudformation.get_waiter.assert_called_with(
             'stack_delete_complete')
+
+    def test_delete_stack(self):
+        self.cf_factory._delete_stack(NAME, REGION)
+        self.cloudformation.delete_stack.assert_called_with(StackName=NAME)
 
     def test_wait_for_updates_skip_noops(self):
         self.cf_factory._wait_for_updates(NAME, {

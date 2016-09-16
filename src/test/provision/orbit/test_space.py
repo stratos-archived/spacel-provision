@@ -5,8 +5,10 @@ import unittest
 from spacel.aws import ClientCache
 from spacel.model import Orbit
 from spacel.provision.changesets import ChangeSetEstimator
-from spacel.provision.template import VpcTemplate, BastionTemplate, TablesTemplate
+from spacel.provision.template import (VpcTemplate, BastionTemplate,
+                                       TablesTemplate)
 from spacel.provision.orbit.space import SpaceElevatorOrbitFactory
+from spacel.provision.s3 import TemplateUploader
 
 from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs)
 
@@ -23,6 +25,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.tables_template.tables.return_value = {}
         self.clients = MagicMock(spec=ClientCache)
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
+        self.templates = MagicMock(spec=TemplateUploader)
         self.ec2 = MagicMock()
         self.clients.ec2.return_value = self.ec2
         self.orbit = Orbit({
@@ -31,6 +34,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         })
         self.orbit_factory = SpaceElevatorOrbitFactory(self.clients,
                                                        self.change_sets,
+                                                       self.templates,
                                                        self.vpc_template,
                                                        self.bastion_template,
                                                        self.tables_template)
@@ -69,7 +73,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
                                         'bastion')
 
         self.vpc_template.vpc.assert_not_called()
-        self.bastion_template.bastion.assert_called_once_with(self.orbit, REGION)
+        self.bastion_template.bastion.assert_called_once_with(self.orbit,
+                                                              REGION)
         self.orbit_factory._wait_for_updates.assert_called_once()
         self.orbit_factory._orbit_from_vpc.assert_not_called()
         self.orbit_factory._orbit_from_bastion.assert_called_once()

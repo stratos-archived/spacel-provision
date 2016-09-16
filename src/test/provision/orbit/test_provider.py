@@ -37,5 +37,6 @@ class TestProviderOrbitFactory(unittest.TestCase):
         self.provider.get_orbit.assert_not_called()
 
     def test_get(self):
-        orbit_factory = ProviderOrbitFactory.get(None, None, None, None, None)
+        orbit_factory = ProviderOrbitFactory.get(None, None, None, None, None,
+                                                 None)
         self.assertEqual(2, len(orbit_factory._providers))

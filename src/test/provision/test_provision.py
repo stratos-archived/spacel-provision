@@ -6,6 +6,7 @@ from spacel.model import Orbit, SpaceApp
 from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.provision import CloudProvisioner
 from spacel.provision.template import AppTemplate
+from spacel.provision.s3 import TemplateUploader
 
 REGIONS = ('us-east-1', 'us-west-2')
 
@@ -14,10 +15,12 @@ class TestCloudProvisioner(unittest.TestCase):
     def setUp(self):
         self.clients = MagicMock(spec=ClientCache)
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
+        self.templates = MagicMock(spec=TemplateUploader)
         self.app_template = MagicMock(spec=AppTemplate)
         self.app_template.app.return_value = {}
 
         self.provisioner = CloudProvisioner(self.clients, self.change_sets,
+                                            self.templates,
                                             self.app_template)
         self.provisioner._wait_for_updates = MagicMock()
         self.provisioner._stack = MagicMock()

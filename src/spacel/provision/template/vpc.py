@@ -60,13 +60,20 @@ class VpcTemplate(BaseTemplateCache):
             nat_subnet_resource = self._add_subnet(resources, None,
                                                    az_index, az_param,
                                                    'PublicNat',
-                                                   40 + az_index, )
+                                                   40 + az_index)
+            self._add_subnet(resources, outputs, az_index, az_param,
+                             'PublicRds', 80 + az_index)
             self._add_subnet(resources, outputs, az_index, az_param,
                              'PrivateInstance', 100 + az_index,
                              private_rt_resource)
             self._add_subnet(resources, outputs, az_index, az_param,
                              'PrivateElb', 120 + az_index,
                              private_rt_resource)
+            self._add_subnet(resources, outputs, az_index, az_param,
+                             'PrivateCache', 160 + az_index,
+                             private_rt_resource)
+            self._add_subnet(resources, outputs, az_index, az_param,
+                             'PrivateRds', 180 + az_index, private_rt_resource)
 
             # Each AZ _can_ have a NAT gateway:
             nat_eip_clone = deepcopy(base_nat_eip)
@@ -102,6 +109,10 @@ class VpcTemplate(BaseTemplateCache):
                                      az_index
             resources[private_route_resource] = private_default_route_clone
 
+        self._add_subnet_ids(resources, azs, 'PrivateCache')
+        self._add_subnet_ids(resources, azs, 'PublicRds')
+        self._add_subnet_ids(resources, azs, 'PrivateRds')
+
         return vpc_template
 
     def _add_subnet(self, resources, outputs, az_index, az, label, cidr,
@@ -131,3 +142,10 @@ class VpcTemplate(BaseTemplateCache):
             label, az_index)
         resources[rta_resource] = rta_clone
         return subnet_resource
+
+    @staticmethod
+    def _add_subnet_ids(resources, azs, label):
+        subnet_group = resources.get('%sSubnetGroup' % label, {})
+        subnet_ids = subnet_group.get('Properties', {}).get('SubnetIds', [])
+        for index, _ in enumerate(azs[1:]):
+            subnet_ids.append({'Ref': '%sSubnet%02d' % (label, index + 2)})
