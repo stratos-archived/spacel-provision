@@ -18,6 +18,17 @@ class CacheFactory(object):
         app_name = app.name
         orbit_name = app.orbit.name
         resources = template['Resources']
+
+        # Get UserData components:
+        user_data = (resources['Lc']
+                     ['Properties']
+                     ['UserData']
+                     ['Fn::Base64']
+                     ['Fn::Join'][1])
+        # Find the breadcrumb for the cache map:
+        cache_intro = user_data.index('"caches":{') + 1
+
+        added_caches = 0
         for name, params in caches.items():
             # How many replicas?
             replicas = self._replicas(params)
@@ -33,6 +44,7 @@ class CacheFactory(object):
 
             cache_resource = 'Cache%s' % clean_name(name)
             cache_desc = '%s for %s in %s' % (name, app_name, orbit_name)
+            logger.debug('Creating cache "%s".', name)
 
             # Security group for cache:
             cache_sg_resource = '%sSg' % cache_resource
@@ -70,7 +82,19 @@ class CacheFactory(object):
                 }
             }
 
+            # Inject a labeled reference to this cache replication group:
+            # Read this backwards, and note the trailing comma.
+            user_data.insert(cache_intro, ',')
+            user_data.insert(cache_intro, '"')
+            user_data.insert(cache_intro, {'Ref': cache_resource})
+            user_data.insert(cache_intro, '"%s":"' % name)
+            added_caches += 1
+
             # TODO: ingress rules to share cache with other services
+
+        # If we added any caches, remove trailing comma:
+        if added_caches:
+            del user_data[cache_intro + (4 * added_caches) - 1]
 
     @staticmethod
     def _replicas(params):

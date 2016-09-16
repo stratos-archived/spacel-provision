@@ -1,5 +1,6 @@
-import unittest
+import json
 from mock import MagicMock
+import unittest
 
 from spacel.model import SpaceApp
 from spacel.provision.cache.factory import CacheFactory
@@ -9,7 +10,24 @@ CACHE_NAME = 'test-cache'
 
 class TestCacheFactory(unittest.TestCase):
     def setUp(self):
-        self.resources = {}
+        self.user_data_params = [
+            '{',
+            '\"caches\":{',
+            '} }'
+        ]
+        self.resources = {
+            'Lc': {
+                'Properties': {
+                    'UserData': {
+                        'Fn::Base64': {
+                            'Fn::Join': [
+                                '', self.user_data_params
+                            ]
+                        }
+                    }
+                }
+            }
+        }
         self.template = {'Resources': self.resources}
         self.cache_params = {}
         self.caches = {
@@ -25,17 +43,26 @@ class TestCacheFactory(unittest.TestCase):
     def test_add_caches_noop(self):
         del self.caches[CACHE_NAME]
         self.cache_factory.add_caches(self.app, self.template, self.caches)
-        self.assertEquals({}, self.resources)
+        self.assertEquals(1, len(self.resources))
 
     def test_add_caches_invalid_replicas(self):
         self.cache_params['replicas'] = 'meow'
 
         self.cache_factory.add_caches(self.app, self.template, self.caches)
-        self.assertEquals({}, self.resources)
+        self.assertEquals(1, len(self.resources))
 
     def test_add_caches(self):
         self.cache_factory.add_caches(self.app, self.template, self.caches)
-        self.assertEquals(2, len(self.resources))
+        self.assertEquals(3, len(self.resources))
+
+        # Resolve {'Ref':}s to a string:
+        for index, user_data in enumerate(self.user_data_params):
+            if isinstance(user_data, dict):
+                self.user_data_params[index] = user_data['Ref']
+
+        # UserData should be valid JSON, `caches` should reference
+        user_data = json.loads(''.join(self.user_data_params))
+        self.assertEquals('Cachetestcache', user_data['caches'][CACHE_NAME])
 
     def test_replicas_invalid(self):
         replicas = self.cache_factory._replicas({'replicas': 'meow'})

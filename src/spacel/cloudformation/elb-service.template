@@ -481,7 +481,9 @@
                 {"Ref": "Service"},
                 "\",\"cloudformation_signal\":{\"",
                 {"Ref": "AWS::StackName"},
-                "\":\"Asg\"}",
+                "\":\"Asg\"},",
+                "\"caches\":{",
+                "}",
                 {"Ref": "UserData"},
                 "}"
               ]
