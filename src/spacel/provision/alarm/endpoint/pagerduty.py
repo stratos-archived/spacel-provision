@@ -167,7 +167,7 @@ class PagerDutyEndpoints(object):
         request_args = {
             'headers': dict(self._pd_headers)
         }
-        if six.PY3:
+        if six.PY3: # pragma: no cover
             request_args['method'] = method
 
         if data is not None:
