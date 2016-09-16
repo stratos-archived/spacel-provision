@@ -1,10 +1,5 @@
 import logging
 
-from spacel.provision.alarm.endpoint.email import EmailEndpoints
-from spacel.provision.alarm.endpoint.pagerduty import PagerDutyEndpoints
-from spacel.provision.alarm.endpoint.scale import ScaleEndpoints
-from spacel.provision.alarm.endpoint.slack import SlackEndpoints
-
 logger = logging.getLogger('spacel.provision.alarm.endpoint.factory')
 
 
@@ -36,5 +31,6 @@ class AlarmEndpointFactory(object):
                 }
             else:
                 logger.debug('Endpoint %s was invalid.', name)
-        logger.debug('Built endpoints: %s', endpoint_resources)
+        if endpoint_resources:
+            logger.debug('Built endpoints: %s', endpoint_resources)
         return endpoint_resources
