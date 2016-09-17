@@ -57,7 +57,18 @@ class TestAppTemplate(unittest.TestCase):
 
         app = self.cache.app(self.app, REGION)
 
-        self.assertIn('PrivatePort123TCP', app['Resources'])
+        sg_properties = app['Resources']['PrivatePort123TCP']['Properties']
+        self.assertEquals(123, sg_properties['FromPort'])
+        self.assertEquals(123, sg_properties['ToPort'])
+
+    def test_app_private_ports_split(self):
+        self.app.private_ports = {'123-456': ['TCP']}
+
+        app = self.cache.app(self.app, REGION)
+
+        sg_properties = app['Resources']['PrivatePort123to456TCP']['Properties']
+        self.assertEquals('123', sg_properties['FromPort'])
+        self.assertEquals('456', sg_properties['ToPort'])
 
     def test_app_instance_storage(self):
         self.app.instance_type = 'c1.medium'

@@ -32,7 +32,7 @@ class IngressResourceFactory(object):
 
         # Common properties:
         ingress_properties = {
-            'Protocol': protocol,
+            'IpProtocol': protocol,
             'FromPort': start_port,
             'ToPort': end_port,
             'GroupId': {'Ref': sg_ref}

@@ -10,7 +10,10 @@ REDIS_VERSION = '2.8.24'
 
 
 class CacheFactory(object):
-    def add_caches(self, app, template, caches):
+    def __init__(self, ingress):
+        self._ingress = ingress
+
+    def add_caches(self, app, region, template, caches):
         if not caches:
             logger.debug('No caches specified.')
             return
@@ -90,7 +93,14 @@ class CacheFactory(object):
             user_data.insert(cache_intro, '"%s":"' % name)
             added_caches += 1
 
-            # TODO: ingress rules to share cache with other services
+            clients = params.get('clients', ())
+            ingress_resources = \
+                self._ingress.ingress_resources(app.orbit,
+                                                region,
+                                                6379,
+                                                clients,
+                                                sg_ref=cache_sg_resource)
+            resources.update(ingress_resources)
 
         # If we added any caches, remove trailing comma:
         if added_caches:

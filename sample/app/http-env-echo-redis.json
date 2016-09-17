@@ -19,7 +19,10 @@
   },
   "caches": {
     "some-db": {
-      "replicas": 0
+      "replicas": 0,
+      "clients": [
+        "192.168.0.0/16"
+      ]
     }
   }
 }
