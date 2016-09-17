@@ -50,6 +50,7 @@ class SpaceApp(object):
             logger.warn('Invalid service: %s', service_name)
         self.alarms = params.get('alarms', {})
         self.caches = params.get('caches', {})
+        self.databases = params.get('databases', {})
 
     @property
     def full_name(self):

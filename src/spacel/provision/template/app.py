@@ -7,10 +7,11 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, ami_finder, alarm_factory, cache_factory):
+    def __init__(self, ami_finder, alarm_factory, cache_factory, rds_factory):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
         self._alarm_factory = alarm_factory
         self._cache_factory = cache_factory
+        self._rds_factory = rds_factory
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -102,7 +103,7 @@ class AppTemplate(BaseTemplateCache):
         # Private ports:
         for private_port, protocols in app.private_ports.items():
             if (isinstance(private_port, six.string_types)
-                    and '-' in private_port):
+                and '-' in private_port):
                 from_port, to_port = private_port.split('-', 1)
                 port_label = private_port.replace('-', 'to')
             else:
@@ -136,6 +137,7 @@ class AppTemplate(BaseTemplateCache):
 
         self._alarm_factory.add_alarms(app_template, app.alarms)
         self._cache_factory.add_caches(app, region, app_template, app.caches)
+        self._rds_factory.add_rds(app, region, app_template, app.databases)
         return app_template
 
     def _user_data(self, params, app):

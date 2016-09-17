@@ -3,7 +3,7 @@ from mock import MagicMock
 import unittest
 
 from spacel.model import SpaceApp
-from spacel.provision.cache.factory import CacheFactory
+from spacel.provision.db.cache import CacheFactory
 from spacel.provision.template import IngressResourceFactory
 
 CACHE_NAME = 'test-cache'

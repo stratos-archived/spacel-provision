@@ -13,7 +13,7 @@ from spacel.provision.template import (AppTemplate, BastionTemplate,
                                        IngressResourceFactory, TablesTemplate,
                                        VpcTemplate)
 from spacel.provision.alarm import AlarmFactory
-from spacel.provision.cache import CacheFactory
+from spacel.provision.db import CacheFactory, RdsFactory
 
 
 def main(args, in_stream):
@@ -43,11 +43,13 @@ def main(args, in_stream):
                                      lambda_up)
     ingress_factory = IngressResourceFactory(clients)
     cache_factory = CacheFactory(ingress_factory)
+    rds_factory = RdsFactory(ingress_factory)
 
     # Templates:
     ami_finder = AmiFinder()
 
-    app_template = AppTemplate(ami_finder, alarm_factory, cache_factory)
+    app_template = AppTemplate(ami_finder, alarm_factory, cache_factory,
+                               rds_factory)
     bastion_template = BastionTemplate(ami_finder)
     tables_template = TablesTemplate()
     vpc_template = VpcTemplate()
