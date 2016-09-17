@@ -136,7 +136,13 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
             'PublicNatSubnet': 'subnet-000121',
             'NatEip': IP_ADDRESS,
             'VpcId': VPC_ID,
+            'PublicRdsSubnetGroup': 'public-rds',
+            'PrivateRdsSubnetGroup': 'private-rds',
+            'PrivateCacheSubnetGroup': 'private-rds',
+            'PrivateCacheSubnet01': 'subnet-666666',
+            'PrivateRdsSubnet01': 'subnet-777777',
             'Unknown': 'AndThatsOk'
+
         }
 
         self.orbit_factory._orbit_from_vpc(self.orbit, REGION,
@@ -151,6 +157,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.assertEquals(['subnet-000111'],
                           self.orbit.public_elb_subnets(REGION))
         self.assertEquals(VPC_ID, self.orbit.vpc_id(REGION))
+        self.assertEquals('private-rds',
+                          self.orbit.private_rds_subnet_group(REGION))
 
     def test_orbit_from_bastion(self):
         outputs = {

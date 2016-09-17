@@ -10,7 +10,8 @@ from spacel.provision import (ChangeSetEstimator, CloudProvisioner,
                               TemplateUploader)
 
 from spacel.provision.template import (AppTemplate, BastionTemplate,
-                                       TablesTemplate, VpcTemplate)
+                                       IngressResourceFactory, TablesTemplate,
+                                       VpcTemplate)
 from spacel.provision.alarm import AlarmFactory
 from spacel.provision.cache import CacheFactory
 
@@ -40,7 +41,8 @@ def main(args, in_stream):
     alarm_factory = AlarmFactory.get(pagerduty_default,
                                      pagerduty_api_key,
                                      lambda_up)
-    cache_factory = CacheFactory()
+    ingress_factory = IngressResourceFactory(clients)
+    cache_factory = CacheFactory(ingress_factory)
 
     # Templates:
     ami_finder = AmiFinder()

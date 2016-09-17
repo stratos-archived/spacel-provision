@@ -78,9 +78,11 @@ class Orbit(object):
     def bastion_sg(self, region):
         return self._bastion_sgs.get(region)
 
-    # TODO: why isn't this a tuple like subnets?
     def bastion_eips(self, region):
         return self._bastion_eips.get(region, {})
+
+    def nat_eips(self, region):
+        return self._nat_eips.get(region, {})
 
     def public_instance_subnets(self, region):
         return self._public_instance_subnets.get(region, ())

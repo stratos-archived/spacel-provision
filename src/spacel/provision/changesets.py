@@ -48,6 +48,11 @@ COSTS = {
         'Modify': 2,
         'Remove': 5
     },
+    'AWS::EC2::SecurityGroupIngress': {
+        'Add': 10,
+        'Modify': 10,
+        'Remove': 5
+    },
     'AWS::EC2::SubnetRouteTableAssociation': {
         'Add': 5,
         'Remove': 5

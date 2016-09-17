@@ -1,5 +1,6 @@
 import base64
 import json
+import six
 
 from spacel.aws import INSTANCE_VOLUMES
 from spacel.provision.template.base import BaseTemplateCache
@@ -99,17 +100,25 @@ class AppTemplate(BaseTemplateCache):
             private_elb.append(elb_listener)
 
         # Private ports:
-        # TODO: what about ranges? Can split `private_port`
         for private_port, protocols in app.private_ports.items():
+            if (isinstance(private_port, six.string_types)
+                    and '-' in private_port):
+                from_port, to_port = private_port.split('-', 1)
+                port_label = private_port.replace('-', 'to')
+            else:
+                from_port = private_port
+                to_port = private_port
+                port_label = private_port
+
             for protocol in protocols:
-                port_resource = 'PrivatePort%s%s' % (private_port, protocol)
+                port_resource = 'PrivatePort%s%s' % (port_label, protocol)
                 resources[port_resource] = {
                     'Type': 'AWS::EC2::SecurityGroupIngress',
                     'Properties': {
                         'GroupId': {'Ref': 'Sg'},
                         'IpProtocol': protocol,
-                        'FromPort': private_port,
-                        'ToPort': private_port,
+                        'FromPort': from_port,
+                        'ToPort': to_port,
                         'SourceSecurityGroupId': {'Ref': 'Sg'}
                     }
                 }
@@ -126,7 +135,7 @@ class AppTemplate(BaseTemplateCache):
                 })
 
         self._alarm_factory.add_alarms(app_template, app.alarms)
-        self._cache_factory.add_caches(app, app_template, app.caches)
+        self._cache_factory.add_caches(app, region, app_template, app.caches)
         return app_template
 
     def _user_data(self, params, app):

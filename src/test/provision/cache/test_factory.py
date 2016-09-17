@@ -4,8 +4,10 @@ import unittest
 
 from spacel.model import SpaceApp
 from spacel.provision.cache.factory import CacheFactory
+from spacel.provision.template import IngressResourceFactory
 
 CACHE_NAME = 'test-cache'
+REGION = 'us-west-2'
 
 
 class TestCacheFactory(unittest.TestCase):
@@ -38,21 +40,22 @@ class TestCacheFactory(unittest.TestCase):
         self.app.orbit = MagicMock()
         self.app.orbit.name = 'test-orbit'
 
-        self.cache_factory = CacheFactory()
+        self.ingress = MagicMock(spec=IngressResourceFactory)
+        self.cache_factory = CacheFactory(self.ingress)
 
     def test_add_caches_noop(self):
         del self.caches[CACHE_NAME]
-        self.cache_factory.add_caches(self.app, self.template, self.caches)
+        self.cache_factory.add_caches(self.app, REGION, self.template, self.caches)
         self.assertEquals(1, len(self.resources))
 
     def test_add_caches_invalid_replicas(self):
         self.cache_params['replicas'] = 'meow'
 
-        self.cache_factory.add_caches(self.app, self.template, self.caches)
+        self.cache_factory.add_caches(self.app, REGION, self.template, self.caches)
         self.assertEquals(1, len(self.resources))
 
     def test_add_caches(self):
-        self.cache_factory.add_caches(self.app, self.template, self.caches)
+        self.cache_factory.add_caches(self.app, REGION, self.template, self.caches)
         self.assertEquals(3, len(self.resources))
 
         # Resolve {'Ref':}s to a string:

@@ -117,7 +117,7 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
             elif key == 'PrivateCacheSubnetGroup':
                 orbit._private_cache_subnet_groups[region] = value
             elif 'CacheSubnet' in key or 'RdsSubnet' in key:
-                pass
+                continue
             else:
                 logger.warn('Unrecognized output key: %s', key)
 
