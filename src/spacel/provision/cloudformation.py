@@ -29,11 +29,29 @@ class BaseCloudFormationFactory(object):
         self._sleep_time = sleep_time
         self._uploader = uploader
 
-    def _stack(self, name, region, json_template, parameters={}):
+    def _stack(self, name, region, json_template, parameters={},
+               secret_parameters={}):
         cf = self._clients.cloudformation(region)
         template_url = self._uploader.upload(json_template, name)
         parameters = [{'ParameterKey': k, 'ParameterValue': v}
                       for k, v in parameters.items()]
+
+        if secret_parameters:
+            existing_params = self._existing_params(cf, name)
+            for secret_param, value_func in secret_parameters.items():
+                if secret_param in existing_params:
+                    # Param exists in CloudFormation, re-use previous value:
+                    parameters.append({
+                        'ParameterKey': secret_param,
+                        'UsePreviousValue': True
+                    })
+                else:
+                    # Parameter does not exist, generate a fresh value/lookup:
+                    secret_value = value_func()
+                    parameters.append({
+                        'ParameterKey': secret_param,
+                        'ParameterValue': secret_value
+                    })
 
         set_name = 'change-%s' % uuid.uuid4()
         try:
@@ -111,6 +129,17 @@ class BaseCloudFormationFactory(object):
                     waiter.wait(StackName=name)
                     return self._stack(name, region, json_template)
             raise e
+
+    @staticmethod
+    def _existing_params(cf, name):
+        try:
+            stack = cf.describe_stacks(StackName=name)
+            existing_parameters = [param['ParameterKey']
+                                   for param in (stack['Stacks'][0]
+                                                 ['Parameters'])]
+        except ClientError:
+            existing_parameters = []
+        return set(existing_parameters)
 
     def _delete_stack(self, name, region):
         cf = self._clients.cloudformation(region)
