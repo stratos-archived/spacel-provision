@@ -1,6 +1,5 @@
 from botocore.exceptions import ClientError
 from mock import MagicMock
-import unittest
 import six
 
 from spacel.security.kms_crypt import KmsCrypto

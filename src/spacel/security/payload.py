@@ -35,7 +35,7 @@ class EncryptedPayload(object):
             'key_region': self.key_region,
             'ciphertext': base64_encode(self.ciphertext),
             'encoding': self.encoding,
-        })
+        }, sort_keys=True)
 
     @staticmethod
     def from_json(json_string):

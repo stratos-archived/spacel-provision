@@ -1,4 +1,6 @@
+from botocore.exceptions import ClientError
 import logging
+
 from spacel.provision import clean_name, bool_param
 from spacel.provision.db.base import BaseTemplateDecorator
 
@@ -16,8 +18,9 @@ DEFAULT_PORTS = {
 
 
 class RdsFactory(BaseTemplateDecorator):
-    def __init__(self, ingress, passwords):
+    def __init__(self, clients, ingress, passwords):
         super(RdsFactory, self).__init__(ingress)
+        self._clients = clients
         self._passwords = passwords
 
     def add_rds(self, app, region, template):
@@ -36,8 +39,30 @@ class RdsFactory(BaseTemplateDecorator):
         added_databases = 0
         secret_params = {}
         for name, db_params in app.databases.items():
+            password_label = 'rds:%s' % name
+            rds_resource = 'Db%s' % clean_name(name)
+
             db_global = db_params.get('global')
             if db_global and db_global != region:
+                # If connecting to a global DB, query for stored password:
+                encrypted, _ = \
+                    self._passwords.get_password(app, region, password_label,
+                                                 generate=False)
+                if not encrypted:
+                    continue
+
+                rds_id = self._rds_id(app, db_global, rds_resource)
+                if not rds_id:
+                    continue
+
+                user_data.insert(db_intro, ',')
+                user_data.insert(db_intro, ',"region": "%s"}' % db_global)
+                user_data.insert(db_intro,
+                                 '","password": %s' % encrypted.json())
+                user_data.insert(db_intro, rds_id)
+                user_data.insert(db_intro, '"%s":{"name":"' % name)
+                added_databases += 1
+
                 continue
 
             db_type = db_params.get('type', 'postgres')
@@ -64,7 +89,6 @@ class RdsFactory(BaseTemplateDecorator):
             db_subnet_group = '%sRdsSubnetGroup' % (public and 'Public'
                                                     or 'Private')
 
-            rds_resource = 'Db%s' % clean_name(name)
             rds_desc = '%s for %s in %s' % (name, app_name, orbit_name)
             logger.debug('Creating database "%s".', name)
 
@@ -132,9 +156,25 @@ class RdsFactory(BaseTemplateDecorator):
                 'Properties': rds_params
             }
 
-            password_label = 'rds:%s' % name
             encrypted, plaintext_func = \
                 self._passwords.get_password(app, region, password_label)
+
+            # If hosting a global DB, store the password in each region:
+            if db_global:
+                region_clients = []
+                for other_region in app.regions:
+                    if region == other_region:
+                        continue
+                    self._passwords.set_password(app, other_region,
+                                                 password_label, plaintext_func)
+                    region_clients.append(other_region)
+
+                # Inject other regions into 'clients' list
+                db_clients = db_params.get('clients')
+                if db_clients is None:
+                    db_params['clients'] = region_clients
+                else:
+                    db_clients += region_clients
 
             # Inject a labeled reference to this cache replication group:
             # Read this backwards, and note the trailing comma.
@@ -153,6 +193,23 @@ class RdsFactory(BaseTemplateDecorator):
             del user_data[db_intro + (5 * added_databases) - 1]
 
         return secret_params
+
+    def _rds_id(self, app, region, rds_resource):
+        cloudformation = self._clients.cloudformation(region)
+        stack_name = '%s-%s' % (app.orbit.name, app.name)
+        try:
+            resource = cloudformation.describe_stack_resource(
+                StackName=stack_name,
+                LogicalResourceId=rds_resource)
+            return (resource['StackResourceDetail']
+                    ['PhysicalResourceId'])
+        except ClientError as e:
+            e_message = e.response['Error'].get('Message', '')
+            if 'does not exist' in e_message:
+                logger.debug('App %s not found in %s in %s.', app.name,
+                             app.orbit.name, region)
+                return None
+            raise e
 
     @staticmethod
     def _instance_type(params):

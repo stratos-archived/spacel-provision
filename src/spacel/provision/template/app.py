@@ -26,12 +26,15 @@ class AppTemplate(BaseTemplateCache):
         params['Orbit']['Default'] = orbit.name
         params['Service']['Default'] = app.name
         params['BastionSecurityGroup']['Default'] = orbit.bastion_sg(region)
-        params['PrivateCacheSubnetGroup']['Default'] = \
-            orbit.private_cache_subnet_group(region)
-        params['PublicRdsSubnetGroup']['Default'] = \
-            orbit.public_rds_subnet_group(region)
-        params['PrivateRdsSubnetGroup']['Default'] = \
-            orbit.private_rds_subnet_group(region)
+        cache_subnet_group = orbit.private_cache_subnet_group(region)
+        if cache_subnet_group:
+            params['PrivateCacheSubnetGroup']['Default'] = cache_subnet_group
+        public_rds_group = orbit.public_rds_subnet_group(region)
+        if public_rds_group:
+            params['PublicRdsSubnetGroup']['Default'] = public_rds_group
+        private_rds_group = orbit.private_rds_subnet_group(region)
+        if private_rds_group:
+            params['PrivateRdsSubnetGroup']['Default'] = private_rds_group
 
         # Inject parameters:
         params['ElbScheme']['Default'] = app.scheme
@@ -103,8 +106,8 @@ class AppTemplate(BaseTemplateCache):
 
         # Private ports:
         for private_port, protocols in app.private_ports.items():
-            if (isinstance(private_port, six.string_types)
-                    and '-' in private_port):
+            port_is_string = isinstance(private_port, six.string_types)
+            if port_is_string and '-' in private_port:
                 from_port, to_port = private_port.split('-', 1)
                 port_label = private_port.replace('-', 'to')
             else:

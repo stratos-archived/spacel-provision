@@ -48,7 +48,7 @@ def main(args, in_stream):
     password_manager = PasswordManager(clients, kms_crypto)
 
     cache_factory = CacheFactory(ingress_factory)
-    rds_factory = RdsFactory(ingress_factory, password_manager)
+    rds_factory = RdsFactory(clients, ingress_factory, password_manager)
 
     # Templates:
     ami_finder = AmiFinder()

@@ -9,6 +9,7 @@ from spacel.provision.db import CacheFactory, RdsFactory
 from test.provision.template import SUBNETS
 
 REGION = 'us-east-1'
+SUBNET_GROUP = 'subnet-123456'
 
 
 class TestAppTemplate(unittest.TestCase):
@@ -79,6 +80,30 @@ class TestAppTemplate(unittest.TestCase):
 
         block_devs = app['Resources']['Lc']['Properties']['BlockDeviceMappings']
         self.assertEquals(2, len(block_devs))
+
+    def test_app_cache_subnet_group(self):
+        self.orbit._private_cache_subnet_groups[REGION] = SUBNET_GROUP
+
+        app, _ = self.cache.app(self.app, REGION)
+        self.assertEquals(SUBNET_GROUP, (app['Parameters']
+                                         ['PrivateCacheSubnetGroup']
+                                         ['Default']))
+
+    def test_app_public_rds_subnet_group(self):
+        self.orbit._public_rds_subnet_groups[REGION] = SUBNET_GROUP
+
+        app, _ = self.cache.app(self.app, REGION)
+        self.assertEquals(SUBNET_GROUP, (app['Parameters']
+                                         ['PublicRdsSubnetGroup']
+                                         ['Default']))
+
+    def test_app_private_rds_subnet_group(self):
+        self.orbit._private_rds_subnet_groups[REGION] = SUBNET_GROUP
+
+        app, _ = self.cache.app(self.app, REGION)
+        self.assertEquals(SUBNET_GROUP, (app['Parameters']
+                                         ['PrivateRdsSubnetGroup']
+                                         ['Default']))
 
     def test_user_data(self):
         params = {}

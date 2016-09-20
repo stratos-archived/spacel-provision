@@ -1,9 +1,8 @@
 from botocore.exceptions import ClientError
-from mock import MagicMock
 
 from spacel.security.kms_key import KmsKeyFactory
 from test import REGION
-from test.security import BaseKmsTest, KEY_ARN
+from test.security import BaseKmsTest, KEY_ARN, CLIENT_ERROR
 
 ALIAS = 'alias/test-orbit-test-app'
 KEY_METADATA = {
@@ -12,8 +11,6 @@ KEY_METADATA = {
         'Enabled': True
     }
 }
-
-CLIENT_ERROR = ClientError({'Error': {'Message': 'Kaboom'}}, 'DescribeKey')
 
 
 class TestKmsKeyFactory(BaseKmsTest):
