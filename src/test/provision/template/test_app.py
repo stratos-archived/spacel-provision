@@ -32,7 +32,7 @@ class TestAppTemplate(unittest.TestCase):
         })
 
     def test_app(self):
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         app_resources = len(app['Resources'])
         self.assertEquals(self.base_resources, app_resources)
@@ -48,7 +48,7 @@ class TestAppTemplate(unittest.TestCase):
     def test_app_domain(self):
         self.app.hostnames = ('app.test.com',)
 
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         params = app['Parameters']
         self.assertEquals(params['VirtualHostDomain']['Default'], 'test.com.')
@@ -57,7 +57,7 @@ class TestAppTemplate(unittest.TestCase):
     def test_app_private_ports(self):
         self.app.private_ports = {123: ['TCP']}
 
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         sg_properties = app['Resources']['PrivatePort123TCP']['Properties']
         self.assertEquals(123, sg_properties['FromPort'])
@@ -66,7 +66,7 @@ class TestAppTemplate(unittest.TestCase):
     def test_app_private_ports_split(self):
         self.app.private_ports = {'123-456': ['TCP']}
 
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         sg_properties = app['Resources']['PrivatePort123to456TCP']['Properties']
         self.assertEquals('123', sg_properties['FromPort'])
@@ -75,7 +75,7 @@ class TestAppTemplate(unittest.TestCase):
     def test_app_instance_storage(self):
         self.app.instance_type = 'c1.medium'
 
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         block_devs = app['Resources']['Lc']['Properties']['BlockDeviceMappings']
         self.assertEquals(2, len(block_devs))

@@ -1,3 +1,4 @@
+import base64
 import re
 
 from .changesets import ChangeSetEstimator
@@ -15,3 +16,7 @@ def bool_param(params, name, default):
     if val is None:
         return default
     return bool(val)
+
+
+def base64_encode(some_string):
+    return base64.b64encode(some_string).decode('utf-8').strip()

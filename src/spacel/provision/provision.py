@@ -18,8 +18,10 @@ class CloudProvisioner(BaseCloudFormationFactory):
         app_name = app.full_name
         updates = {}
         for region in app.regions:
-            template = self._app.app(app, region)
-            updates[region] = self._stack(app_name, region, template)
+            template, secret_params = self._app.app(app, region)
+
+            updates[region] = self._stack(app_name, region, template,
+                                          secret_parameters=secret_params)
         self._wait_for_updates(app_name, updates)
 
     def delete_app(self, app):

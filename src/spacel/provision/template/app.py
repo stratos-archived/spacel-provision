@@ -3,6 +3,7 @@ import json
 import six
 
 from spacel.aws import INSTANCE_VOLUMES
+from spacel.provision import base64_encode
 from spacel.provision.template.base import BaseTemplateCache
 
 
@@ -103,7 +104,7 @@ class AppTemplate(BaseTemplateCache):
         # Private ports:
         for private_port, protocols in app.private_ports.items():
             if (isinstance(private_port, six.string_types)
-                and '-' in private_port):
+                    and '-' in private_port):
                 from_port, to_port = private_port.split('-', 1)
                 port_label = private_port.replace('-', 'to')
             else:
@@ -137,8 +138,9 @@ class AppTemplate(BaseTemplateCache):
 
         self._alarm_factory.add_alarms(app_template, app.alarms)
         self._cache_factory.add_caches(app, region, app_template, app.caches)
-        self._rds_factory.add_rds(app, region, app_template, app.databases)
-        return app_template
+        secret_params = self._rds_factory.add_rds(app, region, app_template,
+                                                  app.databases)
+        return app_template, secret_params
 
     def _user_data(self, params, app):
         user_data = ''
@@ -148,21 +150,17 @@ class AppTemplate(BaseTemplateCache):
             for service_name, service in app.services.items():
                 unit_file = service.unit_file.encode('utf-8')
                 systemd[service.name] = {
-                    'body': self._base64(unit_file)
+                    'body': base64_encode(unit_file)
                 }
                 if service.environment:
                     environment_file = '\n'.join('%s=%s' % (key, value)
                                                  for key, value in
                                                  service.environment.items())
                     files['%s.env' % service_name] = {
-                        'body': self._base64(environment_file.encode('utf-8'))
+                        'body': base64_encode(environment_file.encode('utf-8'))
                     }
             user_data += ',"systemd":' + json.dumps(systemd)
         if app.volumes:
             params['VolumeSupport']['Default'] = 'true'
             user_data += ', "volumes":' + json.dumps(app.volumes)
         return user_data
-
-    @staticmethod
-    def _base64(some_string):
-        return base64.b64encode(some_string).decode('utf-8').strip()
