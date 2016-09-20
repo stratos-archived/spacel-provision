@@ -46,3 +46,8 @@ class TestClientCache(unittest.TestCase):
         self.clients._client = MagicMock()
         self.clients.dynamodb(REGION)
         self.clients._client.assert_called_with('dynamodb', REGION)
+
+    def test_acm(self):
+        self.clients._client = MagicMock()
+        self.clients.acm(REGION)
+        self.clients._client.assert_called_with('acm', REGION)

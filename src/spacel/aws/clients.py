@@ -53,6 +53,14 @@ class ClientCache(object):
         """
         return self._client('dynamodb', region)
 
+    def acm(self, region):
+        """
+        Get AWS Certificate Manager client.
+        :param region:  AWS region.
+        :return: ACM Client.
+        """
+        return self._client('acm', region)
+
     def _client(self, client_type, region):
         client_cache = self._clients[client_type]
         cached = client_cache.get(region)
