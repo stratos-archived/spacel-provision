@@ -4,6 +4,7 @@ from mock import MagicMock
 from spacel.model import SpaceApp
 from spacel.provision.db.rds import RdsFactory
 from spacel.provision.template import IngressResourceFactory
+from spacel.security import EncryptedPayload, PasswordManager
 
 DB_NAME = 'test-db'
 REGION = 'us-west-2'
@@ -35,21 +36,28 @@ class TestRdsFactory(unittest.TestCase):
             'Resources': self.resources
         }
         self.db_params = {}
-        self.databases = {
-            DB_NAME: self.db_params
-        }
 
         self.app = MagicMock(spec=SpaceApp)
         self.app.name = 'test-app'
         self.app.orbit = MagicMock()
         self.app.orbit.name = 'test-orbit'
+        self.app.databases = {
+            DB_NAME: self.db_params
+        }
 
         self.ingress = MagicMock(spec=IngressResourceFactory)
-        self.rds_factory = RdsFactory(self.ingress)
+        self.password_manager = MagicMock(spec=PasswordManager)
+        self.password_manager.get_password.return_value = EncryptedPayload(
+            b'1234567890123456',
+            b'1234567890123456',
+            b'1234567890123456',
+            'us-east-1',
+            'utf-8'
+        ), lambda: 'test-password'
+        self.rds_factory = RdsFactory(self.ingress, self.password_manager)
 
     def test_add_rds(self):
-        self.rds_factory.add_rds(self.app, REGION, self.template,
-                                 self.databases)
+        self.rds_factory.add_rds(self.app, REGION, self.template)
         self.assertEquals(3, len(self.resources))
 
         # Resolve {'Ref':}s to a string:

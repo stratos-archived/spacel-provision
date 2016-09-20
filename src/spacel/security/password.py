@@ -12,12 +12,13 @@ class PasswordManager(object):
         self._clients = clients
         self._kms_crypt = kms_crypt
 
-    def get_password(self, app, region, label):
+    def get_password(self, app, region, label, length=64):
         """
         Get a password for an application in a region.
         :param app:  Application.
         :param region: Region.
         :param label: Password label.
+        :param length: Password length.
         :return: Encrypted password.
         """
         name = app.name
@@ -40,7 +41,7 @@ class PasswordManager(object):
 
         # Not found, generate:
         logger.debug('Generating password for %s in %s.', label, name)
-        plaintext = self._generate_password(32)
+        plaintext = self._generate_password(length)
         encrypted_payload = self._kms_crypt.encrypt(app, region, plaintext)
         password_item = encrypted_payload.dynamodb_item()
         password_item['name'] = {'S': password_name}

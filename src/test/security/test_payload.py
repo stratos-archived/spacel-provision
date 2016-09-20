@@ -23,6 +23,11 @@ class TestEncryptedPayload(unittest.TestCase):
         self.assertEquals(REGION, payload.key_region)
         self.assertEquals(ENCODING, payload.encoding)
 
-    def test_json(self):
+    def test_roundtrip_json(self):
         as_json = self.payload.json()
-        json.loads(as_json)
+        payload = EncryptedPayload.from_json(as_json)
+        self.assertEquals(IV, payload.iv)
+        self.assertEquals(CIPHERTEXT, payload.ciphertext)
+        self.assertEquals(KEY, payload.key)
+        self.assertEquals(REGION, payload.key_region)
+        self.assertEquals(ENCODING, payload.encoding)

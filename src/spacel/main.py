@@ -14,6 +14,7 @@ from spacel.provision.template import (AppTemplate, BastionTemplate,
                                        VpcTemplate)
 from spacel.provision.alarm import AlarmFactory
 from spacel.provision.db import CacheFactory, RdsFactory
+from spacel.security import KmsCrypto, KmsKeyFactory, PasswordManager
 
 
 def main(args, in_stream):
@@ -42,8 +43,12 @@ def main(args, in_stream):
                                      pagerduty_api_key,
                                      lambda_up)
     ingress_factory = IngressResourceFactory(clients)
+    kms_key_factory = KmsKeyFactory(clients)
+    kms_crypto = KmsCrypto(clients, kms_key_factory)
+    password_manager = PasswordManager(clients, kms_crypto)
+
     cache_factory = CacheFactory(ingress_factory)
-    rds_factory = RdsFactory(ingress_factory)
+    rds_factory = RdsFactory(ingress_factory, password_manager)
 
     # Templates:
     ami_finder = AmiFinder()

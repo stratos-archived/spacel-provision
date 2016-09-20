@@ -16,8 +16,12 @@ DEFAULT_PORTS = {
 
 
 class RdsFactory(BaseTemplateDecorator):
-    def add_rds(self, app, region, template, databases):
-        if not databases:
+    def __init__(self, ingress, passwords):
+        super(RdsFactory, self).__init__(ingress)
+        self._passwords = passwords
+
+    def add_rds(self, app, region, template):
+        if not app.databases:
             logger.debug('No databases specified.')
             return
 
@@ -30,7 +34,8 @@ class RdsFactory(BaseTemplateDecorator):
         db_intro = user_data.index('"databases":{') + 1
 
         added_databases = 0
-        for name, db_params in databases.items():
+        secret_params = {}
+        for name, db_params in app.databases.items():
             db_global = db_params.get('global')
             if db_global and db_global != region:
                 continue
@@ -68,9 +73,7 @@ class RdsFactory(BaseTemplateDecorator):
             params[password_param] = {
                 'Type': 'String',
                 'Description': 'Password for database %s' % name,
-                'NoEcho': True,
-                # FIXME: not this
-                'Default': 'Writeme123'
+                'NoEcho': True
             }
 
             # Security group for database:
@@ -129,18 +132,27 @@ class RdsFactory(BaseTemplateDecorator):
                 'Properties': rds_params
             }
 
+            password_label = 'rds:%s' % name
+            encrypted, plaintext_func = \
+                self._passwords.get_password(app, region, password_label)
+
             # Inject a labeled reference to this cache replication group:
             # Read this backwards, and note the trailing comma.
             user_data.insert(db_intro, ',')
-            user_data.insert(db_intro, '","region": "%s"}' % region)
+            user_data.insert(db_intro, ',"region": "%s"}' % region)
+            user_data.insert(db_intro, '","password": %s' % encrypted.json())
             user_data.insert(db_intro, {'Ref': rds_resource})
             user_data.insert(db_intro, '"%s":{"name":"' % name)
             added_databases += 1
 
             self._add_client_resources(resources, app, region, db_port,
                                        db_params, rds_sg_resource)
+            secret_params[password_param] = plaintext_func
+
         if added_databases:
-            del user_data[db_intro + (4 * added_databases) - 1]
+            del user_data[db_intro + (5 * added_databases) - 1]
+
+        return secret_params
 
     @staticmethod
     def _instance_type(params):

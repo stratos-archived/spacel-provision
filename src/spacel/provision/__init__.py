@@ -18,5 +18,9 @@ def bool_param(params, name, default):
     return bool(val)
 
 
-def base64_encode(some_string):
-    return base64.b64encode(some_string).decode('utf-8').strip()
+def base64_encode(some_data):
+    return base64.b64encode(some_data).decode('utf-8').strip()
+
+
+def base64_decode(some_string):
+    return base64.b64decode(some_string)

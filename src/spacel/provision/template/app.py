@@ -138,8 +138,7 @@ class AppTemplate(BaseTemplateCache):
 
         self._alarm_factory.add_alarms(app_template, app.alarms)
         self._cache_factory.add_caches(app, region, app_template, app.caches)
-        secret_params = self._rds_factory.add_rds(app, region, app_template,
-                                                  app.databases)
+        secret_params = self._rds_factory.add_rds(app, region, app_template)
         return app_template, secret_params
 
     def _user_data(self, params, app):
