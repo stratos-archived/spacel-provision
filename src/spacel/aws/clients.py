@@ -37,6 +37,22 @@ class ClientCache(object):
         """
         return self._resource('s3', region)
 
+    def kms(self, region):
+        """
+        Get KMS client.
+        :param region:  AWS region.
+        :return: KMS Client.
+        """
+        return self._client('kms', region)
+
+    def dynamodb(self, region):
+        """
+        Get DynamoDb client.
+        :param region:  AWS region.
+        :return: DynamoDb Client.
+        """
+        return self._client('dynamodb', region)
+
     def _client(self, client_type, region):
         client_cache = self._clients[client_type]
         cached = client_cache.get(region)
