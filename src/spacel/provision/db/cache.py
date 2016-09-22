@@ -1,5 +1,6 @@
 import logging
 from spacel.provision import clean_name
+from spacel.provision.db.base import BaseTemplateDecorator
 
 logger = logging.getLogger('spacel.provision.cache.factory')
 
@@ -9,10 +10,7 @@ REDIS_PORT = '6379'
 REDIS_VERSION = '2.8.24'
 
 
-class CacheFactory(object):
-    def __init__(self, ingress):
-        self._ingress = ingress
-
+class CacheFactory(BaseTemplateDecorator):
     def add_caches(self, app, region, template, caches):
         if not caches:
             logger.debug('No caches specified.')
@@ -23,11 +21,7 @@ class CacheFactory(object):
         resources = template['Resources']
 
         # Get UserData components:
-        user_data = (resources['Lc']
-                     ['Properties']
-                     ['UserData']
-                     ['Fn::Base64']
-                     ['Fn::Join'][1])
+        user_data = self._user_data(resources)
         # Find the breadcrumb for the cache map:
         cache_intro = user_data.index('"caches":{') + 1
 
@@ -55,7 +49,6 @@ class CacheFactory(object):
                 'Type': 'AWS::EC2::SecurityGroup',
                 'Properties': {
                     'GroupDescription': cache_desc,
-                    # Trying to get a non-VPC instance
                     'VpcId': {'Ref': 'VpcId'},
                     'SecurityGroupIngress': [
                         {
@@ -93,18 +86,14 @@ class CacheFactory(object):
             user_data.insert(cache_intro, '"%s":"' % name)
             added_caches += 1
 
-            clients = params.get('clients', ())
-            ingress_resources = \
-                self._ingress.ingress_resources(app.orbit,
-                                                region,
-                                                6379,
-                                                clients,
-                                                sg_ref=cache_sg_resource)
-            resources.update(ingress_resources)
+            self._add_client_resources(resources, app, region, 6379, params,
+                                       cache_sg_resource)
 
         # If we added any caches, remove trailing comma:
         if added_caches:
             del user_data[cache_intro + (4 * added_caches) - 1]
+
+
 
     @staticmethod
     def _replicas(params):

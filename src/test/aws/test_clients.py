@@ -1,9 +1,9 @@
 import unittest
+from mock import patch, MagicMock
 
-from mock import patch
 from spacel.aws.clients import ClientCache
 
-REGION = 'us-east-1'
+from test import REGION
 
 
 class TestClientCache(unittest.TestCase):
@@ -36,3 +36,18 @@ class TestClientCache(unittest.TestCase):
         self.clients.s3(REGION)
         self.clients.s3(REGION)
         self.assertEqual(1, mock_boto3.resource.call_count)
+
+    def test_kms(self):
+        self.clients._client = MagicMock()
+        self.clients.kms(REGION)
+        self.clients._client.assert_called_with('kms', REGION)
+
+    def test_dynamodb(self):
+        self.clients._client = MagicMock()
+        self.clients.dynamodb(REGION)
+        self.clients._client.assert_called_with('dynamodb', REGION)
+
+    def test_acm(self):
+        self.clients._client = MagicMock()
+        self.clients.acm(REGION)
+        self.clients._client.assert_called_with('acm', REGION)

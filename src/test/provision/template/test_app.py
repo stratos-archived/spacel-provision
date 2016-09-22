@@ -5,10 +5,11 @@ from spacel.aws import AmiFinder
 from spacel.model import Orbit, SpaceApp, SpaceDockerService
 from spacel.provision.template.app import AppTemplate
 from spacel.provision.alarm import AlarmFactory
-from spacel.provision.cache import CacheFactory
+from spacel.provision.db import CacheFactory, RdsFactory
 from test.provision.template import SUBNETS
 
 REGION = 'us-east-1'
+SUBNET_GROUP = 'subnet-123456'
 
 
 class TestAppTemplate(unittest.TestCase):
@@ -16,7 +17,9 @@ class TestAppTemplate(unittest.TestCase):
         self.ami_finder = MagicMock(spec=AmiFinder)
         self.alarms = MagicMock(spec=AlarmFactory)
         self.caches = MagicMock(spec=CacheFactory)
-        self.cache = AppTemplate(self.ami_finder, self.alarms, self.caches)
+        self.rds = MagicMock(spec=RdsFactory)
+        self.cache = AppTemplate(self.ami_finder, self.alarms, self.caches,
+                                 self.rds)
         base_template = self.cache.get('elb-service')
         self.base_resources = len(base_template['Resources'])
         self.orbit = Orbit({
@@ -30,7 +33,7 @@ class TestAppTemplate(unittest.TestCase):
         })
 
     def test_app(self):
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         app_resources = len(app['Resources'])
         self.assertEquals(self.base_resources, app_resources)
@@ -46,7 +49,7 @@ class TestAppTemplate(unittest.TestCase):
     def test_app_domain(self):
         self.app.hostnames = ('app.test.com',)
 
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         params = app['Parameters']
         self.assertEquals(params['VirtualHostDomain']['Default'], 'test.com.')
@@ -55,7 +58,7 @@ class TestAppTemplate(unittest.TestCase):
     def test_app_private_ports(self):
         self.app.private_ports = {123: ['TCP']}
 
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         sg_properties = app['Resources']['PrivatePort123TCP']['Properties']
         self.assertEquals(123, sg_properties['FromPort'])
@@ -64,7 +67,7 @@ class TestAppTemplate(unittest.TestCase):
     def test_app_private_ports_split(self):
         self.app.private_ports = {'123-456': ['TCP']}
 
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         sg_properties = app['Resources']['PrivatePort123to456TCP']['Properties']
         self.assertEquals('123', sg_properties['FromPort'])
@@ -73,10 +76,34 @@ class TestAppTemplate(unittest.TestCase):
     def test_app_instance_storage(self):
         self.app.instance_type = 'c1.medium'
 
-        app = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, REGION)
 
         block_devs = app['Resources']['Lc']['Properties']['BlockDeviceMappings']
         self.assertEquals(2, len(block_devs))
+
+    def test_app_cache_subnet_group(self):
+        self.orbit._private_cache_subnet_groups[REGION] = SUBNET_GROUP
+
+        app, _ = self.cache.app(self.app, REGION)
+        self.assertEquals(SUBNET_GROUP, (app['Parameters']
+                                         ['PrivateCacheSubnetGroup']
+                                         ['Default']))
+
+    def test_app_public_rds_subnet_group(self):
+        self.orbit._public_rds_subnet_groups[REGION] = SUBNET_GROUP
+
+        app, _ = self.cache.app(self.app, REGION)
+        self.assertEquals(SUBNET_GROUP, (app['Parameters']
+                                         ['PublicRdsSubnetGroup']
+                                         ['Default']))
+
+    def test_app_private_rds_subnet_group(self):
+        self.orbit._private_rds_subnet_groups[REGION] = SUBNET_GROUP
+
+        app, _ = self.cache.app(self.app, REGION)
+        self.assertEquals(SUBNET_GROUP, (app['Parameters']
+                                         ['PrivateRdsSubnetGroup']
+                                         ['Default']))
 
     def test_user_data(self):
         params = {}

@@ -47,9 +47,8 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
 
             updates[region] = self._stack(stack_name, region, template)
 
-        # FIXME: 'region' has the wrong value here
         logger.debug('Requested %s in %s, waiting for provisioning...',
-                     stack_name, region)
+                     stack_name, regions)
         self._wait_for_updates(stack_name, updates)
         logger.debug('Provisioned %s in %s.', stack_name, region)
 

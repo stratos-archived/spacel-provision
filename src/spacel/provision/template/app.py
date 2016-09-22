@@ -3,14 +3,16 @@ import json
 import six
 
 from spacel.aws import INSTANCE_VOLUMES
+from spacel.provision import base64_encode
 from spacel.provision.template.base import BaseTemplateCache
 
 
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, ami_finder, alarm_factory, cache_factory):
+    def __init__(self, ami_finder, alarm_factory, cache_factory, rds_factory):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
         self._alarm_factory = alarm_factory
         self._cache_factory = cache_factory
+        self._rds_factory = rds_factory
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -24,12 +26,15 @@ class AppTemplate(BaseTemplateCache):
         params['Orbit']['Default'] = orbit.name
         params['Service']['Default'] = app.name
         params['BastionSecurityGroup']['Default'] = orbit.bastion_sg(region)
-        params['PrivateCacheSubnetGroup']['Default'] = \
-            orbit.private_cache_subnet_group(region)
-        params['PublicRdsSubnetGroup']['Default'] = \
-            orbit.public_rds_subnet_group(region)
-        params['PrivateRdsSubnetGroup']['Default'] = \
-            orbit.private_rds_subnet_group(region)
+        cache_subnet_group = orbit.private_cache_subnet_group(region)
+        if cache_subnet_group:
+            params['PrivateCacheSubnetGroup']['Default'] = cache_subnet_group
+        public_rds_group = orbit.public_rds_subnet_group(region)
+        if public_rds_group:
+            params['PublicRdsSubnetGroup']['Default'] = public_rds_group
+        private_rds_group = orbit.private_rds_subnet_group(region)
+        if private_rds_group:
+            params['PrivateRdsSubnetGroup']['Default'] = private_rds_group
 
         # Inject parameters:
         params['ElbScheme']['Default'] = app.scheme
@@ -101,8 +106,8 @@ class AppTemplate(BaseTemplateCache):
 
         # Private ports:
         for private_port, protocols in app.private_ports.items():
-            if (isinstance(private_port, six.string_types)
-                    and '-' in private_port):
+            port_is_string = isinstance(private_port, six.string_types)
+            if port_is_string and '-' in private_port:
                 from_port, to_port = private_port.split('-', 1)
                 port_label = private_port.replace('-', 'to')
             else:
@@ -136,7 +141,8 @@ class AppTemplate(BaseTemplateCache):
 
         self._alarm_factory.add_alarms(app_template, app.alarms)
         self._cache_factory.add_caches(app, region, app_template, app.caches)
-        return app_template
+        secret_params = self._rds_factory.add_rds(app, region, app_template)
+        return app_template, secret_params
 
     def _user_data(self, params, app):
         user_data = ''
@@ -146,21 +152,17 @@ class AppTemplate(BaseTemplateCache):
             for service_name, service in app.services.items():
                 unit_file = service.unit_file.encode('utf-8')
                 systemd[service.name] = {
-                    'body': self._base64(unit_file)
+                    'body': base64_encode(unit_file)
                 }
                 if service.environment:
                     environment_file = '\n'.join('%s=%s' % (key, value)
                                                  for key, value in
                                                  service.environment.items())
                     files['%s.env' % service_name] = {
-                        'body': self._base64(environment_file.encode('utf-8'))
+                        'body': base64_encode(environment_file.encode('utf-8'))
                     }
             user_data += ',"systemd":' + json.dumps(systemd)
         if app.volumes:
             params['VolumeSupport']['Default'] = 'true'
             user_data += ', "volumes":' + json.dumps(app.volumes)
         return user_data
-
-    @staticmethod
-    def _base64(some_string):
-        return base64.b64encode(some_string).decode('utf-8').strip()

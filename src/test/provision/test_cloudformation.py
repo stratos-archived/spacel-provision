@@ -132,6 +132,44 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         self.cloudformation.get_waiter.assert_called_with(
             'stack_delete_complete')
 
+    def test_stack_secret_param_generated(self):
+        self.cloudformation.describe_change_set.side_effect = [
+            {'Status': 'CREATE_COMPLETE', 'Changes': []}
+        ]
+
+        secret_func = MagicMock()
+        self.cf_factory._stack(NAME, REGION, TEMPLATE,
+                               secret_parameters={
+                                   'TopSecret': secret_func
+                               })
+        secret_func.assert_called_once()
+
+    def test_stack_secret_param_reused(self):
+        self.cloudformation.describe_stacks.return_value = {
+            'Stacks': [
+                {'Parameters': [
+                    {'ParameterKey': 'TopSecret'}
+                ]}
+            ]
+        }
+        self.cloudformation.describe_change_set.return_value = \
+            {'Status': 'CREATE_COMPLETE', 'Changes': []}
+
+        secret_func = MagicMock()
+        self.cf_factory._stack(NAME, REGION, TEMPLATE,
+                               secret_parameters={
+                                   'TopSecret': secret_func
+                               })
+        secret_func.assert_not_called()
+
+    def test_existing_params_error(self):
+        self.cloudformation.describe_stacks.side_effect = ClientError({'Error': {
+            'Message': 'Stack [test-stack] does not exist'
+        }}, 'DescribeStack')
+
+        params = self.cf_factory._existing_params(self.cloudformation, NAME)
+        self.assertEquals(0, len(params))
+
     def test_delete_stack(self):
         self.cf_factory._delete_stack(NAME, REGION)
         self.cloudformation.delete_stack.assert_called_with(StackName=NAME)

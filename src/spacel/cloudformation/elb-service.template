@@ -483,6 +483,8 @@
                 {"Ref": "AWS::StackName"},
                 "\":\"Asg\"},",
                 "\"caches\":{",
+                "},",
+                "\"databases\":{",
                 "}",
                 {"Ref": "UserData"},
                 "}"

@@ -17,7 +17,7 @@ class TestCloudProvisioner(unittest.TestCase):
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
         self.templates = MagicMock(spec=TemplateUploader)
         self.app_template = MagicMock(spec=AppTemplate)
-        self.app_template.app.return_value = {}
+        self.app_template.app.return_value = {}, {}
 
         self.provisioner = CloudProvisioner(self.clients, self.change_sets,
                                             self.templates,

@@ -70,8 +70,9 @@ class IngressResourceFactory(object):
             if client in orbit.regions:
                 logger.debug('Adding access from %s in %s.', orbit.name, client)
                 for nat_index, nat_eip in orbit.nat_eips(client).items():
-                    ingress_resource('Nat%s%s' % (client, nat_index),
-                                     CidrIp='%s/32' % nat_eip)
+                    if nat_eip:
+                        ingress_resource('Nat%s%s' % (client, nat_index),
+                                         CidrIp='%s/32' % nat_eip)
                 continue
 
             # An application in the same orbit:
