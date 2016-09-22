@@ -1,4 +1,5 @@
 import logging
+import six
 
 logger = logging.getLogger('spacel')
 
@@ -51,6 +52,19 @@ class SpaceApp(object):
         self.alarms = params.get('alarms', {})
         self.caches = params.get('caches', {})
         self.databases = params.get('databases', {})
+        self.spot = self._spot(params)
+
+    @staticmethod
+    def _spot(params):
+        spot = params.get('spot')
+        if isinstance(spot, bool) and spot:
+            return {}
+        elif isinstance(spot, six.string_types) and bool(spot):
+            return {}
+        elif isinstance(spot, dict):
+            return spot
+        else:
+            return None
 
     @property
     def full_name(self):

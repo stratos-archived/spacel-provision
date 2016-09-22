@@ -1,0 +1,28 @@
+{
+  "name": "http-env-echo",
+  "health_check": "HTTP:80/",
+  "spot": {
+    "price": "0.70",
+    "weights": {
+      "c4.large": 1,
+      "c3.large": 1,
+      "m4.large": 1,
+      "m3.large": 1
+    }
+  },
+  "instance_min": 1,
+  "instance_max": 1,
+  "services": {
+    "http-env-echo": {
+      "image": "pwagner/http-env-echo",
+      "ports": {
+        "80": 8080
+      }
+    }
+  },
+  "public_ports": {
+    "80": {
+      "sources": ["0.0.0.0/0"]
+    }
+  }
+}

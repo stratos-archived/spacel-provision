@@ -4,8 +4,10 @@ import unittest
 from spacel.aws import AmiFinder
 from spacel.model import Orbit, SpaceApp, SpaceDockerService
 from spacel.provision.template.app import AppTemplate
+from spacel.provision.template.app_spot import AppSpotTemplateDecorator
 from spacel.provision.alarm import AlarmFactory
 from spacel.provision.db import CacheFactory, RdsFactory
+
 from test.provision.template import SUBNETS
 
 REGION = 'us-east-1'
@@ -18,8 +20,9 @@ class TestAppTemplate(unittest.TestCase):
         self.alarms = MagicMock(spec=AlarmFactory)
         self.caches = MagicMock(spec=CacheFactory)
         self.rds = MagicMock(spec=RdsFactory)
+        self.spot = MagicMock(spec=AppSpotTemplateDecorator)
         self.cache = AppTemplate(self.ami_finder, self.alarms, self.caches,
-                                 self.rds)
+                                 self.rds, self.spot)
         base_template = self.cache.get('elb-service')
         self.base_resources = len(base_template['Resources'])
         self.orbit = Orbit({

@@ -1,4 +1,3 @@
-import base64
 import json
 import six
 
@@ -7,12 +6,15 @@ from spacel.provision import base64_encode
 from spacel.provision.template.base import BaseTemplateCache
 
 
+
 class AppTemplate(BaseTemplateCache):
-    def __init__(self, ami_finder, alarm_factory, cache_factory, rds_factory):
+    def __init__(self, ami_finder, alarm_factory, cache_factory, rds_factory,
+                 spot_decorator):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
         self._alarm_factory = alarm_factory
         self._cache_factory = cache_factory
         self._rds_factory = rds_factory
+        self._spot_decorator = spot_decorator
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -142,9 +144,14 @@ class AppTemplate(BaseTemplateCache):
         self._alarm_factory.add_alarms(app_template, app.alarms)
         self._cache_factory.add_caches(app, region, app_template, app.caches)
         secret_params = self._rds_factory.add_rds(app, region, app_template)
+
+        # Order matters: SpotFleet AFTER Asg/Lc have been fully configured:
+        self._spot_decorator.spotify(app, region, app_template)
+
         return app_template, secret_params
 
-    def _user_data(self, params, app):
+    @staticmethod
+    def _user_data(params, app):
         user_data = ''
         if app.services:
             systemd = {}

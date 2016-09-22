@@ -46,6 +46,7 @@ class Orbit(object):
         self._private_cache_subnet_groups = {}
         self._private_rds_subnet_groups = {}
         self._public_rds_subnet_groups = {}
+        self._spot_fleet_role = {}
 
         # Output from Bastion:
         self._bastion_eips = defaultdict(dict)
@@ -104,3 +105,6 @@ class Orbit(object):
 
     def public_rds_subnet_group(self, region):
         return self._public_rds_subnet_groups.get(region)
+
+    def spot_fleet_role(self, region):
+        return self._spot_fleet_role.get(region)

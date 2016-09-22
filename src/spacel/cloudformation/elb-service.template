@@ -288,6 +288,28 @@
               "Effect": "Allow",
               "Action": "elasticloadbalancing:DescribeInstanceHealth",
               "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+              "Resource": {
+                "Fn::Join": [
+                  "", [
+                    "arn:aws:elasticloadbalancing:",
+                    {"Ref": "AWS::Region"},
+                    ":",
+                    {"Ref": "AWS::AccountId"},
+                    ":loadbalancer/",
+                    {
+                      "Fn::If": [
+                        "ElbPublic",
+                        {"Ref": "PublicElb"},
+                        {"Ref": "PrivateElb"}
+                      ]
+                    }
+                  ]
+                ]
+              }
             }
           ]
         }
@@ -467,7 +489,7 @@
           "Fn::Base64": {
             "Fn::Join": [
               "", [
-                "{\"elb\":\"",
+                "{\"elb\":{\"name\":\"",
                 {
                   "Fn::If": [
                     "ElbPublic",
@@ -475,7 +497,7 @@
                     {"Ref": "PrivateElb"}
                   ]
                 },
-                "\",\"orbit\":\"",
+                "\"},\"orbit\":\"",
                 {"Ref": "Orbit"},
                 "\",\"name\":\"",
                 {"Ref": "Service"},
