@@ -115,6 +115,8 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
                 orbit._private_rds_subnet_groups[region] = value
             elif key == 'PrivateCacheSubnetGroup':
                 orbit._private_cache_subnet_groups[region] = value
+            elif key == 'RoleSpotFleet':
+                orbit._spot_fleet_role[region] = value
             elif 'CacheSubnet' in key or 'RdsSubnet' in key:
                 continue
             else:

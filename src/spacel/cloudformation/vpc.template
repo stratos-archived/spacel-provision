@@ -345,6 +345,55 @@
         "DBSubnetGroupDescription": "Private RDS subnet group",
         "SubnetIds": [{"Ref": "PrivateRdsSubnet01"}]
       }
+    },
+    "RoleSpotFleet": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "spotfleet.amazonaws.com"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "RoleSpotFleetPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "root",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:DescribeImages",
+                "ec2:DescribeSubnets",
+                "ec2:RequestSpotInstances",
+                "ec2:TerminateInstances",
+                "iam:PassRole"
+              ],
+              "Resource": ["*"]
+            }
+          ]
+        },
+        "Roles": [
+          {
+            "Ref": "RoleSpotFleet"
+          }
+        ]
+      }
     }
   },
   "Outputs": {
@@ -374,6 +423,9 @@
     },
     "PrivateRdsSubnetGroup": {
       "Value": {"Ref": "PrivateRdsSubnetGroup"}
+    },
+    "RoleSpotFleet": {
+      "Value": {"Fn::GetAtt": ["RoleSpotFleet", "Arn"]}
     }
   }
 }

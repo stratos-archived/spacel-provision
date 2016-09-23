@@ -19,7 +19,6 @@ class CloudProvisioner(BaseCloudFormationFactory):
         updates = {}
         for region in app.regions:
             template, secret_params = self._app.app(app, region)
-
             updates[region] = self._stack(app_name, region, template,
                                           secret_parameters=secret_params)
         self._wait_for_updates(app_name, updates)

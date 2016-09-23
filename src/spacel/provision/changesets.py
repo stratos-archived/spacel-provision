@@ -53,6 +53,11 @@ COSTS = {
         'Modify': 10,
         'Remove': 5
     },
+    'AWS::EC2::SpotFleet': {
+        'Add': 30,
+        'Modify': 300,
+        'Remove': 30
+    },
     'AWS::EC2::SubnetRouteTableAssociation': {
         'Add': 5,
         'Remove': 5
@@ -67,15 +72,20 @@ COSTS = {
         'Modify': 30,
         'Remove': 60
     },
-    'AWS::IAM::Role': {
-        'Add': 75,
-        'Modify': 60,
-        'Remove': 75
-    },
     'AWS::IAM::InstanceProfile': {
         'Add': 120,
         'Modify': 60,
         'Remove': 120
+    },
+    'AWS::IAM::Policy': {
+        'Add': 120,
+        'Modify': 60,
+        'Remove': 120
+    },
+    'AWS::IAM::Role': {
+        'Add': 75,
+        'Modify': 60,
+        'Remove': 75
     },
     'AWS::SNS::Topic': {
         'Add': 15,
