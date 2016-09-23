@@ -23,7 +23,7 @@ class SpaceApp(object):
         self.local_health_check = params.get('health_check', 'TCP:80')
 
         public_ports = params.get('public_ports', {80: {}})
-        self.public_ports = {port: SpaceServicePort(port_params)
+        self.public_ports = {port: SpaceServicePort(port, port_params)
                              for port, port_params in public_ports.items()}
 
         self.private_ports = params.get('private_ports', {})
@@ -72,13 +72,21 @@ class SpaceApp(object):
 
 
 class SpaceServicePort(object):
-    def __init__(self, params={}):
-        self.scheme = params.get('scheme', 'HTTP')
-        default_scheme = self.scheme == 'HTTPS' and 'HTTP' or self.scheme
-        self.internal_scheme = params.get('internal_scheme', default_scheme)
+    def __init__(self, port, params={}):
+        self.scheme = params.get('scheme', self._scheme(port))
+
+        self.internal_port = params.get('internal_port', port)
+        self.internal_scheme = params.get('internal_scheme',
+                                          self._scheme(self.internal_port))
 
         self.sources = params.get('sources', ('0.0.0.0/0',))
-        # TODO: HTTPS parameters: cert, ciphers
+        self.certificate = params.get('certificate')
+
+    @staticmethod
+    def _scheme(port):
+        if str(port) == '443':
+            return 'HTTPS'
+        return 'HTTP'
 
 
 class SpaceService(object):

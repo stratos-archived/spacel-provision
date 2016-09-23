@@ -7,33 +7,30 @@ from spacel.provision.template.app import AppTemplate
 from spacel.provision.template.app_spot import AppSpotTemplateDecorator
 from spacel.provision.alarm import AlarmFactory
 from spacel.provision.db import CacheFactory, RdsFactory
+from spacel.security import AcmCertificates
 
+from test import REGION, BaseSpaceAppTest
 from test.provision.template import SUBNETS
 
-REGION = 'us-east-1'
 SUBNET_GROUP = 'subnet-123456'
 
 
-class TestAppTemplate(unittest.TestCase):
+class TestAppTemplate(BaseSpaceAppTest):
     def setUp(self):
+        super(TestAppTemplate, self).setUp()
         self.ami_finder = MagicMock(spec=AmiFinder)
         self.alarms = MagicMock(spec=AlarmFactory)
         self.caches = MagicMock(spec=CacheFactory)
         self.rds = MagicMock(spec=RdsFactory)
         self.spot = MagicMock(spec=AppSpotTemplateDecorator)
+        self.acm = MagicMock(spec=AcmCertificates)
         self.cache = AppTemplate(self.ami_finder, self.alarms, self.caches,
-                                 self.rds, self.spot)
+                                 self.rds, self.spot, self.acm)
         base_template = self.cache.get('elb-service')
         self.base_resources = len(base_template['Resources'])
-        self.orbit = Orbit({
-            'domain': 'test.com'
-        })
         self.orbit._public_elb_subnets = {REGION: SUBNETS}
         self.orbit._private_elb_subnets = {REGION: SUBNETS}
         self.orbit._private_instance_subnets = {REGION: SUBNETS}
-        self.app = SpaceApp(self.orbit, {
-            'name': 'app'
-        })
 
     def test_app(self):
         app, _ = self.cache.app(self.app, REGION)
@@ -44,7 +41,8 @@ class TestAppTemplate(unittest.TestCase):
         resources = app['Resources']
 
         self.assertEquals(params['VirtualHostDomain']['Default'], 'test.com.')
-        self.assertEquals(params['VirtualHost']['Default'], 'app-test.test.com')
+        self.assertEquals(params['VirtualHost']['Default'],
+                          'test-app-test-orbit.test.com')
 
         block_devs = resources['Lc']['Properties']['BlockDeviceMappings']
         self.assertEquals(1, len(block_devs))
