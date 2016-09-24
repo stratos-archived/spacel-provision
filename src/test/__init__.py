@@ -10,7 +10,8 @@ REGION = 'us-west-2'
 class BaseSpaceAppTest(unittest.TestCase):
     def setUp(self):
         self.orbit = Orbit({
-            'name': ORBIT_NAME
+            'name': ORBIT_NAME,
+            'domain': 'test.com'
         })
 
         self.app = SpaceApp(self.orbit, {

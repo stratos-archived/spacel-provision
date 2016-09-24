@@ -14,7 +14,8 @@ from spacel.provision.template import (AppTemplate, AppSpotTemplateDecorator,
                                        TablesTemplate, VpcTemplate)
 from spacel.provision.alarm import AlarmFactory
 from spacel.provision.db import CacheFactory, RdsFactory
-from spacel.security import KmsCrypto, KmsKeyFactory, PasswordManager
+from spacel.security import (AcmCertificates, KmsCrypto, KmsKeyFactory,
+                             PasswordManager)
 
 
 def main(args, in_stream):
@@ -53,9 +54,10 @@ def main(args, in_stream):
     # Templates:
     ami_finder = AmiFinder()
     app_spot = AppSpotTemplateDecorator()
+    acm = AcmCertificates(clients)
 
     app_template = AppTemplate(ami_finder, alarm_factory, cache_factory,
-                               rds_factory, app_spot)
+                               rds_factory, app_spot, acm)
     bastion_template = BastionTemplate(ami_finder)
     tables_template = TablesTemplate()
     vpc_template = VpcTemplate()

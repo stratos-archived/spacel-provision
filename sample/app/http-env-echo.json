@@ -15,6 +15,10 @@
   "public_ports": {
     "80": {
       "sources": ["0.0.0.0/0"]
+    },
+    "443": {
+      "sources": ["0.0.0.0/0"],
+      "internal_port": 80
     }
   }
 }

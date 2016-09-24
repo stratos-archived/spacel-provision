@@ -1,20 +1,25 @@
 import json
+import logging
 import six
 
 from spacel.aws import INSTANCE_VOLUMES
 from spacel.provision import base64_encode
 from spacel.provision.template.base import BaseTemplateCache
 
+SSL_SCHEMES = ('HTTPS', 'SSL')
+
+logger = logging.getLogger('spacel.provision.template.app')
 
 
 class AppTemplate(BaseTemplateCache):
     def __init__(self, ami_finder, alarm_factory, cache_factory, rds_factory,
-                 spot_decorator):
+                 spot_decorator, acm):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
         self._alarm_factory = alarm_factory
         self._cache_factory = cache_factory
         self._rds_factory = rds_factory
         self._spot_decorator = spot_decorator
+        self._acm = acm
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -56,8 +61,8 @@ class AppTemplate(BaseTemplateCache):
             params['VirtualHost']['Default'] = app_hostname
         else:
             params['VirtualHostDomain']['Default'] = orbit.domain + '.'
-            generated_dns = '%s-%s.%s' % (app.name, orbit.name, orbit.domain)
-            params['VirtualHost']['Default'] = generated_dns
+            app_hostname = '%s-%s.%s' % (app.name, orbit.name, orbit.domain)
+            params['VirtualHost']['Default'] = app_hostname
 
         # Expand ELB to all AZs:
         public_elb_subnets = orbit.public_elb_subnets(region)
@@ -79,6 +84,7 @@ class AppTemplate(BaseTemplateCache):
         instance_ingress = resources['Sg']['Properties']['SecurityGroupIngress']
         public_elb = resources['PublicElb']['Properties']['Listeners']
         private_elb = resources['PrivateElb']['Properties']['Listeners']
+        elb_ingress_ports = set()
         for port_number, port_config in app.public_ports.items():
             # Allow all sources into ELB:
             for ip_source in port_config.sources:
@@ -90,19 +96,35 @@ class AppTemplate(BaseTemplateCache):
                 })
 
             # Allow ELB->Instance
-            instance_ingress.append({
-                'IpProtocol': 'tcp',
-                'FromPort': port_number,
-                'ToPort': port_number,
-                'SourceSecurityGroupId': {'Ref': 'ElbSg'}
-            })
+            internal_port = port_config.internal_port
+            if internal_port not in elb_ingress_ports:
+                instance_ingress.append({
+                    'IpProtocol': 'tcp',
+                    'FromPort': internal_port,
+                    'ToPort': internal_port,
+                    'SourceSecurityGroupId': {'Ref': 'ElbSg'}
+                })
+                elb_ingress_ports.add(internal_port)
 
             elb_listener = {
-                'InstancePort': port_number,
+                'InstancePort': internal_port,
                 'LoadBalancerPort': port_number,
                 'Protocol': port_config.scheme,
                 'InstanceProtocol': port_config.internal_scheme
             }
+
+            if port_config.scheme in SSL_SCHEMES:
+                cert = port_config.certificate
+                if not cert:
+                    cert = self._acm.get_certificate(region, app_hostname)
+                if not cert:
+                    logger.warn('Unable to find certificate for %s. ' +
+                                'Specify a "certificate" or provision  in ACM.',
+                                app_hostname)
+                    raise Exception('Public_port %s is missing certificate.' %
+                                    port_number)
+                elb_listener['SSLCertificateId'] = cert
+
             public_elb.append(elb_listener)
             private_elb.append(elb_listener)
 

@@ -33,6 +33,15 @@ class TestSpaceApp(unittest.TestCase):
         self.assertEqual('HTTP', app.public_ports[80].scheme)
         self.assertEquals(('0.0.0.0/0',), app.public_ports[80].sources)
 
+    def test_public_ports_https(self):
+        app = SpaceApp(self.orbit, {
+            'public_ports': {
+                443: {
+                }
+            }
+        })
+        self.assertEqual('HTTPS', app.public_ports[443].scheme)
+
     def test_public_ports_custom_sources(self):
         custom_sources = ('10.0.0.0/8', '192.168.0.0/16')
         app = SpaceApp(self.orbit, {
