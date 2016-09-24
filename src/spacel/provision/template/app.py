@@ -1,4 +1,5 @@
 import json
+import logging
 import six
 
 from spacel.aws import INSTANCE_VOLUMES
@@ -6,6 +7,8 @@ from spacel.provision import base64_encode
 from spacel.provision.template.base import BaseTemplateCache
 
 SSL_SCHEMES = ('HTTPS', 'SSL')
+
+logger = logging.getLogger('spacel.provision.template.app')
 
 
 class AppTemplate(BaseTemplateCache):
@@ -114,6 +117,12 @@ class AppTemplate(BaseTemplateCache):
                 cert = port_config.certificate
                 if not cert:
                     cert = self._acm.get_certificate(region, app_hostname)
+                if not cert:
+                    logger.warn('Unable to find certificate for %s. ' +
+                                'Specify a "certificate" or provision  in ACM.',
+                                app_hostname)
+                    raise Exception('Public_port %s is missing certificate.' %
+                                    port_number)
                 elb_listener['SSLCertificateId'] = cert
 
             public_elb.append(elb_listener)

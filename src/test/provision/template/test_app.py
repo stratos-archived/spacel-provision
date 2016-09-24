@@ -2,7 +2,7 @@ from mock import MagicMock
 import unittest
 
 from spacel.aws import AmiFinder
-from spacel.model import Orbit, SpaceApp, SpaceDockerService
+from spacel.model import SpaceServicePort, SpaceDockerService
 from spacel.provision.template.app import AppTemplate
 from spacel.provision.template.app_spot import AppSpotTemplateDecorator
 from spacel.provision.alarm import AlarmFactory
@@ -12,6 +12,7 @@ from spacel.security import AcmCertificates
 from test import REGION, BaseSpaceAppTest
 from test.provision.template import SUBNETS
 
+DOMAIN_NAME = 'test-app-test-orbit.test.com'
 SUBNET_GROUP = 'subnet-123456'
 
 
@@ -41,8 +42,8 @@ class TestAppTemplate(BaseSpaceAppTest):
         resources = app['Resources']
 
         self.assertEquals(params['VirtualHostDomain']['Default'], 'test.com.')
-        self.assertEquals(params['VirtualHost']['Default'],
-                          'test-app-test-orbit.test.com')
+
+        self.assertEquals(params['VirtualHost']['Default'], DOMAIN_NAME)
 
         block_devs = resources['Lc']['Properties']['BlockDeviceMappings']
         self.assertEquals(1, len(block_devs))
@@ -73,6 +74,33 @@ class TestAppTemplate(BaseSpaceAppTest):
         sg_properties = app['Resources']['PrivatePort123to456TCP']['Properties']
         self.assertEquals('123', sg_properties['FromPort'])
         self.assertEquals('456', sg_properties['ToPort'])
+
+    def test_app_public_ports_ssl_cert(self):
+        self.app.public_ports = {
+            443: SpaceServicePort(443, {
+                'certificate': '123456'
+            })
+        }
+
+        app, _ = self.cache.app(self.app, REGION)
+
+        self.acm.get_certificate.assert_not_called()
+
+    def test_app_public_ports_ssl_acm(self):
+        self.app.public_ports = {
+            443: SpaceServicePort(443, {})
+        }
+        app, _ = self.cache.app(self.app, REGION)
+
+        self.acm.get_certificate.assert_called_with(REGION, DOMAIN_NAME)
+
+    def test_app_public_ports_ssl_not_found(self):
+        self.app.public_ports = {
+            443: SpaceServicePort(443, {})
+        }
+        self.acm.get_certificate.return_value = None
+
+        self.assertRaises(Exception, self.cache.app, self.app, REGION)
 
     def test_app_instance_storage(self):
         self.app.instance_type = 'c1.medium'
