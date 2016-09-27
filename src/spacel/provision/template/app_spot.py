@@ -1,4 +1,5 @@
 import logging
+import json
 
 logger = logging.getLogger('spacel.provision.template.app_spot')
 
@@ -21,13 +22,21 @@ class AppSpotTemplateDecorator(object):
             return
 
         resources = template['Resources']
-        self._add_spot_fleet(app, region, resources)
+        parameters = template['Parameters']
+        self._add_spot_fleet(app, region, resources, parameters)
         self._clean_up_asg(template)
 
     @staticmethod
-    def _add_spot_fleet(app, region, resources):
+    def _add_spot_fleet(app, region, resources, parameters):
         spot_price = app.spot.get('price', '1.00')
 
+        # Set Name tag
+        tags = {'Name': app.full_name}
+        user_data_param = parameters['UserData']['Default'] or ''
+        if user_data_param:
+            user_data_param += ','
+        user_data_param += '"tags":' + json.dumps(tags)
+        parameters['UserData']['Default'] = user_data_param
 
         # Extract parameters:
         lc_properties = resources['Lc']['Properties']
@@ -59,7 +68,6 @@ class AppSpotTemplateDecorator(object):
         else:
             default_allocation_strat = 'lowestPrice'
         allocation_strat = app.spot.get('strategy', default_allocation_strat)
-
 
         # Build launch specs:
         launch_specs = []
