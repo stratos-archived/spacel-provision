@@ -7,9 +7,10 @@ ASG_RESOURCES = ('Asg',
                  'Lc')
 
 GDH_ASG_RESOURCE = ('SpScaleDown',
-                    'SpScaleDown',
+                    'SpScaleUp',
                     'AlarmScaleDown',
-                    'AlarmScaleUp')
+                    'AlarmScaleUp',
+                    'AlarmContinuousHighLoad')
 
 
 class AppSpotTemplateDecorator(object):
