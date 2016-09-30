@@ -131,13 +131,13 @@ class TriggerFactory(object):
     def _parse_threshold(threshold):
         if not threshold:
             return None, None
-        match = re.match('([=><]+)([0-9]+)', threshold)
+        match = re.match('([=><]+)([0-9.]+)', threshold)
         if not match:
             logger.warn('Invalid threshold %s', threshold)
             return None, None
 
         op = match.group(1)
-        value = int(match.group(2))
+        value = float(match.group(2))
 
         if op == '>':
             return 'GreaterThanThreshold', value

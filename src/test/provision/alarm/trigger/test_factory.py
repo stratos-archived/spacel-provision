@@ -129,6 +129,16 @@ class TestTriggerFactory(unittest.TestCase):
         self.assertEquals(operator, 'LessThanOrEqualToThreshold')
         self.assertEquals(thresh, 200)
 
+    def test_parse_threshold_decimal(self):
+        operator, thresh = self.factory._parse_threshold('<0.3')
+        self.assertEquals(operator, 'LessThanThreshold')
+        self.assertEquals(thresh, 0.3)
+
+    def test_parse_threshold_ignore_garbage_tail(self):
+        operator, thresh = self.factory._parse_threshold('>0.3meow')
+        self.assertEquals(operator, 'GreaterThanThreshold')
+        self.assertEquals(thresh, 0.3)
+
     def test_parse_period_missing(self):
         operator, thresh = self.factory._parse_period(None)
         self.assertIsNone(operator)
