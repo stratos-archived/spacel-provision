@@ -135,6 +135,6 @@ class ChangeSetEstimator(object):
         if basic_cost:
             return basic_cost
 
-        logger.warn('No basic cost for %s to %s.', resource_action,
-                    resource_type)
+        logger.warning('No basic cost for %s to %s.', resource_action,
+                       resource_type)
         return 0

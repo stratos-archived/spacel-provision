@@ -1,8 +1,10 @@
+import logging
+
 from botocore.exceptions import ClientError
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util.py3compat import bchr, bord
-import logging
+
 import six
 from spacel.security.payload import EncryptedPayload
 
@@ -23,6 +25,13 @@ class KmsCrypto(object):
         self._random = Random.new()
 
     def encrypt(self, app, region, plaintext):
+        """
+        Encrypt data for an application.
+        :param app:  Space app.
+        :param region:  Region.
+        :param plaintext: Plaintext blob.
+        :return: EncryptedPayload.
+        """
         # Get DEK:
         logger.debug('Fetching fresh data key...')
         try:
@@ -60,10 +69,24 @@ class KmsCrypto(object):
         return EncryptedPayload(iv, ciphertext, encrypted_key, region, encoding)
 
     def decrypt_payload(self, payload):
+        """
+        Decrypt an encrypted payload.
+        :param payload: EncryptedPayload.
+        :return: Decrypted payload.
+        """
         return self.decrypt(payload.iv, payload.ciphertext, payload.key,
                             payload.key_region, payload.encoding)
 
     def decrypt(self, iv, ciphertext, key, key_region, encoding):
+        """
+        Decrypt.
+        :param iv: Encryption IV.
+        :param ciphertext:  Ciphertext.
+        :param key: Encrypted data key.
+        :param key_region: Data key region (KMS).
+        :param encoding:  Encoding
+        :return: Decrypted payload.
+        """
         # Decrypt DEK:
         logger.debug('Decrypting data key...')
         kms = self._clients.kms(key_region)
@@ -86,4 +109,4 @@ class KmsCrypto(object):
         if six.PY3:  # pragma: no cover
             return str(unpadded, encoding)
         else:  # pragma: no cover
-            return unpadded.decode('utf-8')
+            return unpadded.decode(encoding)

@@ -25,7 +25,8 @@ class ScaleEndpoints(object):
 
         adjustment = self._calculate_adjustment(adjustment)
         if not adjustment:
-            logger.warn('Scaling endpoint %s has invalid "adjustment".', name)
+            logger.warning('Scaling endpoint %s has invalid "adjustment".',
+                           name)
             return ACTIONS_NONE
 
         cooldown = params.get('cooldown', '300')

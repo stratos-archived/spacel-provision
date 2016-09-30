@@ -18,7 +18,7 @@ class EmailEndpoints(object):
     def add_endpoints(self, template, name, params):
         addresses = params.get('addresses')
         if not addresses:
-            logger.warn('Email endpoint %s is missing "addresses".', name)
+            logger.warning('Email endpoint %s is missing "addresses".', name)
             return ACTIONS_NONE
         if isinstance(addresses, str):
             addresses = addresses.split(',')

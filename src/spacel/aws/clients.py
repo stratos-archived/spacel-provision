@@ -1,6 +1,7 @@
-import boto3
 from collections import defaultdict
 import logging
+
+import boto3
 
 logger = logging.getLogger('spacel.aws.clients')
 

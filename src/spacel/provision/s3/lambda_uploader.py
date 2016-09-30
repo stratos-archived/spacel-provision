@@ -23,11 +23,12 @@ class LambdaUploader(BaseUploader):
             self._cache[template] = loaded
             return loaded
 
-    def upload(self, name, expansions={}):
+    def upload(self, name, expansions=None):
         # Load and customize script:
         script = self._load(name)
-        for key, value in expansions.items():
-            script = script.replace(key, value)
+        if expansions:
+            for key, value in expansions.items():
+                script = script.replace(key, value)
         encoded_script = script.encode('utf-8')
 
         # Hash script

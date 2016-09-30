@@ -66,7 +66,7 @@ class BaseTemplateCache(object):
         :param instance_subnets: Subnet IDs
         """
         asg_subnets = resources['Asg']['Properties']['VPCZoneIdentifier']
-        for index, subnet in enumerate(instance_subnets[1:]):
+        for index, _ in enumerate(instance_subnets[1:]):
             subnet_param = '%sSubnet%02d' % (subnet_type, index + 2)
             asg_subnets.append({'Ref': subnet_param})
 
@@ -79,6 +79,6 @@ class BaseTemplateCache(object):
         :param subnets: Subnet IDs.
         """
         elb_subnets = resources[elb_type]['Properties']['Subnets']
-        for index, subnet in enumerate(subnets[1:]):
+        for index, _ in enumerate(subnets[1:]):
             subnet_param = '%sSubnet%02d' % (elb_type, index + 2)
             elb_subnets.append({"Ref": subnet_param})

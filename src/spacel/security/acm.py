@@ -1,5 +1,4 @@
 import logging
-import re
 from tldextract import extract
 
 logger = logging.getLogger('spacel.security.acm')
@@ -52,9 +51,10 @@ class AcmCertificates(object):
         wildcards = []
         # For each subdomain component:
         split_subdomain = extracted.subdomain.split('.')
-        for i in range(len(split_subdomain)):
+        for subdomain_index in range(len(split_subdomain)):
             # Replace with wildcard, then concat to remaining bits:
-            wildcard_parts = ['*'] * (i + 1) + split_subdomain[i + 1:]
+            wildcard_parts = ['*'] * (subdomain_index + 1) \
+                             + split_subdomain[subdomain_index + 1:]
             wildcard_parts += common_domain
             wildcards.append('.'.join(wildcard_parts))
 

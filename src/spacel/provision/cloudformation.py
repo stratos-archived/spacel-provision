@@ -1,8 +1,9 @@
-from botocore.exceptions import ClientError
 import logging
 import re
 import time
 import uuid
+
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger('spacel.provision.cloudformation')
 
@@ -29,8 +30,10 @@ class BaseCloudFormationFactory(object):
         self._sleep_time = sleep_time
         self._uploader = uploader
 
-    def _stack(self, name, region, json_template, parameters={},
-               secret_parameters={}):
+    def _stack(self, name, region, json_template, parameters=None,
+               secret_parameters=None):
+        parameters = parameters or {}
+        secret_parameters = secret_parameters or {}
         cf = self._clients.cloudformation(region)
         template_url = self._uploader.upload(json_template, name)
         parameters = [{'ParameterKey': k, 'ParameterValue': v}
@@ -120,7 +123,7 @@ class BaseCloudFormationFactory(object):
                     cf.delete_stack(StackName=name)
                     waiter = cf.get_waiter('stack_delete_complete')
                 else:  # pragma: no cover
-                    logger.warn('Unknown state: %s', current_state)
+                    logger.warning('Unknown state: %s', current_state)
 
                 if waiter:
                     logger.debug('Stack %s is %s, waiting...', name,

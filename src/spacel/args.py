@@ -1,14 +1,15 @@
 from argparse import ArgumentParser
-import boto3
 import json
 import logging
 import os
-import six
-from splitstream import splitfile
 import sys
+
+import boto3
+import six
 from six.moves.urllib.error import HTTPError
 from six.moves.urllib.parse import urlparse
 from six.moves.urllib.request import urlopen
+from splitstream import splitfile
 
 logger = logging.getLogger('spacel')
 
@@ -18,14 +19,14 @@ class ErrorEatingArgumentParser(ArgumentParser):
         self.print_usage(sys.stderr)
 
 
-parser = ErrorEatingArgumentParser(prog='spacel.main',
+PARSER = ErrorEatingArgumentParser(prog='spacel.main',
                                    description='Spacel provisioner')
-parser.add_argument('orbit_url')
-parser.add_argument('app_url')
+PARSER.add_argument('orbit_url')
+PARSER.add_argument('app_url')
 
 
 def parse_args(args, in_stream):
-    parsed = parser.parse_args(args)
+    parsed = PARSER.parse_args(args)
     if not parsed.orbit_url or not parsed.app_url:
         return None, None
 
@@ -65,25 +66,25 @@ def read_manifest(name, label, in_split):
             opened = urlopen(name)
             json_body = opened.read()
         except HTTPError as e:
-            logger.warn('Unable to read manifest from %s: %s - %s', name,
-                        e.code,
-                        e.msg)
+            logger.warning('Unable to read manifest from %s: %s - %s', name,
+                           e.code,
+                           e.msg)
             return None
     elif url.scheme == 's3':
         region, bucket, key = parse_s3(url)
-        s3 = boto3.resource('s3', region)
-        json_body = s3.Object(bucket, key).get()['Body'].read()
+        s3_resource = boto3.resource('s3', region)
+        json_body = s3_resource.Object(bucket, key).get()['Body'].read()
     elif not url.scheme and url.path == '-':
         try:
             json_body = six.next(in_split)
         except StopIteration:
-            logger.warn('Unable to read %s manifest from stdin.', label)
+            logger.warning('Unable to read %s manifest from stdin.', label)
             return None
     elif os.path.isfile(name):
         with open(name, 'rb') as file_in:
             json_body = file_in.read()
     else:
-        logger.warn('Invalid input URL for %s: %s', label, name)
+        logger.warning('Invalid input URL for %s: %s', label, name)
         return None
 
     if json_body:

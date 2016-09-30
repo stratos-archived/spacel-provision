@@ -23,7 +23,7 @@ class SlackEndpoints(object):
     def add_endpoints(self, template, name, params):
         url = params.get('url')
         if not url:
-            logger.warn('Slack endpoint %s is missing "url".', name)
+            logger.warning('Slack endpoint %s is missing "url".', name)
             return ACTIONS_NONE
 
         resources = template['Resources']

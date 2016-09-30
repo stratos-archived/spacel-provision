@@ -118,9 +118,9 @@ class AppTemplate(BaseTemplateCache):
                 if not cert:
                     cert = self._acm.get_certificate(region, app_hostname)
                 if not cert:
-                    logger.warn('Unable to find certificate for %s. ' +
-                                'Specify a "certificate" or provision  in ACM.',
-                                app_hostname)
+                    logger.warning('Unable to find certificate for %s. ' +
+                                   'Specify a "certificate" or request in ACM.',
+                                   app_hostname)
                     raise Exception('Public_port %s is missing certificate.' %
                                     port_number)
                 elb_listener['SSLCertificateId'] = cert
