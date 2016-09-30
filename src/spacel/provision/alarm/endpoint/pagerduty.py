@@ -57,14 +57,14 @@ class PagerDutyEndpoints(object):
         return ACTIONS_OK_ALARM
 
     def _get_url(self, template, params):
-        parameters = template['Parameters']
-        service = parameters['Service']['Default']
-        orbit = parameters['Orbit']['Default']
-        pd_service_name = '%s (%s)' % (service, orbit)
-
         url = params.get('url')
         if url:
             return url
+
+        parameters = template['Parameters']
+        service = self._get_param_default(parameters, 'Service', 'ServiceName')
+        orbit = self._get_param_default(parameters, 'Orbit', 'Environment')
+        pd_service_name = '%s (%s)' % (service, orbit)
 
         # Without PagerDuty API key we can't continue:
         if not self._pd_headers:
@@ -98,6 +98,14 @@ class PagerDutyEndpoints(object):
                         return '%s/%s' % (PD_EVENTS_BASE, integration_key)
 
         return self._default_url
+
+    @staticmethod
+    def _get_param_default(parameters, *args):
+        for arg in args:
+            value = parameters.get(arg)
+            if value is not None:
+                return value['Default']
+        return None
 
     def _integration_key(self, service_id):
         # Fetch service details:

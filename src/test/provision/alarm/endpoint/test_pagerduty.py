@@ -221,3 +221,15 @@ class TestPagerDutyEndpoints(BaseEndpointTest):
         mock_response = MagicMock()
         mock_response.read.return_value = '{"foo":"bar"}'.encode('utf-8')
         mock_urlopen.return_value = mock_response
+
+    def test_get_param_default(self):
+        parameters = {
+            'Foo': {'Default': 'foo'}
+        }
+        self.assertEquals('foo', self.endpoint._get_param_default(parameters,
+                                                                  'Foo'))
+
+        self.assertEquals('foo', self.endpoint._get_param_default(parameters,
+                                                                  'Bar',
+                                                                  'Foo',
+                                                                  'Baz'))
