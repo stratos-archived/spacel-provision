@@ -5,6 +5,8 @@ logger = logging.getLogger('spacel')
 
 DEFAULTS = 'defaults'
 
+NAME = 'name'
+DOMAIN = 'domain'
 PRIVATE_NETWORK = 'private_network'
 
 BASTION_INSTANCE_COUNT = 'bastion_instance_count'
@@ -29,8 +31,8 @@ class Orbit(object):
     }
 
     def __init__(self, params):
-        self.name = params.get('name', 'test')
-        self.domain = params.get('domain', '')
+        self.name = params.get(NAME, 'test')
+        self.domain = params.get(DOMAIN, '')
         self._params = params
 
         # Queried from EC2:
