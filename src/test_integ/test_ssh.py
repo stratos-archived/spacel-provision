@@ -22,6 +22,7 @@ class TestSshAccess(BaseIntegrationTest):
 
     def setUp(self):
         super(TestSshAccess, self).setUp()
+        self.orbit_params['defaults'][BASTION_INSTANCE_COUNT] = 1
         self.provisioned_app = self.provision()
 
     def test_01_bastion_login(self):

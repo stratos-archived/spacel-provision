@@ -48,6 +48,10 @@ class AppTemplate(BaseTemplateCache):
         params['HealthCheckTarget']['Default'] = app.health_check
         params['InstanceType']['Default'] = app.instance_type
         params['InstanceMin']['Default'] = app.instance_min
+        min_in_service = app.instance_min
+        if app.instance_min and app.instance_min == app.instance_max:
+            min_in_service = app.instance_max - 1
+        params['InstanceMinInService']['Default'] = min_in_service
         params['InstanceMax']['Default'] = app.instance_max
         params['UserData']['Default'] = self._user_data(params, app)
         params['Ami']['Default'] = self._ami.spacel_ami(region)

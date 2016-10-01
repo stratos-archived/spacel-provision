@@ -29,7 +29,7 @@ class BastionTemplate(BaseTemplateCache):
 
         bastion_count = int(orbit.get_param(region, BASTION_INSTANCE_COUNT))
         params['InstanceCount']['Default'] = bastion_count
-        params['InstanceCountMinusOne']['Default'] = (bastion_count - 1)
+        params['InstanceCountMinusOne']['Default'] = max(bastion_count - 1, 0)
 
         # TODO: support multiple sources (like ELB)
 

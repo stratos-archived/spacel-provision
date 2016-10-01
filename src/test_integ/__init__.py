@@ -4,7 +4,7 @@ import logging
 from spacel.aws import ClientCache
 from spacel.main import provision
 from spacel.model import Orbit, SpaceApp
-from spacel.model.orbit import (NAME, DOMAIN, REGIONS)
+from spacel.model.orbit import (NAME, BASTION_INSTANCE_COUNT, DOMAIN, REGIONS)
 from spacel.user import SpaceSshDb
 
 FORENSICS_USERS = {
@@ -20,6 +20,10 @@ FORENSICS_USERS = {
 
 class BaseIntegrationTest(unittest.TestCase):
     ORBIT_NAME = 'sl-test'
+    APP_NAME = 'test-app'
+    APP_DOMAIN = 'pebbledev.com'
+    APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, APP_DOMAIN)
+    APP_VERSION = '0.0.1'
 
     @classmethod
     def setUpClass(cls):
@@ -35,18 +39,22 @@ class BaseIntegrationTest(unittest.TestCase):
     def setUp(self):
         self.orbit_params = {
             NAME: BaseIntegrationTest.ORBIT_NAME,
-            DOMAIN: 'pebbledev.com',
-            REGIONS: ['us-east-1']
+            DOMAIN: BaseIntegrationTest.APP_DOMAIN,
+            REGIONS: ['us-east-1'],
+            'defaults': {
+                BASTION_INSTANCE_COUNT: 0
+            }
         }
+
         self.app_params = {
-            'name': 'test-app',
+            'name': BaseIntegrationTest.APP_NAME,
             'health_check': 'HTTP:80/',
             'instance_type': 't2.nano',
             'instance_min': 1,
-            'instance_max': 1,
+            'instance_max': 2,
             'services': {
                 'laika': {
-                    'image': 'pebbletech/spacel-laika:latest',
+                    'image': self.image(),
                     'ports': {
                         '80': 8080
                     }
@@ -64,6 +72,10 @@ class BaseIntegrationTest(unittest.TestCase):
         }
         self.clients = ClientCache()
         self.ssh_db = SpaceSshDb(self.clients)
+
+    @staticmethod
+    def image(version=APP_VERSION):
+        return 'pebbletech/spacel-laika:%s' % version
 
     def orbit(self):
         return Orbit(self.orbit_params)
