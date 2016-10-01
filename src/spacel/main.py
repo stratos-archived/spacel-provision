@@ -26,18 +26,19 @@ def main(args, in_stream):
     orbit = Orbit(orbit_json)
     app = SpaceApp(orbit, app_json)
 
-    clients = ClientCache()
+    return provision(app)
 
+
+def provision(app):
+    clients = ClientCache()
     # Lambda function storage
     lambda_bucket = os.environ.get('LAMBDA_BUCKET')
     lambda_region = os.environ.get('LAMBDA_REGION', 'us-west-2')
     lambda_up = LambdaUploader(clients, lambda_region, lambda_bucket)
-
     # CloudFormation template storage
     template_bucket = os.environ.get('TEMPLATE_BUCKET', lambda_bucket)
     template_region = os.environ.get('TEMPLATE_REGION', lambda_region)
     template_up = TemplateUploader(clients, template_region, template_bucket)
-
     pagerduty_default = os.environ.get('WEBHOOKS_PAGERDUTY')
     pagerduty_api_key = os.environ.get('PAGERDUTY_API_KEY')
     alarm_factory = AlarmFactory.get(pagerduty_default,
@@ -47,28 +48,23 @@ def main(args, in_stream):
     kms_key_factory = KmsKeyFactory(clients)
     kms_crypto = KmsCrypto(clients, kms_key_factory)
     password_manager = PasswordManager(clients, kms_crypto)
-
     cache_factory = CacheFactory(ingress_factory)
     rds_factory = RdsFactory(clients, ingress_factory, password_manager)
-
     # Templates:
     ami_finder = AmiFinder()
     app_spot = AppSpotTemplateDecorator()
     acm = AcmCertificates(clients)
-
     app_template = AppTemplate(ami_finder, alarm_factory, cache_factory,
                                rds_factory, app_spot, acm)
     bastion_template = BastionTemplate(ami_finder)
     tables_template = TablesTemplate()
     vpc_template = VpcTemplate()
-
     change_sets = ChangeSetEstimator()
     orbit_factory = ProviderOrbitFactory.get(clients, change_sets, template_up,
                                              vpc_template,
                                              bastion_template,
                                              tables_template)
-    orbit_factory.get_orbit(orbit)
-
+    orbit_factory.get_orbit(app.orbit)
     provisioner = CloudProvisioner(clients, change_sets, template_up,
                                    app_template)
     provisioner.app(app)
