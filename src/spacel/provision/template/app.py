@@ -85,7 +85,7 @@ class AppTemplate(BaseTemplateCache):
         public_elb = resources['PublicElb']['Properties']['Listeners']
         private_elb = resources['PrivateElb']['Properties']['Listeners']
         elb_ingress_ports = set()
-        for port_number, port_config in app.public_ports.items():
+        for port_number, port_config in sorted(app.public_ports.items()):
             # Allow all sources into ELB:
             for ip_source in port_config.sources:
                 elb_ingress.append({
@@ -107,7 +107,7 @@ class AppTemplate(BaseTemplateCache):
                 elb_ingress_ports.add(internal_port)
 
             elb_listener = {
-                'InstancePort': internal_port,
+                'InstancePort': str(internal_port),
                 'LoadBalancerPort': port_number,
                 'Protocol': port_config.scheme,
                 'InstanceProtocol': port_config.internal_scheme
@@ -129,7 +129,7 @@ class AppTemplate(BaseTemplateCache):
             private_elb.append(elb_listener)
 
         # Private ports:
-        for private_port, protocols in app.private_ports.items():
+        for private_port, protocols in sorted(app.private_ports.items()):
             port_is_string = isinstance(private_port, six.string_types)
             if port_is_string and '-' in private_port:
                 from_port, to_port = private_port.split('-', 1)
@@ -146,8 +146,8 @@ class AppTemplate(BaseTemplateCache):
                     'Properties': {
                         'GroupId': {'Ref': 'Sg'},
                         'IpProtocol': protocol,
-                        'FromPort': from_port,
-                        'ToPort': to_port,
+                        'FromPort': str(from_port),
+                        'ToPort': str(to_port),
                         'SourceSecurityGroupId': {'Ref': 'Sg'}
                     }
                 }

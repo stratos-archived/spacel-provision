@@ -63,8 +63,8 @@ class TestAppTemplate(BaseSpaceAppTest):
         app, _ = self.cache.app(self.app, REGION)
 
         sg_properties = app['Resources']['PrivatePort123TCP']['Properties']
-        self.assertEquals(123, sg_properties['FromPort'])
-        self.assertEquals(123, sg_properties['ToPort'])
+        self.assertEquals('123', sg_properties['FromPort'])
+        self.assertEquals('123', sg_properties['ToPort'])
 
     def test_app_private_ports_split(self):
         self.app.private_ports = {'123-456': ['TCP']}

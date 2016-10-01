@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import time
@@ -35,7 +36,11 @@ class BaseCloudFormationFactory(object):
         parameters = parameters or {}
         secret_parameters = secret_parameters or {}
         cf = self._clients.cloudformation(region)
-        template_url = self._uploader.upload(json_template, name)
+        template_body = json.dumps(json_template, indent=2, sort_keys=True)
+        if len(template_body) >= 51200:
+            template_url = self._uploader.upload(template_body, name)
+        else:
+            template_url = None
         parameters = [{'ParameterKey': k, 'ParameterValue': v}
                       for k, v in parameters.items()]
 
@@ -59,11 +64,17 @@ class BaseCloudFormationFactory(object):
         set_name = 'change-%s' % uuid.uuid4()
         try:
             logger.debug('Updating stack %s in %s.', name, region)
-            cf.create_change_set(StackName=name,
-                                 ChangeSetName=set_name,
-                                 Parameters=parameters,
-                                 TemplateURL=template_url,
-                                 Capabilities=CAPABILITIES)
+            create_params = {
+                'StackName': name,
+                'ChangeSetName': set_name,
+                'Parameters': parameters,
+                'Capabilities': CAPABILITIES
+            }
+            if template_url:
+                create_params['TemplateURL'] = template_url
+            else:
+                create_params['TemplateBody'] = template_body
+            cf.create_change_set(**create_params)
 
             # Wait for change set to complete:
             change_set = cf.describe_change_set(StackName=name,
@@ -102,12 +113,17 @@ class BaseCloudFormationFactory(object):
             if not_exist:
                 logger.debug('Stack %s not found in %s, creating.', name,
                              region)
-                cf.create_stack(
-                    StackName=name,
-                    Parameters=parameters,
-                    TemplateURL=template_url,
-                    Capabilities=CAPABILITIES
-                )
+
+                create_params = {
+                    'StackName': name,
+                    'Parameters': parameters,
+                    'Capabilities': CAPABILITIES
+                }
+                if template_url:
+                    create_params['TemplateURL'] = template_url
+                else:
+                    create_params['TemplateBody'] = template_body
+                cf.create_stack(**create_params)
                 return 'create'
 
             state_match = INVALID_STATE_MESSAGE.match(e_message)

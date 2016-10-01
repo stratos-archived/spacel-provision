@@ -14,7 +14,7 @@ class TestTemplateUploader(unittest.TestCase):
         self.template._upload = MagicMock()
 
     def test_upload(self):
-        self.template.upload({}, 'foo')
+        self.template.upload('{}', 'foo')
         self.template._upload.assert_called_with(
             'foo/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f.template',
             '{}')
