@@ -5,6 +5,17 @@ from spacel.aws import ClientCache
 from spacel.main import provision
 from spacel.model import Orbit, SpaceApp
 from spacel.model.orbit import (NAME, DOMAIN, REGIONS)
+from spacel.user import SpaceSshDb
+
+FORENSICS_USERS = {
+    'pwagner':
+        'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC46uFbuAy8posO4dzLSIeiaeI8xM5GK'
+        'WuuTIuYIGm/xwML+GWq5lgEmfAx7tWSaoPbkr5V65swkJgF3XMOYwzAvu/9ySS5o3+4N+'
+        'jzoYhVHae7EnQFYBJt+GeCJ2gZyz1wYu0UdawCHk9yLWLwIpM8QkVLvo0NCYh4X+7JsmC'
+        'WQqauZdF+NG3JwxiYSd95HEHuuQO1CxBe084Kc4QRMMyeVI45jhVXd9fH2hwKxK0XylrX'
+        'qwWKzRn6/hZiJI4r5MqCUZsxOZPFYQkfvJ/Rhc4tFRKk8TdfBuPdqMX7HwzJypUVX/ajF'
+        'Hwm1BJIzo1alidHU7rzEs510JKzEmHI/vUT'
+}
 
 
 class BaseIntegrationTest(unittest.TestCase):
@@ -34,8 +45,8 @@ class BaseIntegrationTest(unittest.TestCase):
             'instance_min': 1,
             'instance_max': 1,
             'services': {
-                'http-env-echo': {
-                    'image': 'pwagner/http-env-echo',
+                'laika': {
+                    'image': 'pebbletech/spacel-laika:latest',
                     'ports': {
                         '80': 8080
                     }
@@ -52,6 +63,7 @@ class BaseIntegrationTest(unittest.TestCase):
             }
         }
         self.clients = ClientCache()
+        self.ssh_db = SpaceSshDb(self.clients)
 
     def orbit(self):
         return Orbit(self.orbit_params)
@@ -63,4 +75,7 @@ class BaseIntegrationTest(unittest.TestCase):
         app = self.app()
         result = provision(app)
         self.assertEquals(expected, result)
+        for user, key in FORENSICS_USERS.items():
+            self.ssh_db.add_key(app.orbit, user, key)
+            self.ssh_db.grant(app, user)
         return app
