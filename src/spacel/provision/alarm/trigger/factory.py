@@ -84,8 +84,8 @@ class TriggerFactory(object):
             dimensions = defaults.get('dimensions')
             if dimensions:
                 alarm_properties['Dimensions'] = [
-                    {'Name': k, 'Value': v} for k, v in dimensions.items()
-                    ]
+                    {'Name': k, 'Value': v}
+                    for k, v in dimensions.items()]
 
             resources[trigger_name] = {
                 'Type': 'AWS::CloudWatch::Alarm',

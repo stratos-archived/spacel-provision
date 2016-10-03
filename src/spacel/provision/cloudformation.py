@@ -12,6 +12,9 @@ CAPABILITIES = ('CAPABILITY_IAM',)
 INVALID_STATE_MESSAGE = re.compile('.* is in ([A-Z_]*) state and can not'
                                    ' be updated.')
 
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html
+MAX_TEMPLATE_BODY_SIZE = 51200
+
 NO_CHANGES = 'The submitted information didn\'t contain changes.' \
              ' Submit different information to create a change set.'
 
@@ -37,7 +40,7 @@ class BaseCloudFormationFactory(object):
         secret_parameters = secret_parameters or {}
         cf = self._clients.cloudformation(region)
         template_body = json.dumps(json_template, indent=2, sort_keys=True)
-        if len(template_body) >= 51200:
+        if len(template_body) >= MAX_TEMPLATE_BODY_SIZE:
             template_url = self._uploader.upload(template_body, name)
         else:
             template_url = None
