@@ -36,7 +36,7 @@ class TestCacheFactory(BaseDbTest):
     def test_add_caches(self):
         self.cache_factory.add_caches(self.app, REGION, self.template,
                                       self.caches)
-        self.assertEquals(3, len(self.resources))
+        self.assertEquals(4, len(self.resources))
 
         # UserData should be valid JSON, `caches` should reference
         user_data = self._user_data()
@@ -61,3 +61,9 @@ class TestCacheFactory(BaseDbTest):
     def test_instance_type_missing_ha(self):
         instance_type = self.cache_factory._instance_type({}, True)
         self.assertEquals('cache.m3.medium', instance_type)
+
+    def test_instance_type_add_prefix(self):
+        instance_type = self.cache_factory._instance_type({
+            'instance_type': 't2.micro'
+        }, True)
+        self.assertEquals('cache.t2.micro', instance_type)
