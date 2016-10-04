@@ -33,7 +33,7 @@ class KmsKeyFactory(object):
             existing_key = existing_key['KeyMetadata']
             key_arn = existing_key['Arn']
             if not existing_key['Enabled']:
-                logger.warn('Key %s is disabled.', key_arn)
+                logger.warning('Key %s is disabled.', key_arn)
                 return None
             return key_arn
         except ClientError as e:
@@ -64,8 +64,8 @@ class KmsKeyFactory(object):
             )
         except ClientError as e:
             # Key created, but couldn't get alias: cleanup.
-            logger.warn('Error applying alias, deleting orphan key: "%s".',
-                        key_arn)
+            logger.warning('Error applying alias, deleting orphan key: "%s".',
+                           key_arn)
             kms.schedule_key_deletion(
                 KeyId=key_arn,
                 PendingWindowInDays=7

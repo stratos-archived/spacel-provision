@@ -1,9 +1,12 @@
-from botocore.exceptions import ClientError
 import logging
+from botocore.exceptions import ClientError
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              key_sorted)
 
 logger = logging.getLogger('spacel.provision.orbit.spacel')
+
+
+# pylint: disable=W0212
 
 
 class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
@@ -42,7 +45,7 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
             elif stack_suffix == 'tables':
                 template = self._tables.tables(orbit)
             else:
-                logger.warn('Unknown orbit template: %s', stack_suffix)
+                logger.warning('Unknown orbit template: %s', stack_suffix)
                 return
 
             updates[region] = self._stack(stack_name, region, template)
@@ -50,7 +53,7 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
         logger.debug('Requested %s in %s, waiting for provisioning...',
                      stack_name, regions)
         self._wait_for_updates(stack_name, updates)
-        logger.debug('Provisioned %s in %s.', stack_name, region)
+        logger.debug('Provisioned %s in %s.', stack_name, regions)
 
         # Refresh model from CF:
         for region in regions:
@@ -64,7 +67,7 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
             elif stack_suffix == 'bastion':
                 self._orbit_from_bastion(orbit, region, cf_outputs)
             else:  # pragma: no cover
-                logger.warn('Unknown suffix: %s', stack_suffix)
+                logger.warning('Unknown suffix: %s', stack_suffix)
 
     def _azs(self, orbit, regions):
         for region in regions:
@@ -120,7 +123,7 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
             elif 'CacheSubnet' in key or 'RdsSubnet' in key:
                 continue
             else:
-                logger.warn('Unrecognized output key: %s', key)
+                logger.warning('Unrecognized output key: %s', key)
 
         orbit._public_instance_subnets[region] = key_sorted(pub_instance)
         orbit._public_elb_subnets[region] = key_sorted(pub_elb)
@@ -138,4 +141,4 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
             elif key.startswith('BastionSecurityGroup'):
                 orbit._bastion_sgs[region] = value
             else:
-                logger.warn('Unrecognized output key: %s', key)
+                logger.warning('Unrecognized output key: %s', key)

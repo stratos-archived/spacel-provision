@@ -32,7 +32,7 @@ class ProviderOrbitFactory(object):
         for provider_name, provider_regions in provider_regions.items():
             provider = self._providers.get(provider_name)
             if not provider:
-                logger.warn('Unknown provider: %s', provider_name)
+                logger.warning('Unknown provider: %s', provider_name)
                 continue
             provider.get_orbit(orbit, regions=provider_regions)
 

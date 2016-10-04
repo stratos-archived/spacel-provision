@@ -292,7 +292,7 @@ class MetricDefinitions(object):
         for alias in aliases:
             alias_lower = alias.lower()
             if alias_lower in self._metrics:  # pragma: no cover
-                logger.warn('Duplicate metric: %s', alias)
+                logger.warning('Duplicate metric: %s', alias)
                 continue
             self._metrics[alias_lower] = data
 

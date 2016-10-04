@@ -30,7 +30,7 @@ class CacheFactory(BaseTemplateDecorator):
             # How many replicas?
             replicas = self._replicas(params)
             if replicas is None:
-                logger.warn('Cache "%s" has invalid "replicas".', name)
+                logger.warning('Cache "%s" has invalid "replicas".', name)
                 continue
             default_automatic_failover = replicas > 0
             automatic_failover = params.get('automatic_failover',
@@ -92,8 +92,6 @@ class CacheFactory(BaseTemplateDecorator):
         # If we added any caches, remove trailing comma:
         if added_caches:
             del user_data[cache_intro + (4 * added_caches) - 1]
-
-
 
     @staticmethod
     def _replicas(params):

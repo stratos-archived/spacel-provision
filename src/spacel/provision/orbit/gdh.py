@@ -1,5 +1,6 @@
-from botocore.exceptions import ClientError
 import logging
+from botocore.exceptions import ClientError
+
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              key_sorted)
 from spacel.model.orbit import GDH_DEPLOY, GDH_PARENT
@@ -7,10 +8,14 @@ from spacel.model.orbit import GDH_DEPLOY, GDH_PARENT
 logger = logging.getLogger('spacel.provision.orbit.gdh')
 
 
+# pylint: disable=W0212
+
+
 class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
     """
     Queries existing orbital VPCs built by git-deploy.
     """
+
     def get_orbit(self, orbit, regions=None):
         regions = regions or orbit.regions
         for region in regions:
@@ -27,7 +32,7 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
             except ClientError as e:
                 e_message = e.response['Error'].get('Message', '')
                 if 'does not exist' in e_message:
-                    logger.warn('Orbit %s not found in %s.', name, region)
+                    logger.warning('Orbit %s not found in %s.', name, region)
                     continue
                 raise e
 
@@ -91,7 +96,7 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
             elif key == 'CIDR':
                 continue
             else:
-                logger.warn('Unrecognized output key: %s', key)
+                logger.warning('Unrecognized output key: %s', key)
         public_subnets = key_sorted(public_subnets)
         private_subnets = key_sorted(private_subnets)
         orbit._public_instance_subnets[region] = public_subnets

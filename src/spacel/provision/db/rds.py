@@ -1,5 +1,5 @@
-from botocore.exceptions import ClientError
 import logging
+from botocore.exceptions import ClientError
 
 from spacel.provision import clean_name, bool_param
 from spacel.provision.db.base import BaseTemplateDecorator
@@ -69,12 +69,12 @@ class RdsFactory(BaseTemplateDecorator):
 
             db_version = db_params.get('version', DEFAULT_VERSIONS.get(db_type))
             if not db_version:
-                logger.warn('Database "%s" has invalid "version".', name)
+                logger.warning('Database "%s" has invalid "version".', name)
                 continue
 
             db_port = db_params.get('port', DEFAULT_PORTS.get(db_type))
             if not db_port:
-                logger.warn('Database "%s" has invalid "port".', name)
+                logger.warning('Database "%s" has invalid "port".', name)
                 continue
 
             instance_type = self._instance_type(db_params)
@@ -140,15 +140,15 @@ class RdsFactory(BaseTemplateDecorator):
             if storage_iops:
                 rds_params['Iops'] = storage_iops
                 if storage_type != 'io1':
-                    logger.warn('Overriding "storage_type" of "%s": ' +
-                                '"iops" requires io1.', name)
+                    logger.warning('Overriding "storage_type" of "%s": ' +
+                                   '"iops" requires io1.', name)
                     rds_params['StorageType'] = 'io1'
 
             # Workaround for the instance_type default not supporting crypt
             # Other t2's fail, but at least that's the user's fault.
             if encrypted and instance_type == 'db.t2.micro':
-                logger.warn('Overriding "instance_type" of "%s": ' +
-                            '"encrypted" requires t2.large".', name)
+                logger.warning('Overriding "instance_type" of "%s": ' +
+                               '"encrypted" requires t2.large".', name)
                 rds_params['DBInstanceClass'] = 'db.t2.large'
 
             resources[rds_resource] = {

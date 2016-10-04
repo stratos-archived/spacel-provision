@@ -64,6 +64,11 @@
       "Type": "Number",
       "Default": "2"
     },
+    "InstanceMinInService": {
+      "Description": "The minimum number of instances during a deploy",
+      "Type": "Number",
+      "Default": "2"
+    },
     "InstanceMax": {
       "Description": "The maximum number of instances in autoscaling group",
       "Type": "Number",
@@ -570,7 +575,7 @@
       },
       "UpdatePolicy": {
         "AutoScalingRollingUpdate": {
-          "MinInstancesInService": 0,
+          "MinInstancesInService": {"Ref": "InstanceMinInService"},
           "WaitOnResourceSignals": "true",
           "PauseTime": "PT10M"
         }

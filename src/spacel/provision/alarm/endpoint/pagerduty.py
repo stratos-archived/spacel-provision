@@ -38,7 +38,7 @@ class PagerDutyEndpoints(object):
     def add_endpoints(self, template, name, params):
         url = self._get_url(template, params)
         if not url:
-            logger.warn('PagerDuty endpoint %s is missing "url".', name)
+            logger.warning('PagerDuty endpoint %s is missing "url".', name)
             return ACTIONS_NONE
 
         resources = template['Resources']
@@ -83,7 +83,7 @@ class PagerDutyEndpoints(object):
             url = '/escalation_policies/%s?include[]=service' % escalation
             policy = self._pd_api(url)
             if not policy:
-                logger.warn('Escalation policy %s not found.', escalation)
+                logger.warning('Escalation policy %s not found.', escalation)
             else:
                 policy = policy['escalation_policy']
                 logger.debug('Using escalation policy "%s" (%s).',
@@ -111,7 +111,7 @@ class PagerDutyEndpoints(object):
         # Fetch service details:
         service = self._pd_api('/services/%s' % service_id)
         if not service:
-            logger.warn('Invalid service "%s".', service_id)
+            logger.warning('Invalid service "%s".', service_id)
             return None
         service = service['service']
 
@@ -191,7 +191,7 @@ class PagerDutyEndpoints(object):
             return json.loads(response.read().decode('utf-8'))
         except HTTPError as e:
             response = e.read().decode('utf-8')
-            logger.warn("API error: %s", response)
+            logger.warning("API error: %s", response)
             if method == 'GET' and e.code == 404:
                 return None
             else:

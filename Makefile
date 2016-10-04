@@ -1,9 +1,14 @@
 test: build/venv
-	@( . build/venv/bin/activate;  \
+	@( . build/venv/bin/activate; \
 	    cd src && \
 		nosetests --with-xunit --xunit-file=../build/nosetests.xml \
 			--with-coverage --cover-package=spacel --cover-xml --cover-xml-file=../build/coverage.xml \
 			test \
+	)
+
+lint: build/venv
+	@( . build/venv/bin/activate; \
+		find src -not -path 'src/test*' -name '*.py' | xargs pylint --rcfile pylintrc \
 	)
 
 clean:
@@ -26,4 +31,4 @@ composetest:
 	docker-compose run --rm test
 	docker-compose run --rm test-python2
 
-.PHONY: composetest test
+.PHONY: composetest test lint

@@ -1,6 +1,7 @@
-from botocore.exceptions import ClientError
 import logging
 import re
+
+from botocore.exceptions import ClientError
 
 from spacel.provision import clean_name
 from spacel.model.orbit import PRIVATE_NETWORK
@@ -81,7 +82,7 @@ class IngressResourceFactory(object):
                 ingress_resource('App%s' % client, SourceSecurityGroupId=sg_id)
                 continue
 
-            logger.warn('Unknown client: %s', client)
+            logger.warning('Unknown client: %s', client)
 
         return ingress_resources
 

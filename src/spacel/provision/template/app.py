@@ -48,6 +48,10 @@ class AppTemplate(BaseTemplateCache):
         params['HealthCheckTarget']['Default'] = app.health_check
         params['InstanceType']['Default'] = app.instance_type
         params['InstanceMin']['Default'] = app.instance_min
+        min_in_service = app.instance_min
+        if app.instance_min and app.instance_min == app.instance_max:
+            min_in_service = app.instance_max - 1
+        params['InstanceMinInService']['Default'] = min_in_service
         params['InstanceMax']['Default'] = app.instance_max
         params['UserData']['Default'] = self._user_data(params, app)
         params['Ami']['Default'] = self._ami.spacel_ami(region)
@@ -85,7 +89,7 @@ class AppTemplate(BaseTemplateCache):
         public_elb = resources['PublicElb']['Properties']['Listeners']
         private_elb = resources['PrivateElb']['Properties']['Listeners']
         elb_ingress_ports = set()
-        for port_number, port_config in app.public_ports.items():
+        for port_number, port_config in sorted(app.public_ports.items()):
             # Allow all sources into ELB:
             for ip_source in port_config.sources:
                 elb_ingress.append({
@@ -107,7 +111,7 @@ class AppTemplate(BaseTemplateCache):
                 elb_ingress_ports.add(internal_port)
 
             elb_listener = {
-                'InstancePort': internal_port,
+                'InstancePort': str(internal_port),
                 'LoadBalancerPort': port_number,
                 'Protocol': port_config.scheme,
                 'InstanceProtocol': port_config.internal_scheme
@@ -118,9 +122,9 @@ class AppTemplate(BaseTemplateCache):
                 if not cert:
                     cert = self._acm.get_certificate(region, app_hostname)
                 if not cert:
-                    logger.warn('Unable to find certificate for %s. ' +
-                                'Specify a "certificate" or provision  in ACM.',
-                                app_hostname)
+                    logger.warning('Unable to find certificate for %s. ' +
+                                   'Specify a "certificate" or request in ACM.',
+                                   app_hostname)
                     raise Exception('Public_port %s is missing certificate.' %
                                     port_number)
                 elb_listener['SSLCertificateId'] = cert
@@ -129,7 +133,7 @@ class AppTemplate(BaseTemplateCache):
             private_elb.append(elb_listener)
 
         # Private ports:
-        for private_port, protocols in app.private_ports.items():
+        for private_port, protocols in sorted(app.private_ports.items()):
             port_is_string = isinstance(private_port, six.string_types)
             if port_is_string and '-' in private_port:
                 from_port, to_port = private_port.split('-', 1)
@@ -146,8 +150,8 @@ class AppTemplate(BaseTemplateCache):
                     'Properties': {
                         'GroupId': {'Ref': 'Sg'},
                         'IpProtocol': protocol,
-                        'FromPort': from_port,
-                        'ToPort': to_port,
+                        'FromPort': str(from_port),
+                        'ToPort': str(to_port),
                         'SourceSecurityGroupId': {'Ref': 'Sg'}
                     }
                 }

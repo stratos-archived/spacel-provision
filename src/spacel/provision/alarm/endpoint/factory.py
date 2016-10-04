@@ -12,15 +12,8 @@ class AlarmEndpointFactory(object):
 
         logger.debug('Injecting %d endpoints.', len(endpoints))
         for name, params in endpoints.items():
-            endpoint_type = params.get('type')
-            if not endpoint_type:
-                logger.warn('Endpoint %s is missing "type".', name)
-                continue
-
-            factory = self._factories.get(endpoint_type)
+            factory = self._factory_for_type(params, name)
             if not factory:
-                logger.warn('Endpoint %s has invalid "type". Valid types: %s',
-                            name, sorted(self._factories.keys()))
                 continue
 
             actions = factory.add_endpoints(template, name, params)
@@ -34,3 +27,16 @@ class AlarmEndpointFactory(object):
         if endpoint_resources:
             logger.debug('Built endpoints: %s', endpoint_resources)
         return endpoint_resources
+
+    def _factory_for_type(self, params, name):
+        endpoint_type = params.get('type')
+        if not endpoint_type:
+            logger.warning('Endpoint %s is missing "type".', name)
+            return None
+
+        factory = self._factories.get(endpoint_type)
+        if not factory:
+            logger.warning('Endpoint %s has invalid "type". Valid types: %s',
+                           name, sorted(self._factories.keys()))
+            return None
+        return factory

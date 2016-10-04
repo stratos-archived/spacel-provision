@@ -5,7 +5,8 @@ logger = logging.getLogger('spacel')
 
 
 class SpaceApp(object):
-    def __init__(self, orbit, params={}):
+    def __init__(self, orbit, params=None):
+        params = params or {}
         self.name = params.get('name', 'test')
         self.orbit = orbit
         regions = params.get('regions')
@@ -48,7 +49,7 @@ class SpaceApp(object):
                 self.services[service_name] = docker
                 continue
 
-            logger.warn('Invalid service: %s', service_name)
+            logger.warning('Invalid service: %s', service_name)
         self.alarms = params.get('alarms', {})
         self.caches = params.get('caches', {})
         self.databases = params.get('databases', {})
@@ -72,7 +73,8 @@ class SpaceApp(object):
 
 
 class SpaceServicePort(object):
-    def __init__(self, port, params={}):
+    def __init__(self, port, params=None):
+        params = params or {}
         self.scheme = params.get('scheme', self._scheme(port))
 
         self.internal_port = params.get('internal_port', port)
@@ -90,14 +92,14 @@ class SpaceServicePort(object):
 
 
 class SpaceService(object):
-    def __init__(self, name, unit_file, environment={}):
+    def __init__(self, name, unit_file, environment=None):
         self.name = name
         self.unit_file = unit_file
-        self.environment = environment
+        self.environment = environment or {}
 
 
 class SpaceDockerService(SpaceService):
-    def __init__(self, name, image, ports={}, volumes={}, environment={}):
+    def __init__(self, name, image, ports=None, volumes=None, environment=None):
         docker_run_flags = ''
         docker_run_flags += SpaceDockerService._dict_flags('p', ports)
         docker_run_flags += SpaceDockerService._dict_flags('v', volumes)

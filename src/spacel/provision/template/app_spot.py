@@ -115,7 +115,7 @@ class AppSpotTemplateDecorator(object):
 
         # Redirect any outputs that point at the Asg/Lc:
         outputs = template.get('Outputs', {})
-        for output_name, output_params in outputs.items():
+        for _, output_params in outputs.items():
             output_ref = output_params.get('Value', {}).get('Ref')
             if output_ref == 'Asg':
                 output_params['Value']['Ref'] = 'SpotFleet'

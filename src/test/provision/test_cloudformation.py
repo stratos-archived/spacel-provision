@@ -39,7 +39,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         self.cloudformation.create_stack.assert_called_with(
             StackName=NAME,
             Parameters=ANY,
-            TemplateURL=ANY,
+            TemplateBody=ANY,
             Capabilities=ANY
         )
         self.change_sets.estimate.assert_not_called()
