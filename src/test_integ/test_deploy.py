@@ -1,5 +1,6 @@
 import logging
 import requests
+import uuid
 
 from test_integ import BaseIntegrationTest
 
@@ -14,7 +15,7 @@ class TestDeploy(BaseIntegrationTest):
         """Deploy a HTTP/S service, verify it's running."""
         self.provision()
         self._verify_deploy('http://%s' % BaseIntegrationTest.APP_HOSTNAME)
-        self._verify_deploy(APP_URL)
+        self._verify_deploy()
 
     def test_02_upgrade(self):
         """Deploy a HTTPS service, upgrade and verify."""
@@ -25,6 +26,19 @@ class TestDeploy(BaseIntegrationTest):
         self.provision()
         self._verify_deploy(APP_URL, version=UPGRADE_VERSION)
 
-    def _verify_deploy(self, url, version=BaseIntegrationTest.APP_VERSION):
+    def test_03_environment(self):
+        random_message = str(uuid.uuid4())
+        self.app_params['services']['laika']['environment'] = {
+            'MESSAGE': random_message
+        }
+        self.provision()
+        self._verify_message(message=random_message)
+
+    def _verify_deploy(self, url=APP_URL,
+                       version=BaseIntegrationTest.APP_VERSION):
         r = requests.get(url)
         self.assertEquals(version, r.json()['version'])
+
+    def _verify_message(self, url=APP_URL, message=''):
+        r = requests.get('%s/environment' % url)
+        self.assertEquals(message, r.json()['message'])
