@@ -1,15 +1,18 @@
-from botocore.exceptions import ClientError
+from datetime import datetime, timedelta
 from mock import MagicMock, ANY
 import unittest
+
+from botocore.exceptions import ClientError
 
 from spacel.aws.clients import ClientCache
 from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
-                                             NO_CHANGES)
+                                             NO_CHANGES, CF_STACK)
 from spacel.provision.s3.template_uploader import TemplateUploader
 
+from test import REGION
+
 NAME = 'test-stack'
-REGION = 'us-east-1'
 TEMPLATE = {}
 NO_CHANGE_SET = {'Status': 'FAILED', 'StatusReason': NO_CHANGES}
 
@@ -163,9 +166,10 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         secret_func.assert_not_called()
 
     def test_existing_params_error(self):
-        self.cloudformation.describe_stacks.side_effect = ClientError({'Error': {
-            'Message': 'Stack [test-stack] does not exist'
-        }}, 'DescribeStack')
+        self.cloudformation.describe_stacks.side_effect = ClientError({
+            'Error': {
+                'Message': 'Stack [test-stack] does not exist'
+            }}, 'DescribeStack')
 
         params = self.cf_factory._existing_params(self.cloudformation, NAME)
         self.assertEquals(0, len(params))
@@ -179,22 +183,47 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
             REGION: None
         })
 
-        self.cloudformation.get_waiter.assert_not_called()
+        self.cloudformation.describe_stack_events.assert_not_called()
 
     def test_wait_for_updates_skip_failed(self):
         self.cf_factory._wait_for_updates(NAME, {
             REGION: 'failed'
         })
 
-        self.cloudformation.get_waiter.assert_not_called()
+        self.cloudformation.describe_stack_events.assert_not_called()
 
     def test_wait_for_updates(self):
+        self.cloudformation.describe_stack_events.return_value = {
+            'StackEvents': [{
+                'Timestamp': datetime.utcnow() - timedelta(seconds=5),
+                'LogicalResourceId': NAME,
+                'ResourceType': CF_STACK,
+                'ResourceStatus': 'CREATE_IN_PROGRESS'
+            }, {
+                'Timestamp': datetime.utcnow(),
+                'LogicalResourceId': NAME,
+                'ResourceType': 'AWS::EC2::EIP',
+                'ResourceStatus': 'CREATE_IN_PROGRESS',
+                'ResourceStatusReason': 'Just because'
+            }, {
+                'Timestamp': datetime.utcnow(),
+                'LogicalResourceId': NAME,
+                'ResourceType': 'AWS::EC2::EIP',
+                'ResourceStatus': 'CREATE_COMPLETE'
+            }, {
+                'Timestamp': datetime.utcnow(),
+                'LogicalResourceId': NAME,
+                'ResourceType': CF_STACK,
+                'ResourceStatus': 'CREATE_COMPLETE'
+            }]
+        }
+
         self.cf_factory._wait_for_updates(NAME, {
             REGION: 'update'
-        })
+        }, poll_interval=0.001)
 
-        self.cloudformation.get_waiter.assert_called_with(
-            'stack_update_complete')
+        self.assertEquals(3,
+                          self.cloudformation.describe_stack_events.call_count)
 
     @staticmethod
     def _in_progress(state):
