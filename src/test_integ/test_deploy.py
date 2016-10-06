@@ -24,9 +24,10 @@ class TestDeploy(BaseIntegrationTest):
         self.app_params['services']['laika']['image'] = \
             self.image(UPGRADE_VERSION)
         self.provision()
-        self._verify_deploy(APP_URL, version=UPGRADE_VERSION)
+        self._verify_deploy(version=UPGRADE_VERSION)
 
     def test_03_environment(self):
+        """Deploy a service with custom environment variable, verify."""
         random_message = str(uuid.uuid4())
         self.app_params['services']['laika']['environment'] = {
             'MESSAGE': random_message
@@ -34,8 +35,16 @@ class TestDeploy(BaseIntegrationTest):
         self.provision()
         self._verify_message(message=random_message)
 
-    def _verify_deploy(self, url=APP_URL,
-                       version=BaseIntegrationTest.APP_VERSION):
+    def test_04_cache(self):
+        """Deploy a service with ElastiCache, verify."""
+        self.app_params['caches'] = {
+            'redis': {}
+        }
+        self.provision()
+        # FIXME: _verify_redis
+
+    def _verify_deploy(self, url=APP_URL, version=None):
+        version = version or BaseIntegrationTest.APP_VERSION
         r = requests.get(url)
         self.assertEquals(version, r.json()['version'])
 
