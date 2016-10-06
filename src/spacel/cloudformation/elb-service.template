@@ -218,6 +218,7 @@
     "DnsRecord": {
       "Type": "AWS::Route53::RecordSetGroup",
       "Condition": "HasVirtualHost",
+      "DependsOn": "Asg",
       "Properties": {
         "HostedZoneName": {"Ref": "VirtualHostDomain"},
         "Comment": "Alias for ELB",

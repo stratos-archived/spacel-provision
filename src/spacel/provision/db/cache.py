@@ -91,6 +91,21 @@ class CacheFactory(BaseTemplateDecorator):
 
         # If we added any caches, remove trailing comma:
         if added_caches:
+            resources['CachePolicy'] = {
+                'DependsOn': 'Role',
+                'Type': 'AWS::IAM::Policy',
+                'Properties': {
+                    'PolicyName': 'DescribeCacheEndpoints',
+                    'Roles': [{'Ref': 'Role'}],
+                    'PolicyDocument': {
+                        'Statement': [{
+                            'Effect': 'Allow',
+                            'Action': 'elasticache:DescribeReplicationGroups',
+                            'Resource': '*'
+                        }]
+                    }
+                }
+            }
             del user_data[cache_intro + (4 * added_caches) - 1]
 
     @staticmethod

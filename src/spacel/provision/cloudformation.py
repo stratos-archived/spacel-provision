@@ -1,3 +1,5 @@
+from collections import defaultdict
+import datetime
 import json
 import logging
 import re
@@ -17,6 +19,11 @@ MAX_TEMPLATE_BODY_SIZE = 51200
 
 NO_CHANGES = 'The submitted information didn\'t contain changes.' \
              ' Submit different information to create a change set.'
+
+CF_STACK = 'AWS::CloudFormation::Stack'
+FINAL_STATUS = ('CREATE_COMPLETE', 'DELETE_COMPLETE', 'UPDATE_COMPLETE',
+                'UPDATE_ROLLBACK_COMPLETE')
+ROLLBACK_STATE = 'ROLLBACK_COMPLETE'
 
 
 def key_sorted(some_dict):
@@ -172,27 +179,85 @@ class BaseCloudFormationFactory(object):
     def _describe_stack(cf, stack_name):
         return cf.describe_stacks(StackName=stack_name)['Stacks'][0]
 
-    def _wait_for_updates(self, name, updates):
-        start = time.time()
-        waited = False
+    def _wait_for_updates(self, name, updates, poll_interval=5):
+        start = datetime.datetime.utcnow() - datetime.timedelta(seconds=5)
+
+        # Collect regions that require updates:
+        pending = {}
         for region, update in updates.items():
             if not update:
                 continue
             if update == 'failed':
                 logger.debug('Update failed for %s in %s...', name, region)
                 continue
-            waited = True
+            pending[region] = start
 
-            cf = self._clients.cloudformation(region)
-            logger.debug('Waiting for %s in %s...', name, region)
-            waiter = cf.get_waiter('stack_%s_complete' % update)
-            self._impatient(waiter)
-            waiter.wait(StackName=name)
-            logger.debug('Completed %s in %s.', name, region)
+        if not pending:
+            return
 
-        if waited:
-            logger.info('Completed all updates in %i seconds.',
-                        time.time() - start)
+        resource_starts = defaultdict(dict)
+        resource_times = defaultdict(dict)
+
+        # Loop until every region is finished:
+        while pending:
+            for region, last_log in pending.copy().items():
+                # Get stack events in this region
+                cf = self._clients.cloudformation(region)
+                events = (cf.describe_stack_events(StackName=name)
+                          .get('StackEvents', ()))
+
+                region_starts = resource_starts[region]
+                region_times = resource_times[region]
+
+                # Iterate events in chronological order:
+                for event in reversed(events):
+                    # Skip events that have been processed:
+                    event_time = event['Timestamp'].replace(tzinfo=None)
+                    if event_time <= last_log:
+                        continue
+
+                    # If this is a "stack complete" event, remove from pending:
+                    resource_id = event['LogicalResourceId']
+                    resource_type = event['ResourceType']
+                    status = event['ResourceStatus']
+                    is_complete = (resource_id == name
+                                   and resource_type == CF_STACK
+                                   and status in FINAL_STATUS)
+                    if is_complete:
+                        del pending[region]
+
+                    # Track the first mention of each resource
+                    # Calculate CREATE/UPDATE time for each resource:
+                    if resource_id not in region_starts:
+                        region_starts[resource_id] = time.time()
+                    elif (status in FINAL_STATUS
+                          and resource_id not in resource_starts):
+                        resource_start = region_starts.get(resource_id)
+                        region_times[resource_id] = time.time() - resource_start
+
+                    # Flush any remaining events to log:
+                    status_reason = event.get('ResourceStatusReason', '')
+                    if status_reason:
+                        status_reason = ' (%s)' % status_reason
+                    logger.info('Resource %s - %s%s at %s',
+                                resource_id,
+                                status,
+                                status_reason,
+                                event_time.strftime('%Y-%m-%d %H:%M:%S'))
+
+                    # Push "start" to the last logged event
+                    if not is_complete:
+                        pending[region] = event_time
+
+            # Wait before retrying each pending region again:
+            if pending:
+                time.sleep(poll_interval)
+
+        logger.debug('Resource times: %s', dict(resource_times))
+
+        end = datetime.datetime.utcnow()
+        duration = (end - start).total_seconds()
+        logger.info('Completed all updates in %i seconds.', duration)
 
     @staticmethod
     def _impatient(waiter):

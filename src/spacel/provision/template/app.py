@@ -195,6 +195,7 @@ class AppTemplate(BaseTemplateCache):
                         'body': base64_encode(environment_file.encode('utf-8'))
                     }
             user_data += ',"systemd":' + json.dumps(systemd)
+            user_data += ',"files":' + json.dumps(files)
         if app.volumes:
             params['VolumeSupport']['Default'] = 'true'
             user_data += ',"volumes":' + json.dumps(app.volumes)
