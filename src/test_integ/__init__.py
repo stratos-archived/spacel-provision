@@ -54,7 +54,6 @@ class BaseIntegrationTest(unittest.TestCase):
             'instance_max': 2,
             'services': {
                 'laika': {
-                    'image': self.image(),
                     'ports': {
                         '80': 8080
                     }
@@ -70,12 +69,13 @@ class BaseIntegrationTest(unittest.TestCase):
                 }
             }
         }
+        self.image()
         self.clients = ClientCache()
         self.ssh_db = SpaceSshDb(self.clients)
 
-    @staticmethod
-    def image(version=APP_VERSION):
-        return 'pebbletech/spacel-laika:%s' % version
+    def image(self, version=APP_VERSION):
+        docker_tag = 'pebbletech/spacel-laika:%s' % version
+        self.app_params['services']['laika']['image'] = docker_tag
 
     def orbit(self):
         return Orbit(self.orbit_params)

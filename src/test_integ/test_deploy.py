@@ -22,8 +22,7 @@ class TestDeploy(BaseIntegrationTest):
         """Deploy a HTTPS service, upgrade and verify."""
         self.provision()
 
-        self.app_params['services']['laika']['image'] = \
-            self.image(UPGRADE_VERSION)
+        self.image(UPGRADE_VERSION)
         self.provision()
         self._verify_deploy(version=UPGRADE_VERSION)
 
@@ -36,7 +35,35 @@ class TestDeploy(BaseIntegrationTest):
         self.provision()
         self._verify_message(message=random_message)
 
-    def test_04_cache(self):
+    def test_04_disk(self):
+        # 1 EBS volume, which can only by used by 1 instance at a time:
+        self.app_params['instance_max'] = 1
+        self.app_params['volumes'] = {
+            'data0': {
+                'count': 1,
+                'size': 1
+            }
+        }
+        # Mounted by docker service:
+        self.app_params['services']['laika']['volumes'] = {
+            '/mnt/data0': '/mnt/data'
+        }
+        # Configured by application:
+        self.app_params['services']['laika']['environment'] = {
+            'DISK_PATH': '/mnt/data/file.txt'
+        }
+
+        self.provision()
+
+        initial = self._verify_disk()
+        self.assertNotEquals(0, initial)
+
+        # Upgrade, verify persistence:
+        self.image(UPGRADE_VERSION)
+        self.provision()
+        self._verify_disk(expected_count=initial)
+
+    def test_05_cache(self):
         """Deploy a service with ElastiCache, verify."""
         self.app_params['caches'] = {
             'redis': {}
@@ -58,3 +85,14 @@ class TestDeploy(BaseIntegrationTest):
         redis_info = r.json()
         self.assertEquals(REDIS_PORT, redis_info['tcp_port'])
         self.assertEquals(REDIS_VERSION, redis_info['redis_version'])
+
+    def _verify_disk(self, url=APP_URL, expected_count=0, post_count=10):
+        counter_url = '%s/disk/counter' % url
+        r = requests.get(counter_url)
+        count = r.json()['count']
+        self.assertTrue(count >= expected_count)
+
+        for i in range(post_count):
+            r = requests.post(counter_url)
+            count = r.json()['count']
+        return count
