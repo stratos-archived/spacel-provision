@@ -2,6 +2,7 @@ import logging
 import requests
 import uuid
 
+from spacel.provision.db.cache import REDIS_PORT, REDIS_VERSION
 from test_integ import BaseIntegrationTest
 
 logger = logging.getLogger('spacel.test.deploy')
@@ -41,7 +42,7 @@ class TestDeploy(BaseIntegrationTest):
             'redis': {}
         }
         self.provision()
-        # FIXME: _verify_redis
+        self._verify_redis()
 
     def _verify_deploy(self, url=APP_URL, version=None):
         version = version or BaseIntegrationTest.APP_VERSION
@@ -51,3 +52,9 @@ class TestDeploy(BaseIntegrationTest):
     def _verify_message(self, url=APP_URL, message=''):
         r = requests.get('%s/environment' % url)
         self.assertEquals(message, r.json()['message'])
+
+    def _verify_redis(self, url=APP_URL):
+        r = requests.get('%s/redis/info' % url)
+        redis_info = r.json()
+        self.assertEquals(REDIS_PORT, redis_info['tcp_port'])
+        self.assertEquals(REDIS_VERSION, redis_info['redis_version'])

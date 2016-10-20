@@ -100,12 +100,9 @@ class SpaceService(object):
 
 class SpaceDockerService(SpaceService):
     def __init__(self, name, image, ports=None, volumes=None, environment=None):
-        docker_run_flags = ''
+        docker_run_flags = '--env-file /files/%s.env' % name
         docker_run_flags += SpaceDockerService._dict_flags('p', ports)
         docker_run_flags += SpaceDockerService._dict_flags('v', volumes)
-
-        if environment:
-            docker_run_flags += ' --env-file /files/%s.env' % name
 
         service_name = '%s.service' % name
         unit_file = """[Unit]
@@ -120,7 +117,7 @@ StartLimitInterval=0
 ExecStartPre=-/usr/bin/docker pull {1}
 ExecStartPre=-/usr/bin/docker kill %n
 ExecStartPre=-/usr/bin/docker rm %n
-ExecStart=/usr/bin/docker run --rm --name %n{2} {1}
+ExecStart=/usr/bin/docker run --rm --name %n {2} {1}
 ExecStop=/usr/bin/docker stop %n
 """.format(name, image, docker_run_flags)
         super(SpaceDockerService, self).__init__(service_name, unit_file,
