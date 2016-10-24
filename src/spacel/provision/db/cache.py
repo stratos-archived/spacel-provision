@@ -7,7 +7,7 @@ logger = logging.getLogger('spacel.provision.cache.factory')
 REDIS_PORT = '6379'
 
 # https://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/SelectEngine.html
-REDIS_VERSION = '2.8.24'
+REDIS_VERSION = '3.2.4'
 
 
 class CacheFactory(BaseTemplateDecorator):
