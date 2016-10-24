@@ -60,7 +60,7 @@ class TestRdsFactory(BaseDbTest):
     def test_add_rds_storage_type(self):
         self.db_params['iops'] = 100
         self.rds_factory.add_rds(self.app, REGION, self.template)
-        self.assertEquals(3, len(self.resources))
+        self.assertEquals(4, len(self.resources))
         db_properties = self.resources['Dbtestdb']['Properties']
         self.assertEquals(100, db_properties['Iops'])
         self.assertEquals('io1', db_properties['StorageType'])
@@ -68,7 +68,7 @@ class TestRdsFactory(BaseDbTest):
     def test_add_rds_encryption(self):
         self.db_params['encrypted'] = True
         self.rds_factory.add_rds(self.app, REGION, self.template)
-        self.assertEquals(3, len(self.resources))
+        self.assertEquals(4, len(self.resources))
         db_properties = self.resources['Dbtestdb']['Properties']
         self.assertEquals('db.t2.large', db_properties['DBInstanceClass'])
 
@@ -98,8 +98,8 @@ class TestRdsFactory(BaseDbTest):
 
         self.rds_factory.add_rds(self.app, REGION, self.template)
 
-        # DB resource not added:
-        self.assertEquals(1, len(self.resources))
+        # DB resource not added, IAM policy is:
+        self.assertEquals(2, len(self.resources))
         user_data = self._user_data()
         db_user_data = user_data['databases'][DB_NAME]
         self.assertEquals(RDS_ID, db_user_data['name'])
@@ -109,7 +109,7 @@ class TestRdsFactory(BaseDbTest):
 
         self.rds_factory.add_rds(self.app, REGION, self.template)
 
-        self.assertEquals(3, len(self.resources))
+        self.assertEquals(4, len(self.resources))
         # Password is saved to other regions:
         self.password_manager.set_password.assert_called_with(self.app,
                                                               OTHER_REGION,
@@ -127,7 +127,7 @@ class TestRdsFactory(BaseDbTest):
 
     def test_add_rds(self):
         self.rds_factory.add_rds(self.app, REGION, self.template)
-        self.assertEquals(3, len(self.resources))
+        self.assertEquals(4, len(self.resources))
 
         # Resolve {'Ref':}s to a string:
         user_data = self._user_data()

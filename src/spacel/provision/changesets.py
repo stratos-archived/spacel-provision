@@ -87,6 +87,11 @@ COSTS = {
         'Modify': 60,
         'Remove': 75
     },
+    'AWS::RDS::DBInstance': {
+        'Add': 300,
+        'Modify': 300,
+        'Remove': 120
+    },
     'AWS::SNS::Topic': {
         'Add': 15,
         'Modify': 15,
