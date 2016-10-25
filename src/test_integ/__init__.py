@@ -20,7 +20,7 @@ FORENSICS_USERS = {
 
 class BaseIntegrationTest(unittest.TestCase):
     ORBIT_NAME = 'sl-test'
-    APP_NAME = 'test-app'
+    APP_NAME = 'laika'
     APP_DOMAIN = 'pebbledev.com'
     APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, APP_DOMAIN)
     APP_VERSION = '0.0.1'

@@ -38,6 +38,7 @@ class RdsFactory(BaseTemplateDecorator):
 
         added_databases = 0
         secret_params = {}
+        iam_statements = []
         for name, db_params in app.databases.items():
             password_label = 'rds:%s' % name
             rds_resource = 'Db%s' % clean_name(name)
@@ -54,6 +55,15 @@ class RdsFactory(BaseTemplateDecorator):
                 rds_id = self._rds_id(app, db_global, rds_resource)
                 if not rds_id:
                     continue
+                iam_statements.append({
+                    'Effect': 'Allow',
+                    'Action': 'rds:DescribeDBInstances',
+                    'Resource': {'Fn::Join': ['', [
+                        'arn:aws:rds:%s:' % db_global,
+                        {'Ref': 'AWS::AccountId'},
+                        ':db:%s' % rds_id
+                    ]]}
+                })
 
                 user_data.insert(db_intro, ',')
                 user_data.insert(db_intro, ',"region": "%s"}' % db_global)
@@ -107,14 +117,12 @@ class RdsFactory(BaseTemplateDecorator):
                 'Properties': {
                     'GroupDescription': rds_desc,
                     'VpcId': {'Ref': 'VpcId'},
-                    'SecurityGroupIngress': [
-                        {
-                            'IpProtocol': 'tcp',
-                            'FromPort': db_port,
-                            'ToPort': db_port,
-                            'SourceSecurityGroupId': {'Ref': 'Sg'}
-                        }
-                    ]
+                    'SecurityGroupIngress': [{
+                        'IpProtocol': 'tcp',
+                        'FromPort': db_port,
+                        'ToPort': db_port,
+                        'SourceSecurityGroupId': {'Ref': 'Sg'}
+                    }]
                 }
             }
 
@@ -176,6 +184,17 @@ class RdsFactory(BaseTemplateDecorator):
                 else:
                     db_clients += region_clients
 
+            iam_statements.append({
+                'Effect': 'Allow',
+                'Action': 'rds:DescribeDBInstances',
+                'Resource': {'Fn::Join': ['', [
+                    'arn:aws:rds:%s:' % region,
+                    {'Ref': 'AWS::AccountId'},
+                    ':db:',
+                    {'Ref': rds_resource},
+                ]]}
+            })
+
             # Inject a labeled reference to this cache replication group:
             # Read this backwards, and note the trailing comma.
             user_data.insert(db_intro, ',')
@@ -188,6 +207,19 @@ class RdsFactory(BaseTemplateDecorator):
             self._add_client_resources(resources, app, region, db_port,
                                        db_params, rds_sg_resource)
             secret_params[password_param] = plaintext_func
+
+        if iam_statements:
+            resources['RdsPolicy'] = {
+                'DependsOn': 'Role',
+                'Type': 'AWS::IAM::Policy',
+                'Properties': {
+                    'PolicyName': 'DescribeRdsDatabases',
+                    'Roles': [{'Ref': 'Role'}],
+                    'PolicyDocument': {
+                        'Statement': iam_statements
+                    }
+                }
+            }
 
         if added_databases:
             del user_data[db_intro + (5 * added_databases) - 1]

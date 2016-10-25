@@ -36,6 +36,7 @@ class TestDeploy(BaseIntegrationTest):
         self._verify_message(message=random_message)
 
     def test_04_disk(self):
+        """Deploy a service with persistent EBS volume, verify."""
         # 1 EBS volume, which can only by used by 1 instance at a time:
         self.app_params['instance_max'] = 1
         self.app_params['volumes'] = {
@@ -70,6 +71,13 @@ class TestDeploy(BaseIntegrationTest):
         }
         self.provision()
         self._verify_redis()
+
+    def test_06_rds(self):
+        """Deploy a service with RDS, verify."""
+        self.app_params['databases'] = {
+            'postgres': {}
+        }
+        self.provision()
 
     def _verify_deploy(self, url=APP_URL, version=None):
         version = version or BaseIntegrationTest.APP_VERSION

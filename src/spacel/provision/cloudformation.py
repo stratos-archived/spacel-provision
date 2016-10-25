@@ -253,7 +253,8 @@ class BaseCloudFormationFactory(object):
             if pending:
                 time.sleep(poll_interval)
 
-        logger.debug('Resource times: %s', dict(resource_times))
+        times_str = json.dumps(dict(resource_times), indent=2, sort_keys=True)
+        logger.debug('Resource times: %s', times_str)
 
         end = datetime.datetime.utcnow()
         duration = (end - start).total_seconds()
