@@ -23,7 +23,7 @@ class BaseIntegrationTest(unittest.TestCase):
     APP_NAME = 'laika'
     APP_DOMAIN = 'pebbledev.com'
     APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, APP_DOMAIN)
-    APP_VERSION = '0.0.1'
+    APP_VERSION = '0.1.0'
 
     @classmethod
     def setUpClass(cls):

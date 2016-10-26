@@ -93,13 +93,17 @@ class TestDeploy(BaseIntegrationTest):
         redis_info = r.json()
         self.assertEquals(REDIS_PORT, redis_info['tcp_port'])
         self.assertEquals(REDIS_VERSION, redis_info['redis_version'])
+        counter_url = '%s/redis/counter' % url
+        self._verify_counter(counter_url, post_count=10)
 
     def _verify_disk(self, url=APP_URL, expected_count=0, post_count=10):
         counter_url = '%s/disk/counter' % url
+        return self._verify_counter(counter_url, expected_count, post_count)
+
+    def _verify_counter(self, counter_url, expected_count=0, post_count=10):
         r = requests.get(counter_url)
         count = r.json()['count']
         self.assertTrue(count >= expected_count)
-
         for i in range(post_count):
             r = requests.post(counter_url)
             count = r.json()['count']
