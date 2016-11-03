@@ -37,6 +37,10 @@
       "Type": "String",
       "Description": "IP block that can connect to bastion host.",
       "Default": "0.0.0.0/0"
+    },
+    "VirtualHostDomain": {
+      "Type": "String",
+      "Description": "DNS TLD"
     }
   },
   "Resources": {
@@ -236,6 +240,25 @@
       "Type": "AWS::EC2::EIP",
       "Properties": {
         "Domain": "vpc"
+      }
+    },
+    "DnsRecord01": {
+      "Type": "AWS::Route53::RecordSetGroup",
+      "Properties": {
+        "HostedZoneName": {"Ref": "VirtualHostDomain"},
+        "Comment": "Alias for bastion EIP",
+        "RecordSets": [
+          {
+            "Name": {
+              "Fn::Join": [
+                ".", [{"Ref": "AWS::Region"}, {"Ref": "Orbit"}, {"Ref": "VirtualHostDomain"}]
+              ]
+            },
+            "Type": "A",
+            "TTL": 300,
+            "ResourceRecords": [{"Ref": "ElasticIp01"}]
+          }
+        ]
       }
     }
   },

@@ -1,13 +1,13 @@
-from mock import MagicMock
 import unittest
+
+from mock import MagicMock
 
 from spacel.aws import AmiFinder
 from spacel.model import Orbit
 from spacel.model.orbit import BASTION_INSTANCE_COUNT
 from spacel.provision.template.bastion import BastionTemplate
+from test import REGION
 from test.provision.template import SUBNETS
-
-REGION = 'us-east-1'
 
 
 class TestBastionTemplate(unittest.TestCase):
@@ -30,5 +30,8 @@ class TestBastionTemplate(unittest.TestCase):
 
         bastion = self.cache.bastion(self.orbit, REGION)
 
-        bastion_resources = len(bastion['Resources'])
-        self.assertEquals(self.base_resources + 1, bastion_resources)
+        bastion_resources = bastion['Resources']
+        # 3 resources: Eip01, DNS:bastion01, DNS:bastion02
+        self.assertEquals(self.base_resources + 3, len(bastion_resources))
+        self.assertIn('ElasticIp02', bastion_resources)
+        self.assertIn('DnsRecord02', bastion_resources)
