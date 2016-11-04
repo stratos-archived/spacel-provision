@@ -239,11 +239,11 @@ class BaseCloudFormationFactory(object):
                     status_reason = event.get('ResourceStatusReason', '')
                     if status_reason:
                         status_reason = ' (%s)' % status_reason
-                    logger.info('Resource %s - %s%s at %s',
-                                resource_id,
-                                status,
-                                status_reason,
-                                event_time.strftime('%Y-%m-%d %H:%M:%S'))
+                    logger.debug('Resource %s - %s%s at %s',
+                                 resource_id,
+                                 status,
+                                 status_reason,
+                                 event_time.strftime('%Y-%m-%d %H:%M:%S'))
 
                     # Push "start" to the last logged event
                     if not is_complete:
