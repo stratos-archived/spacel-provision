@@ -23,7 +23,8 @@ class BastionTemplate(BaseTemplateCache):
         # Link to VPC:
         params['VpcId']['Default'] = orbit.vpc_id(region)
         params['Orbit']['Default'] = orbit.name
-        params['VirtualHostDomain']['Default'] = orbit.domain + '.'
+        if orbit.domain:
+            params['VirtualHostDomain']['Default'] = orbit.domain + '.'
 
         # Bastion parameters:
         bastion_type = orbit.get_param(region, BASTION_INSTANCE_TYPE)

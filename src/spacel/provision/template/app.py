@@ -63,7 +63,7 @@ class AppTemplate(BaseTemplateCache):
             domain = '.'.join(domain[-2:]) + '.'
             params['VirtualHostDomain']['Default'] = domain
             params['VirtualHost']['Default'] = app_hostname
-        else:
+        elif orbit.domain:
             params['VirtualHostDomain']['Default'] = orbit.domain + '.'
             app_hostname = '%s-%s.%s' % (app.name, orbit.name, orbit.domain)
             params['VirtualHost']['Default'] = app_hostname

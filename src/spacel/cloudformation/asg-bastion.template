@@ -43,6 +43,18 @@
       "Description": "DNS TLD"
     }
   },
+  "Conditions": {
+    "HasVirtualHost": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {"Ref": "VirtualHostDomain"},
+            ""
+          ]
+        }
+      ]
+    }
+  },
   "Resources": {
     "Sg": {
       "Type": "AWS::EC2::SecurityGroup",
@@ -244,6 +256,7 @@
     },
     "DnsRecord01": {
       "Type": "AWS::Route53::RecordSetGroup",
+      "Condition": "HasVirtualHost",
       "Properties": {
         "HostedZoneName": {"Ref": "VirtualHostDomain"},
         "Comment": "Alias for bastion EIP",
