@@ -33,6 +33,8 @@ class SpaceApp(object):
         self.services = {}
         services = params.get('services', {})
         for service_name, service_params in services.items():
+            if '.' not in service_name:
+                service_name += '.service'
             service_env = service_params.get('environment', {})
             unit_file = service_params.get('unit_file')
             if unit_file:
@@ -104,7 +106,6 @@ class SpaceDockerService(SpaceService):
         docker_run_flags += SpaceDockerService._dict_flags('p', ports)
         docker_run_flags += SpaceDockerService._dict_flags('v', volumes)
 
-        service_name = '%s.service' % name
         unit_file = """[Unit]
 Description={0}
 Requires=spacel-agent.service
@@ -120,8 +121,7 @@ ExecStartPre=-/usr/bin/docker rm %n
 ExecStart=/usr/bin/docker run --rm --name %n {2} {1}
 ExecStop=/usr/bin/docker stop %n
 """.format(name, image, docker_run_flags)
-        super(SpaceDockerService, self).__init__(service_name, unit_file,
-                                                 environment)
+        super(SpaceDockerService, self).__init__(name, unit_file, environment)
 
     @staticmethod
     def _dict_flags(flag, items):

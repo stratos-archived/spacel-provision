@@ -1,5 +1,7 @@
-import unittest
 import logging
+import unittest
+
+import requests
 
 from spacel.aws import ClientCache
 from spacel.main import provision
@@ -24,6 +26,8 @@ class BaseIntegrationTest(unittest.TestCase):
     APP_DOMAIN = 'pebbledev.com'
     APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, APP_DOMAIN)
     APP_VERSION = '0.1.0'
+    UPGRADE_VERSION = '0.0.2'
+    APP_URL = 'https://%s' % APP_HOSTNAME
 
     @classmethod
     def setUpClass(cls):
@@ -91,3 +95,8 @@ class BaseIntegrationTest(unittest.TestCase):
             self.ssh_db.add_key(app.orbit, user, key)
             self.ssh_db.grant(app, user)
         return app
+
+    @staticmethod
+    def _get(url):
+        full_url = '%s/%s' % (BaseIntegrationTest.APP_URL, url)
+        return requests.get(full_url)

@@ -5,7 +5,7 @@ from spacel.model.app import SpaceApp, SpaceDockerService
 
 ORBIT_REGIONS = ('us-east-1', 'us-west-2')
 CONTAINER = 'pwagner/elasticsearch-aws'
-SERVICE_NAME = 'elasticsearch'
+SERVICE_NAME = 'elasticsearch.service'
 
 
 class TestSpaceApp(unittest.TestCase):
