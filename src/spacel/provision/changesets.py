@@ -67,6 +67,11 @@ COSTS = {
         'Modify': 5,
         'Remove': 5
     },
+    'AWS::ElasticLoadBalancing::LoadBalancer': {
+        'Add': 15,
+        'Modify': 5,
+        'Remove': 5
+    },
     'AWS::ElastiCache::ReplicationGroup': {
         'Add': 120,
         'Modify': 30,
@@ -91,6 +96,11 @@ COSTS = {
         'Add': 300,
         'Modify': 300,
         'Remove': 120
+    },
+    'AWS::Route53::RecordSetGroup': {
+        'Add': 5,
+        'Modify': 5,
+        'Remove': 5
     },
     'AWS::SNS::Topic': {
         'Add': 15,

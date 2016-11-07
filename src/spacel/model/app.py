@@ -1,5 +1,6 @@
 import logging
 import six
+from spacel.provision import base64_encode
 
 logger = logging.getLogger('spacel')
 
@@ -52,6 +53,16 @@ class SpaceApp(object):
                 continue
 
             logger.warning('Invalid service: %s', service_name)
+
+        self.files = {}
+        files = params.get('files', {})
+        for file_name, file_params in files.items():
+            if isinstance(file_params, six.string_types):
+                encoded_body = base64_encode(file_params.encode('utf-8'))
+                self.files[file_name] = {'body': encoded_body}
+            else:
+                self.files[file_name] = file_params
+
         self.alarms = params.get('alarms', {})
         self.caches = params.get('caches', {})
         self.databases = params.get('databases', {})

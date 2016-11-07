@@ -178,10 +178,9 @@ class AppTemplate(BaseTemplateCache):
 
     @staticmethod
     def _user_data(params, app):
-        user_data = ''
+        systemd = {}
+        files = {}
         if app.services:
-            systemd = {}
-            files = {}
             for service_name, service in app.services.items():
                 unit_file = service.unit_file.encode('utf-8')
                 systemd[service.name] = {
@@ -194,8 +193,15 @@ class AppTemplate(BaseTemplateCache):
                     files['%s.env' % service_name] = {
                         'body': base64_encode(environment_file.encode('utf-8'))
                     }
+
+        files.update(app.files)
+
+        user_data = ''
+        if systemd:
             user_data += ',"systemd":' + json.dumps(systemd, sort_keys=True)
+        if files:
             user_data += ',"files":' + json.dumps(files, sort_keys=True)
+
         if app.volumes:
             params['VolumeSupport']['Default'] = 'true'
             user_data += ',"volumes":' + json.dumps(app.volumes, sort_keys=True)

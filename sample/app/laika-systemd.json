@@ -5,8 +5,11 @@
   "instance_max": 1,
   "services": {
     "laika": {
-      "unit_file": "[Unit]\nRequires=spacel-agent.service\n\n[Service]\nExecStartPre=-/usr/bin/docker pull pebbletech/spacel-laika:latest\nExecStartPre=-/usr/bin/docker kill %n\nExecStartPre=-/usr/bin/docker rm %n\nExecStart=/usr/bin/docker run --rm --name %n -p 80:8080 pebbletech/spacel-laika:latest\nExecStop=/usr/bin/docker stop %n"
+      "unit_file": "[Unit]\nRequires=spacel-agent.service\n\n[Service]\nExecStartPre=-/usr/bin/docker pull pebbletech/spacel-laika:latest\nExecStartPre=-/usr/bin/docker kill %n\nExecStartPre=-/usr/bin/docker rm %n\nExecStart=/usr/bin/docker run --rm --name %n -p 80:8080 --env-file=/files/test.env pebbletech/spacel-laika:latest\nExecStop=/usr/bin/docker stop %n"
     }
+  },
+  "files": {
+    "test.env": "MESSAGE=i am a file"
   },
   "public_ports": {
     "80": {
