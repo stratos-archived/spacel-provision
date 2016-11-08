@@ -1,4 +1,5 @@
 import logging
+import os
 import six
 from spacel.provision import base64_encode
 
@@ -113,7 +114,8 @@ class SpaceService(object):
 
 class SpaceDockerService(SpaceService):
     def __init__(self, name, image, ports=None, volumes=None, environment=None):
-        docker_run_flags = '--env-file /files/%s.env' % name
+        name_base = os.path.splitext(name)[0]
+        docker_run_flags = '--env-file /files/%s.env' % name_base
         docker_run_flags += SpaceDockerService._dict_flags('p', ports)
         docker_run_flags += SpaceDockerService._dict_flags('v', volumes)
 
