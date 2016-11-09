@@ -491,6 +491,27 @@
         }
       }
     },
+    "WriteLogsPolicy": {
+      "DependsOn": "Role",
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "WriteLogs",
+        "Roles": [{"Ref": "Role"}],
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogStreams"
+              ],
+              "Resource": {"Fn::GetAtt": ["DeployLogGroup", "Arn"]}
+            }
+          ]
+        }
+      }
+    },
     "Lc": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Properties": {
@@ -530,7 +551,14 @@
                 "\"caches\":{",
                 "},",
                 "\"databases\":{",
-                "}",
+                "},",
+                "\"logging\":{",
+                "\"deploy\":{",
+                "\"group\":\"",
+                {"Ref": "DeployLogGroup"},
+                "\",",
+                "\"level\":\"DEBUG\"",
+                "}}",
                 {"Ref": "UserData"},
                 "}"
               ]
@@ -580,6 +608,12 @@
           "WaitOnResourceSignals": "true",
           "PauseTime": "PT10M"
         }
+      }
+    },
+    "DeployLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 14
       }
     }
   },

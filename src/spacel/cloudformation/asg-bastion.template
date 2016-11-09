@@ -120,6 +120,22 @@
             }
           },
           {
+            "PolicyName": "LogOutput",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents",
+                    "logs:DescribeLogStreams"
+                  ],
+                  "Resource": {"Fn::GetAtt": ["DeployLogGroup", "Arn"]}
+                }
+              ]
+            }
+          },
+          {
             "PolicyName": "DynamoSsh",
             "PolicyDocument": {
               "Statement": [
@@ -199,9 +215,16 @@
                 },
                 "\"],",
                 "\"orbit\":\"",
-                {"Ref":"Orbit"},
+                {"Ref": "Orbit"},
                 "\",",
                 "\"bastion\":true,",
+                "\"logging\":{",
+                "\"deploy\":{",
+                "\"group\":\"",
+                {"Ref": "DeployLogGroup"},
+                "\",",
+                "\"level\":\"DEBUG\"",
+                "}},",
                 "\"cloudformation_signal\":{\"",
                 {"Ref": "AWS::StackName"},
                 "\":\"Asg\"}",
@@ -264,7 +287,10 @@
           {
             "Name": {
               "Fn::Join": [
-                ".", [{"Ref": "AWS::Region"}, {"Ref": "Orbit"}, {"Ref": "VirtualHostDomain"}]
+                ".", [
+                  {"Ref": "AWS::Region"}, {"Ref": "Orbit"},
+                  {"Ref": "VirtualHostDomain"}
+                ]
               ]
             },
             "Type": "A",
@@ -272,6 +298,12 @@
             "ResourceRecords": [{"Ref": "ElasticIp01"}]
           }
         ]
+      }
+    },
+    "DeployLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 14
       }
     }
   },
