@@ -152,7 +152,7 @@ class TestAppTemplate(BaseSpaceAppTest):
     def test_user_data_services(self):
         params = {'VolumeSupport': {}}
         self.app.services = {
-            'test.service': SpaceDockerService('test', 'test/test',
+            'test.service': SpaceDockerService('test.service', 'test/test',
                                                environment={'FOO': 'bar'})
         }
 

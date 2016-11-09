@@ -1,14 +1,9 @@
 import logging
-import requests
 import uuid
 
-from spacel.provision.db.cache import REDIS_PORT, REDIS_VERSION
 from test_integ import BaseIntegrationTest
 
 logger = logging.getLogger('spacel.test.deploy')
-
-APP_URL = 'https://%s' % BaseIntegrationTest.APP_HOSTNAME
-UPGRADE_VERSION = '0.0.2'
 
 
 class TestDeploy(BaseIntegrationTest):
@@ -22,9 +17,9 @@ class TestDeploy(BaseIntegrationTest):
         """Deploy a HTTPS service, upgrade and verify."""
         self.provision()
 
-        self.image(UPGRADE_VERSION)
+        self.image(BaseIntegrationTest.UPGRADE_VERSION)
         self.provision()
-        self._verify_deploy(version=UPGRADE_VERSION)
+        self._verify_deploy(version=BaseIntegrationTest.UPGRADE_VERSION)
 
     def test_03_environment(self):
         """Deploy a service with custom environment variable, verify."""
@@ -35,76 +30,33 @@ class TestDeploy(BaseIntegrationTest):
         self.provision()
         self._verify_message(message=random_message)
 
-    def test_04_disk(self):
-        """Deploy a service with persistent EBS volume, verify."""
-        # 1 EBS volume, which can only by used by 1 instance at a time:
-        self.app_params['instance_max'] = 1
-        self.app_params['volumes'] = {
-            'data0': {
-                'count': 1,
-                'size': 1
-            }
-        }
-        # Mounted by docker service:
-        self.app_params['services']['laika']['volumes'] = {
-            '/mnt/data0': '/mnt/data'
-        }
-        # Configured by application:
-        self.app_params['services']['laika']['environment'] = {
-            'DISK_PATH': '/mnt/data/file.txt'
-        }
+    def test_04_systemd(self):
+        """Deploy a service with fulltext systemd unit."""
+        del self.app_params['services']['laika']['image']
+        self.app_params['services']['laika']['unit_file'] = '''[Unit]
+Description=Fulltext unit
+Requires=spacel-agent.service
+
+[Service]
+User=space
+TimeoutStartSec=0
+Restart=always
+StartLimitInterval=0
+ExecStartPre=-/usr/bin/docker pull {0}
+ExecStartPre=-/usr/bin/docker kill %n
+ExecStartPre=-/usr/bin/docker rm %n
+ExecStart=/usr/bin/docker run --rm --name %n -p 80:8080 -e MESSAGE=handwritten {0}
+ExecStop=/usr/bin/docker stop %n
+'''.format('pebbletech/spacel-laika:latest')
 
         self.provision()
+        self._verify_message('handwritten')
 
-        initial = self._verify_disk()
-        self.assertNotEquals(0, initial)
-
-        # Upgrade, verify persistence:
-        self.image(UPGRADE_VERSION)
-        self.provision()
-        self._verify_disk(expected_count=initial)
-
-    def test_05_cache(self):
-        """Deploy a service with ElastiCache, verify."""
-        self.app_params['caches'] = {
-            'redis': {}
-        }
-        self.provision()
-        self._verify_redis()
-
-    def test_06_rds(self):
-        """Deploy a service with RDS, verify."""
-        self.app_params['databases'] = {
-            'postgres': {}
-        }
-        self.provision()
-
-    def _verify_deploy(self, url=APP_URL, version=None):
+    def _verify_deploy(self, version=None):
         version = version or BaseIntegrationTest.APP_VERSION
-        r = requests.get(url)
+        r = self._get('')
         self.assertEquals(version, r.json()['version'])
 
-    def _verify_message(self, url=APP_URL, message=''):
-        r = requests.get('%s/environment' % url)
+    def _verify_message(self, message=''):
+        r = self._get('environment')
         self.assertEquals(message, r.json()['message'])
-
-    def _verify_redis(self, url=APP_URL):
-        r = requests.get('%s/redis/info' % url)
-        redis_info = r.json()
-        self.assertEquals(REDIS_PORT, redis_info['tcp_port'])
-        self.assertEquals(REDIS_VERSION, redis_info['redis_version'])
-        counter_url = '%s/redis/counter' % url
-        self._verify_counter(counter_url, post_count=10)
-
-    def _verify_disk(self, url=APP_URL, expected_count=0, post_count=10):
-        counter_url = '%s/disk/counter' % url
-        return self._verify_counter(counter_url, expected_count, post_count)
-
-    def _verify_counter(self, counter_url, expected_count=0, post_count=10):
-        r = requests.get(counter_url)
-        count = r.json()['count']
-        self.assertTrue(count >= expected_count)
-        for i in range(post_count):
-            r = requests.post(counter_url)
-            count = r.json()['count']
-        return count

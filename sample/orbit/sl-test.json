@@ -1,0 +1,7 @@
+{
+  "name": "sl-test",
+  "domain": "pebbledev.com",
+  "regions": [
+    "us-east-1"
+  ]
+}

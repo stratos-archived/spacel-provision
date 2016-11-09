@@ -1,5 +1,7 @@
 import logging
+import os
 import six
+from spacel.provision import base64_encode
 
 logger = logging.getLogger('spacel')
 
@@ -33,6 +35,8 @@ class SpaceApp(object):
         self.services = {}
         services = params.get('services', {})
         for service_name, service_params in services.items():
+            if '.' not in service_name:
+                service_name += '.service'
             service_env = service_params.get('environment', {})
             unit_file = service_params.get('unit_file')
             if unit_file:
@@ -50,6 +54,16 @@ class SpaceApp(object):
                 continue
 
             logger.warning('Invalid service: %s', service_name)
+
+        self.files = {}
+        files = params.get('files', {})
+        for file_name, file_params in files.items():
+            if isinstance(file_params, six.string_types):
+                encoded_body = base64_encode(file_params.encode('utf-8'))
+                self.files[file_name] = {'body': encoded_body}
+            else:
+                self.files[file_name] = file_params
+
         self.alarms = params.get('alarms', {})
         self.caches = params.get('caches', {})
         self.databases = params.get('databases', {})
@@ -100,11 +114,11 @@ class SpaceService(object):
 
 class SpaceDockerService(SpaceService):
     def __init__(self, name, image, ports=None, volumes=None, environment=None):
-        docker_run_flags = '--env-file /files/%s.env' % name
+        name_base = os.path.splitext(name)[0]
+        docker_run_flags = '--env-file /files/%s.env' % name_base
         docker_run_flags += SpaceDockerService._dict_flags('p', ports)
         docker_run_flags += SpaceDockerService._dict_flags('v', volumes)
 
-        service_name = '%s.service' % name
         unit_file = """[Unit]
 Description={0}
 Requires=spacel-agent.service
@@ -120,8 +134,7 @@ ExecStartPre=-/usr/bin/docker rm %n
 ExecStart=/usr/bin/docker run --rm --name %n {2} {1}
 ExecStop=/usr/bin/docker stop %n
 """.format(name, image, docker_run_flags)
-        super(SpaceDockerService, self).__init__(service_name, unit_file,
-                                                 environment)
+        super(SpaceDockerService, self).__init__(name, unit_file, environment)
 
     @staticmethod
     def _dict_flags(flag, items):

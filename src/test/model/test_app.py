@@ -5,7 +5,7 @@ from spacel.model.app import SpaceApp, SpaceDockerService
 
 ORBIT_REGIONS = ('us-east-1', 'us-west-2')
 CONTAINER = 'pwagner/elasticsearch-aws'
-SERVICE_NAME = 'elasticsearch'
+SERVICE_NAME = 'elasticsearch.service'
 
 
 class TestSpaceApp(unittest.TestCase):
@@ -89,7 +89,7 @@ class TestSpaceApp(unittest.TestCase):
                 SERVICE_NAME: {}
             }
         })
-        
+
         self.assertEqual(0, len(app.services))
 
     def test_spot(self):
@@ -105,6 +105,44 @@ class TestSpaceApp(unittest.TestCase):
     def test_full_name(self):
         app = SpaceApp(self.orbit, {})
         self.assertEquals(app.full_name, 'test-orbit-test')
+
+    def test_files_raw_string(self):
+        app = SpaceApp(self.orbit, {
+            'files': {
+                'test-file': 'meow'
+            }
+        })
+
+        self.assertEquals(1, len(app.files))
+        self.assertEquals({'body': 'bWVvdw=='}, app.files['test-file'])
+
+    def test_files_raw_encoded(self):
+        encoded_body = {'body': 'bWVvdw=='}
+        app = SpaceApp(self.orbit, {
+            'files': {
+                'test-file': encoded_body
+            }
+        })
+
+        self.assertEquals(1, len(app.files))
+        self.assertEquals(encoded_body, app.files['test-file'])
+
+    def test_files_encrypted(self):
+        encrypted_payload = {
+            'iv': '',
+            'key': '',
+            'key_region': '',
+            'ciphertext': '',
+            'encoding': ''
+        }
+        app = SpaceApp(self.orbit, {
+            'files': {
+                'test-file': encrypted_payload
+            }
+        })
+
+        self.assertEquals(1, len(app.files))
+        self.assertEquals(encrypted_payload, app.files['test-file'])
 
 
 class TestSpaceDockerService(unittest.TestCase):
