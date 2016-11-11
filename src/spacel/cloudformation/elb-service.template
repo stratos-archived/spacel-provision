@@ -606,7 +606,8 @@
         "AutoScalingRollingUpdate": {
           "MinInstancesInService": {"Ref": "InstanceMinInService"},
           "WaitOnResourceSignals": "true",
-          "PauseTime": "PT10M"
+          "PauseTime": "PT10M",
+          "SuspendProcesses": ["ReplaceUnhealthy"]
         }
       }
     },

@@ -121,7 +121,7 @@ class SpaceDockerService(SpaceService):
 
         unit_file = """[Unit]
 Description={0}
-Requires=spacel-agent.service
+Wants=spacel-agent.service
 
 [Service]
 User=space
@@ -129,10 +129,9 @@ TimeoutStartSec=0
 Restart=always
 StartLimitInterval=0
 ExecStartPre=-/usr/bin/docker pull {1}
-ExecStartPre=-/usr/bin/docker kill %n
-ExecStartPre=-/usr/bin/docker rm %n
+ExecStartPre=-/usr/bin/docker rm -f %n
 ExecStart=/usr/bin/docker run --rm --name %n {2} {1}
-ExecStop=/usr/bin/docker stop %n
+ExecStop=/usr/bin/docker stop -t 2 %n
 """.format(name, image, docker_run_flags)
         super(SpaceDockerService, self).__init__(name, unit_file, environment)
 

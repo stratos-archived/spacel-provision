@@ -68,7 +68,8 @@ def provision(app):
     orbit_factory.get_orbit(app.orbit)
     provisioner = CloudProvisioner(clients, change_sets, template_up,
                                    app_template)
-    provisioner.app(app)
+    if not provisioner.app(app):
+        return 1
     return 0
 
 

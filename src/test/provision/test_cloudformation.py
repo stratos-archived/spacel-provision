@@ -1,15 +1,14 @@
-from datetime import datetime, timedelta
-from mock import MagicMock, ANY, patch
 import unittest
+from datetime import datetime, timedelta
 
 from botocore.exceptions import ClientError
+from mock import MagicMock, ANY, patch
 
 from spacel.aws.clients import ClientCache
 from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              NO_CHANGES, CF_STACK)
 from spacel.provision.s3.template_uploader import TemplateUploader
-
 from test import REGION
 
 NAME = 'test-stack'
@@ -227,18 +226,38 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         self.cloudformation.delete_stack.assert_called_with(StackName=NAME)
 
     def test_wait_for_updates_skip_noops(self):
-        self.cf_factory._wait_for_updates(NAME, {
+        updated = self.cf_factory._wait_for_updates(NAME, {
             REGION: None
         })
+        self.assertTrue(updated)
 
         self.cloudformation.describe_stack_events.assert_not_called()
 
     def test_wait_for_updates_skip_failed(self):
-        self.cf_factory._wait_for_updates(NAME, {
+        updated = self.cf_factory._wait_for_updates(NAME, {
             REGION: 'failed'
         })
+        self.assertTrue(updated)
 
         self.cloudformation.describe_stack_events.assert_not_called()
+
+    def test_wait_for_updates_failed(self):
+        self.cloudformation.describe_stack_events.return_value = {
+            'StackEvents': [{
+                'Timestamp': datetime.utcnow(),
+                'LogicalResourceId': NAME,
+                'ResourceType': CF_STACK,
+                'ResourceStatus': 'UPDATE_ROLLBACK_COMPLETE'
+            }]
+        }
+
+        updated = self.cf_factory._wait_for_updates(NAME, {
+            REGION: 'update'
+        }, poll_interval=0.001)
+        self.assertFalse(updated)
+
+        self.assertEquals(1,
+                          self.cloudformation.describe_stack_events.call_count)
 
     def test_wait_for_updates(self):
         self.cloudformation.describe_stack_events.return_value = {
@@ -266,9 +285,10 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
             }]
         }
 
-        self.cf_factory._wait_for_updates(NAME, {
+        updated = self.cf_factory._wait_for_updates(NAME, {
             REGION: 'update'
         }, poll_interval=0.001)
+        self.assertTrue(updated)
 
         self.assertEquals(3,
                           self.cloudformation.describe_stack_events.call_count)

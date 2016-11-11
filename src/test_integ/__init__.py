@@ -37,7 +37,6 @@ class BaseIntegrationTest(unittest.TestCase):
         logging.getLogger('botocore').setLevel(logging.CRITICAL)
         logging.getLogger('paramiko').setLevel(logging.CRITICAL)
         logging.getLogger('requests').setLevel(logging.CRITICAL)
-
         logging.getLogger('spacel').setLevel(logging.DEBUG)
 
     def setUp(self):
@@ -100,3 +99,7 @@ class BaseIntegrationTest(unittest.TestCase):
     def _get(url):
         full_url = '%s/%s' % (BaseIntegrationTest.APP_URL, url)
         return requests.get(full_url)
+
+    def _set_unit_file(self, unit_file):
+        del self.app_params['services']['laika']['image']
+        self.app_params['services']['laika']['unit_file'] = unit_file

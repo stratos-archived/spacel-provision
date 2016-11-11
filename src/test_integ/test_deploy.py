@@ -1,9 +1,6 @@
-import logging
 import uuid
 
 from test_integ import BaseIntegrationTest
-
-logger = logging.getLogger('spacel.test.deploy')
 
 
 class TestDeploy(BaseIntegrationTest):
@@ -32,8 +29,7 @@ class TestDeploy(BaseIntegrationTest):
 
     def test_04_systemd(self):
         """Deploy a service with fulltext systemd unit."""
-        del self.app_params['services']['laika']['image']
-        self.app_params['services']['laika']['unit_file'] = '''[Unit]
+        self._set_unit_file('''[Unit]
 Description=Fulltext unit
 Requires=spacel-agent.service
 
@@ -47,7 +43,7 @@ ExecStartPre=-/usr/bin/docker kill %n
 ExecStartPre=-/usr/bin/docker rm %n
 ExecStart=/usr/bin/docker run --rm --name %n -p 80:8080 -e MESSAGE=handwritten {0}
 ExecStop=/usr/bin/docker stop %n
-'''.format('pebbletech/spacel-laika:latest')
+'''.format('pebbletech/spacel-laika:latest'))
 
         self.provision()
         self._verify_message('handwritten')
