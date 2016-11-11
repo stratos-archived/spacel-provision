@@ -50,7 +50,6 @@ class AppTemplate(BaseTemplateCache):
             params['PrivateRdsSubnetGroup']['Default'] = private_rds_group
 
         # Inject parameters:
-        params['ElbScheme']['Default'] = app.scheme
         params['HealthCheckTarget']['Default'] = app.health_check
         params['InstanceType']['Default'] = app.instance_type
         params['InstanceMin']['Default'] = app.instance_min
@@ -74,20 +73,32 @@ class AppTemplate(BaseTemplateCache):
             app_hostname = '%s-%s.%s' % (app.name, orbit.name, orbit.domain)
             params['VirtualHost']['Default'] = app_hostname
 
-        # Expand ELB to all AZs:
-        public_elb_subnets = orbit.public_elb_subnets(region)
-        private_elb_subnets = orbit.private_elb_subnets(region)
-        self._subnet_params(params, 'PublicElb', public_elb_subnets)
-        self._subnet_params(params, 'PrivateElb', private_elb_subnets)
+        if app.loadbalancer == 'true':
+            params['ElbScheme']['Default'] = app.scheme
+            # Expand ELB to all AZs:
+            public_elb_subnets = orbit.public_elb_subnets(region)
+            private_elb_subnets = orbit.private_elb_subnets(region)
+            self._subnet_params(params, 'PublicElb', public_elb_subnets)
+            self._subnet_params(params, 'PrivateElb', private_elb_subnets)
 
-        self._elb_subnets(resources, 'PublicElb', public_elb_subnets)
-        self._elb_subnets(resources, 'PrivateElb', private_elb_subnets)
+            self._elb_subnets(resources, 'PublicElb', public_elb_subnets)
+            self._elb_subnets(resources, 'PrivateElb', private_elb_subnets)
 
         # Expand ASG to all AZs:
-        private_instance_subnets = orbit.private_instance_subnets(region)
-        self._subnet_params(params, 'PrivateInstance', private_instance_subnets)
-        self._asg_subnets(resources, 'PrivateInstance',
-                          private_instance_subnets)
+        if app.availability == 'public':
+            public_instance_subnets = orbit.public_instance_subnets(region)
+            self._subnet_params(params, 'PrivateInstance',
+                                public_instance_subnets)
+            self._asg_subnets(resources, 'PrivateInstance',
+                              public_instance_subnets)
+            # There is no other means of getting internet (out) otherwise!
+            resources['Lc']['Properties']['AssociatePublicIpAddress'] = True
+        else:
+            private_instance_subnets = orbit.private_instance_subnets(region)
+            self._subnet_params(params, 'PrivateInstance',
+                                private_instance_subnets)
+            self._asg_subnets(resources, 'PrivateInstance',
+                              private_instance_subnets)
 
         # Public ports:
         elb_ingress = resources['ElbSg']['Properties']['SecurityGroupIngress']
@@ -96,47 +107,58 @@ class AppTemplate(BaseTemplateCache):
         private_elb = resources['PrivateElb']['Properties']['Listeners']
         elb_ingress_ports = set()
         for port_number, port_config in sorted(app.public_ports.items()):
-            # Allow all sources into ELB:
-            for ip_source in port_config.sources:
-                elb_ingress.append({
-                    'IpProtocol': 'tcp',
-                    'FromPort': port_number,
-                    'ToPort': port_number,
-                    'CidrIp': ip_source
-                })
+            if app.loadbalancer != 'true':
+                for ip_source in port_config.sources:
+                    instance_ingress.append({
+                        'IpProtocol': 'tcp',
+                        'FromPort': port_number,
+                        'ToPort': port_number,
+                        'CidrIp': ip_source
+                    })
+            else:
+                # Allow all sources into ELB:
+                for ip_source in port_config.sources:
+                    elb_ingress.append({
+                        'IpProtocol': 'tcp',
+                        'FromPort': port_number,
+                        'ToPort': port_number,
+                        'CidrIp': ip_source
+                    })
 
-            # Allow ELB->Instance
-            internal_port = port_config.internal_port
-            if internal_port not in elb_ingress_ports:
-                instance_ingress.append({
-                    'IpProtocol': 'tcp',
-                    'FromPort': internal_port,
-                    'ToPort': internal_port,
-                    'SourceSecurityGroupId': {'Ref': 'ElbSg'}
-                })
-                elb_ingress_ports.add(internal_port)
+                # Allow ELB->Instance
+                internal_port = port_config.internal_port
+                if internal_port not in elb_ingress_ports:
+                    instance_ingress.append({
+                        'IpProtocol': 'tcp',
+                        'FromPort': internal_port,
+                        'ToPort': internal_port,
+                        'SourceSecurityGroupId': {'Ref': 'ElbSg'}
+                    })
+                    elb_ingress_ports.add(internal_port)
 
-            elb_listener = {
-                'InstancePort': str(internal_port),
-                'LoadBalancerPort': port_number,
-                'Protocol': port_config.scheme,
-                'InstanceProtocol': port_config.internal_scheme
-            }
+                elb_listener = {
+                    'InstancePort': str(internal_port),
+                    'LoadBalancerPort': port_number,
+                    'Protocol': port_config.scheme,
+                    'InstanceProtocol': port_config.internal_scheme
+                }
 
-            if port_config.scheme in SSL_SCHEMES:
-                cert = port_config.certificate
-                if not cert:
-                    cert = self._acm.get_certificate(region, app_hostname)
-                if not cert:
-                    logger.warning('Unable to find certificate for %s. ' +
-                                   'Specify a "certificate" or request in ACM.',
-                                   app_hostname)
-                    raise Exception('Public_port %s is missing certificate.' %
-                                    port_number)
-                elb_listener['SSLCertificateId'] = cert
+                if port_config.scheme in SSL_SCHEMES:
+                    cert = port_config.certificate
+                    if not cert:
+                        cert = self._acm.get_certificate(region, app_hostname)
+                    if not cert:
+                        logger.warning(
+                            'Unable to find certificate for %s. ' +
+                            'Specify a "certificate" or request in ACM.',
+                            app_hostname)
+                        raise Exception(
+                            'Public_port %s is missing certificate.' %
+                            port_number)
+                    elb_listener['SSLCertificateId'] = cert
 
-            public_elb.append(elb_listener)
-            private_elb.append(elb_listener)
+                public_elb.append(elb_listener)
+                private_elb.append(elb_listener)
 
         # Private ports:
         for private_port, protocols in sorted(app.private_ports.items()):
@@ -172,6 +194,24 @@ class AppTemplate(BaseTemplateCache):
                     'DeviceName': device,
                     'VirtualName': 'ephemeral%d' % volume_index
                 })
+
+        # Clean up loadbalancer if it's unwanted
+        if app.loadbalancer != 'true':
+            params['PublicElb'] = {
+                'Type': 'String',
+                'Default': False
+            }
+            params['PrivateElb'] = {
+                'Type': 'String',
+                'Default': False
+            }
+            del params['PrivateElbSubnet01'], params['PublicElbSubnet01']
+            del (resources['PublicElb'], resources['PrivateElb'],
+                 resources['ElbSg'], resources['DnsRecord'],
+                 resources['ElbHealthPolicy'],
+                 resources['Asg']['Properties']['LoadBalancerNames'])
+            resources['Asg']['Properties']['HealthCheckType'] = 'EC2'
+            params['ElbScheme']['Default'] = ''
 
         self._alarm_factory.add_alarms(app_template, app.alarms)
         self._cache_factory.add_caches(app, region, app_template, app.caches)

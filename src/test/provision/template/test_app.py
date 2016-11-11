@@ -64,6 +64,37 @@ class TestAppTemplate(BaseSpaceAppTest):
         bastion_sg_param = app['Parameters']['BastionSecurityGroup']['Default']
         self.assertEqual('sg-123tes', bastion_sg_param)
 
+    def test_app_availability(self):
+        self.app.availability = 'public'
+        self.orbit.public_instance_subnets = MagicMock(return_value=('test',))
+
+        app, _ = self.cache.app(self.app, REGION)
+
+        self.orbit.public_instance_subnets.assert_called_once()
+        public_addr = (app['Resources']['Lc']['Properties']
+                          ['AssociatePublicIpAddress'])
+        self.assertEqual(True, public_addr)
+
+    def test_app_no_loadbalancer(self):
+        self.app.loadbalancer = 'false'
+
+        app, _ = self.cache.app(self.app, REGION)
+
+        self.assertEqual(False, app['Parameters']['PublicElb']['Default'])
+        self.assertEqual(False, app['Parameters']['PrivateElb']['Default'])
+        self.assertNotIn('PublicElb', app['Resources'])
+        self.assertNotIn('PrivateElb', app['Resources'])
+        self.assertNotIn('ElbSg', app['Resources'])
+        self.assertNotIn('DnsRecord', app['Resources'])
+        self.assertNotIn('ElbHealthPolicy', app['Resources'])
+        self.assertNotIn('LoadBalancerNames', app['Resources']['Asg']
+                                                 ['Properties'])
+        self.assertNotIn('PrivateElbSubnet01', app['Parameters'])
+        self.assertNotIn('PublicElbSubnet01', app['Parameters'])
+        self.assertEqual('', app['Parameters']['ElbScheme']['Default'])
+        self.assertEqual('EC2', app['Resources']['Asg']['Properties']
+                                   ['HealthCheckType'])
+
     def test_app_private_ports(self):
         self.app.private_ports = {123: ['TCP']}
 

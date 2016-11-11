@@ -33,8 +33,7 @@
     "ElbScheme": {
       "Description": "Scheme for ELB",
       "Type": "String",
-      "Default": "internet-facing",
-      "AllowedValues": ["internet-facing", "internal"]
+      "Default": "internet-facing"
     },
     "HealthCheckTarget": {
       "Description": "Target for HealthCheck.",
@@ -112,6 +111,16 @@
       "Fn::Equals": [
         {"Ref": "ElbScheme"},
         "internal"
+      ]
+    },
+    "HasElb": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {"Ref": "ElbScheme"},
+            ""
+          ]
+        }
       ]
     },
     "AddVolumePermissions": {
@@ -533,15 +542,24 @@
           "Fn::Base64": {
             "Fn::Join": [
               "", [
-                "{\"elb\":{\"name\":\"",
-                {
-                  "Fn::If": [
-                    "ElbPublic",
-                    {"Ref": "PublicElb"},
-                    {"Ref": "PrivateElb"}
-                  ]
-                },
-                "\"},\"orbit\":\"",
+                { "Fn::If": [
+                  "HasElb",
+                  {"Fn::Join": [
+                    "", [
+                      "{\"elb\":{\"name\":\"",
+                      {
+                        "Fn::If": [
+                          "ElbPublic",
+                          {"Ref": "PublicElb"},
+                          {"Ref": "PrivateElb"}
+                        ]
+                      },
+                      "\"},"
+                    ]
+                  ]},
+                  "{"
+                ]},
+                "\"orbit\":\"",
                 {"Ref": "Orbit"},
                 "\",\"name\":\"",
                 {"Ref": "Service"},
@@ -621,9 +639,13 @@
     "Elb": {
       "Value": {
         "Fn::If": [
-          "ElbPublic",
-          {"Ref": "PublicElb"},
-          {"Ref": "PrivateElb"}
+          "HasElb",
+          {"Fn::If": [
+            "ElbPublic",
+            {"Ref": "PublicElb"},
+            {"Ref": "PrivateElb"}
+          ]},
+          ""
         ]
       }
     }

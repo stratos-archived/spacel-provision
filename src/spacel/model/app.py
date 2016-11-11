@@ -24,6 +24,8 @@ class SpaceApp(object):
         self.scheme = params.get('scheme', 'internet-facing')
         self.health_check = params.get('health_check', 'TCP:80')
         self.local_health_check = params.get('health_check', 'TCP:80')
+        self.loadbalancer = params.get('loadbalancer', 'true')
+        self.availability = params.get('availability', 'private')
 
         public_ports = params.get('public_ports', {80: {}})
         self.public_ports = {port: SpaceServicePort(port, port_params)
