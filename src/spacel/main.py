@@ -56,7 +56,7 @@ def provision(app):
     app_spot = AppSpotTemplateDecorator()
     acm = AcmCertificates(clients)
     app_template = AppTemplate(ami_finder, alarm_factory, cache_factory,
-                               rds_factory, app_spot, acm)
+                               rds_factory, app_spot, acm, kms_key_factory)
     bastion_template = BastionTemplate(ami_finder)
     tables_template = TablesTemplate()
     vpc_template = VpcTemplate()

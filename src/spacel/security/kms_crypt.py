@@ -1,11 +1,11 @@
 import logging
 
-from botocore.exceptions import ClientError
+import six
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util.py3compat import bchr, bord
+from botocore.exceptions import ClientError
 
-import six
 from spacel.security.payload import EncryptedPayload
 
 logger = logging.getLogger('spacel.security.kms_crypt')
