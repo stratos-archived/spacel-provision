@@ -1,10 +1,10 @@
-from collections import defaultdict
 import datetime
 import json
 import logging
 import re
 import time
 import uuid
+from collections import defaultdict
 
 from botocore.exceptions import ClientError
 
@@ -23,7 +23,8 @@ NO_CHANGES = 'The submitted information didn\'t contain changes.' \
 CF_STACK = 'AWS::CloudFormation::Stack'
 FINAL_STATUS = ('CREATE_COMPLETE', 'DELETE_COMPLETE', 'UPDATE_COMPLETE',
                 'UPDATE_ROLLBACK_COMPLETE')
-ROLLBACK_STATE = 'ROLLBACK_COMPLETE'
+ROLLBACK_STATUS = ('UPDATE_ROLLBACK_COMPLETE', 'ROLLBACK_COMPLETE',
+                   'UPDATE_ROLLBACK_FAILED')
 
 
 def key_sorted(some_dict):
@@ -180,6 +181,13 @@ class BaseCloudFormationFactory(object):
         return cf.describe_stacks(StackName=stack_name)['Stacks'][0]
 
     def _wait_for_updates(self, name, updates, poll_interval=5):
+        """
+        Wait for updates to complete in a stack.
+        :param name: Application name.
+        :param updates: Stack update dict of {region:update}.
+        :param poll_interval: Interval to poll for updates/completion.
+        :return: True if updates completed.
+        """
         start = datetime.datetime.utcnow() - datetime.timedelta(seconds=5)
 
         # Collect regions that require updates:
@@ -193,12 +201,13 @@ class BaseCloudFormationFactory(object):
             pending[region] = start
 
         if not pending:
-            return
+            return True
 
         resource_starts = defaultdict(dict)
         resource_times = defaultdict(dict)
 
         # Loop until every region is finished:
+        rollback_count = 0
         while pending:
             for region, last_log in pending.copy().items():
                 # Get stack events in this region
@@ -220,9 +229,8 @@ class BaseCloudFormationFactory(object):
                     resource_id = event['LogicalResourceId']
                     resource_type = event['ResourceType']
                     status = event['ResourceStatus']
-                    is_complete = (resource_id == name
-                                   and resource_type == CF_STACK
-                                   and status in FINAL_STATUS)
+                    is_stack = resource_id == name and resource_type == CF_STACK
+                    is_complete = is_stack and status in FINAL_STATUS
                     if is_complete:
                         del pending[region]
 
@@ -234,6 +242,10 @@ class BaseCloudFormationFactory(object):
                           and resource_id not in resource_starts):
                         resource_start = region_starts.get(resource_id)
                         region_times[resource_id] = time.time() - resource_start
+
+                    is_rollback = is_stack and status in ROLLBACK_STATUS
+                    if is_rollback:
+                        rollback_count += 1
 
                     # Flush any remaining events to log:
                     status_reason = event.get('ResourceStatusReason', '')
@@ -258,7 +270,9 @@ class BaseCloudFormationFactory(object):
 
         end = datetime.datetime.utcnow()
         duration = (end - start).total_seconds()
-        logger.info('Completed all updates in %i seconds.', duration)
+        logger.info('Completed all updates in %i seconds, %s rollbacks.',
+                    duration, rollback_count)
+        return rollback_count == 0
 
     @staticmethod
     def _impatient(waiter):
