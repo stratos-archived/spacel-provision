@@ -14,6 +14,7 @@ class CloudProvisioner(BaseCloudFormationFactory):
         """
         Provision an app in all regions.
         :param app:  App to provision.
+        :returns True if updates completed.
         """
         app_name = app.full_name
         updates = {}
@@ -21,7 +22,7 @@ class CloudProvisioner(BaseCloudFormationFactory):
             template, secret_params = self._app.app(app, region)
             updates[region] = self._stack(app_name, region, template,
                                           secret_parameters=secret_params)
-        self._wait_for_updates(app_name, updates)
+        return self._wait_for_updates(app_name, updates)
 
     def delete_app(self, app):
         """
