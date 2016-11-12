@@ -188,7 +188,8 @@ class BaseCloudFormationFactory(object):
         :param poll_interval: Interval to poll for updates/completion.
         :return: True if updates completed.
         """
-        start = datetime.datetime.utcnow() - datetime.timedelta(seconds=5)
+        start_offset = datetime.timedelta(seconds=5)
+        start = datetime.datetime.utcnow() - start_offset
 
         # Collect regions that require updates:
         pending = {}
@@ -212,8 +213,17 @@ class BaseCloudFormationFactory(object):
             for region, last_log in pending.copy().items():
                 # Get stack events in this region
                 cf = self._clients.cloudformation(region)
-                events = (cf.describe_stack_events(StackName=name)
-                          .get('StackEvents', ()))
+                try:
+                    events = (cf.describe_stack_events(StackName=name)
+                              .get('StackEvents', ()))
+                except ClientError as e:
+                    # Deleting a stack that doesn't exist is fine:
+                    if updates[region] == 'delete':
+                        e_message = e.response['Error'].get('Message')
+                        if 'does not exist' in e_message:
+                            del pending[region]
+                            continue
+                    raise e
 
                 region_starts = resource_starts[region]
                 region_times = resource_times[region]
@@ -265,11 +275,12 @@ class BaseCloudFormationFactory(object):
             if pending:
                 time.sleep(poll_interval)
 
-        times_str = json.dumps(dict(resource_times), indent=2, sort_keys=True)
-        logger.debug('Resource times: %s', times_str)
+        if resource_times:
+            times_str = json.dumps(dict(resource_times), indent=2, sort_keys=True)
+            logger.debug('Resource times: %s', times_str)
 
         end = datetime.datetime.utcnow()
-        duration = (end - start).total_seconds()
+        duration = (end - start - start_offset).total_seconds()
         logger.info('Completed all updates in %i seconds, %s rollbacks.',
                     duration, rollback_count)
         return rollback_count == 0

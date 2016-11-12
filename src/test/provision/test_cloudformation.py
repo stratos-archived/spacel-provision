@@ -15,6 +15,14 @@ NAME = 'test-stack'
 TEMPLATE = {}
 NO_CHANGE_SET = {'Status': 'FAILED', 'StatusReason': NO_CHANGES}
 
+NOT_FOUND = ClientError({'Error': {
+    'Message': 'Stack [test-stack] does not exist'
+}}, 'CreateChangeSet')
+
+CLIENT_ERROR = ClientError({'Error': {
+    'Message': 'Kaboom'
+}}, 'CreateChangeSet')
+
 
 class TestBaseCloudFormationFactory(unittest.TestCase):
     def setUp(self):
@@ -49,11 +57,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
     @patch('spacel.provision.cloudformation.json')
     def test_stack_not_found_template_url_used(self, mock_json):
         mock_json.dumps = MagicMock(return_value='unicorns' * 64001)
-
-        not_found = ClientError({'Error': {
-            'Message': 'Stack [test-stack] does not exist'
-        }}, 'CreateChangeSet')
-        self.cloudformation.create_change_set.side_effect = not_found
+        self.cloudformation.create_change_set.side_effect = NOT_FOUND
 
         result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
 
@@ -147,11 +151,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
             'stack_update_complete')
 
     def test_stack_exception(self):
-        client_error = ClientError({'Error': {
-            'Message': 'Kaboom'
-        }}, 'CreateChangeSet')
-
-        self.cloudformation.create_change_set.side_effect = client_error
+        self.cloudformation.create_change_set.side_effect = CLIENT_ERROR
 
         self.assertRaises(ClientError, self.cf_factory._stack, NAME, REGION,
                           TEMPLATE)
@@ -258,6 +258,18 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
 
         self.assertEquals(1,
                           self.cloudformation.describe_stack_events.call_count)
+
+    def test_wait_for_updates_does_not_exist_delete(self):
+        self.cloudformation.describe_stack_events.side_effect = NOT_FOUND
+
+        updated = self.cf_factory._wait_for_updates(NAME, {REGION: 'delete'})
+        self.assertTrue(updated)
+
+    def test_wait_for_updates_does_not_exist_update(self):
+        self.cloudformation.describe_stack_events.side_effect = NOT_FOUND
+
+        self.assertRaises(ClientError, self.cf_factory._wait_for_updates, NAME,
+                          {REGION: 'update'})
 
     def test_wait_for_updates(self):
         self.cloudformation.describe_stack_events.return_value = {

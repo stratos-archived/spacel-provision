@@ -19,11 +19,12 @@ FORENSICS_USERS = {
         'Hwm1BJIzo1alidHU7rzEs510JKzEmHI/vUT'
 }
 
+APP_NAME = 'laika'
 ORBIT_NAME = 'sl-test'
 ORBIT_REGIONS = ['us-east-1']
 
+
 class BaseIntegrationTest(unittest.TestCase):
-    APP_NAME = 'laika'
     APP_DOMAIN = 'pebbledev.com'
     APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, APP_DOMAIN)
     APP_VERSION = '0.1.0'
@@ -51,7 +52,7 @@ class BaseIntegrationTest(unittest.TestCase):
         }
 
         self.app_params = {
-            'name': BaseIntegrationTest.APP_NAME,
+            'name': APP_NAME,
             'health_check': 'HTTP:80/',
             'instance_type': 't2.nano',
             'instance_min': 1,

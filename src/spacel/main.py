@@ -74,7 +74,7 @@ def provision(app):
     return 0
 
 
-if __name__ == '__main__':  # pragma: no cover
+def setup_logging():
     formatter = ColoredFormatter(
         "%(log_color)s%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         datefmt='%Y-%m-%d %H:%M:%S',
@@ -94,6 +94,10 @@ if __name__ == '__main__':  # pragma: no cover
     logging.getLogger('boto3').setLevel(logging.CRITICAL)
     logging.getLogger('botocore').setLevel(logging.CRITICAL)
     logging.getLogger('spacel').setLevel(logging.DEBUG)
+
+
+if __name__ == '__main__':  # pragma: no cover
+    setup_logging()
 
     result = main(sys.argv[1:], sys.stdin)
     sys.exit(result)
