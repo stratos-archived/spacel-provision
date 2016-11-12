@@ -1,5 +1,6 @@
 import json
 import logging
+
 import six
 
 from spacel.aws import INSTANCE_VOLUMES
@@ -13,13 +14,14 @@ logger = logging.getLogger('spacel.provision.template.app')
 
 class AppTemplate(BaseTemplateCache):
     def __init__(self, ami_finder, alarm_factory, cache_factory, rds_factory,
-                 spot_decorator, acm):
+                 spot_decorator, acm, kms_key):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
         self._alarm_factory = alarm_factory
         self._cache_factory = cache_factory
         self._rds_factory = rds_factory
         self._spot_decorator = spot_decorator
         self._acm = acm
+        self._kms_key = kms_key
 
     def app(self, app, region):
         app_template = self.get('elb-service')
@@ -173,6 +175,8 @@ class AppTemplate(BaseTemplateCache):
                     'VirtualName': 'ephemeral%d' % volume_index
                 })
 
+        self._add_kms_iam_policy(app, region, resources)
+
         self._alarm_factory.add_alarms(app_template, app.alarms)
         self._cache_factory.add_caches(app, region, app_template, app.caches)
         secret_params = self._rds_factory.add_rds(app, region, app_template)
@@ -181,6 +185,26 @@ class AppTemplate(BaseTemplateCache):
         self._spot_decorator.spotify(app, region, app_template)
 
         return app_template, secret_params
+
+    def _add_kms_iam_policy(self, app, region, resources):
+        kms_key = self._kms_key.get_key(app, region, create=False)
+        if not kms_key:
+            return
+        resources['KmsKeyPolicy'] = {
+            'DependsOn': 'Role',
+            'Type': 'AWS::IAM::Policy',
+            'Properties': {
+                'PolicyName': 'KmsDecrypt',
+                'Roles': [{'Ref': 'Role'}],
+                'PolicyDocument': {
+                    'Statement': [{
+                        'Effect': 'Allow',
+                        'Action': 'kms:Decrypt',
+                        'Resource': kms_key
+                    }]
+                }
+            }
+        }
 
     @staticmethod
     def _user_data(params, app):

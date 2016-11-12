@@ -2,6 +2,17 @@ import uuid
 
 from test_integ import BaseIntegrationTest
 
+ENCRYPTED_ENV = {
+    'ciphertext': '5nBQVtS4VxIZmtW/x74Dfaz2cdjySWbSYhlkIPZUVjs=',
+    'encoding': 'utf-8',
+    'iv': 'xmPEWRKiaVCY7SN5P0/QxA==',
+    'key': 'AQEDAHi4BV5h2C+ZP+MPN8eO2fjkxzg4fd3wni5WSzyTEp2YrgAAAH4wfAYJKoZIhvc'
+           'NAQcGoG8wbQIBADBoBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDA1VD1y9FUO6q5'
+           '1ikQIBEIA7kmMpEXBdWzWgknNLa9mlw/If+MXn/FI9eLHNP4BxqzqVr6rVGAsiNQtmS'
+           'hsGZDxQGT7WJbFV8VnhVaM=',
+    'key_region': 'us-east-1'
+}
+
 
 class TestDeploy(BaseIntegrationTest):
     def test_01_deploy_simple_http(self):
@@ -47,6 +58,12 @@ ExecStop=/usr/bin/docker stop %n
 
         self.provision()
         self._verify_message('handwritten')
+
+    def test_05_encrypted_file(self):
+        """Encrypted file is decrypted."""
+        self.app_params['files'] = {'laika.env': ENCRYPTED_ENV}
+        self.provision()
+        self._verify_message('top secret')
 
     def _verify_deploy(self, version=None):
         version = version or BaseIntegrationTest.APP_VERSION
