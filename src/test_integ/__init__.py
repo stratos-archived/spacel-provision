@@ -19,9 +19,10 @@ FORENSICS_USERS = {
         'Hwm1BJIzo1alidHU7rzEs510JKzEmHI/vUT'
 }
 
+ORBIT_NAME = 'sl-test'
+ORBIT_REGIONS = ['us-east-1']
 
 class BaseIntegrationTest(unittest.TestCase):
-    ORBIT_NAME = 'sl-test'
     APP_NAME = 'laika'
     APP_DOMAIN = 'pebbledev.com'
     APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, APP_DOMAIN)
@@ -41,9 +42,9 @@ class BaseIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         self.orbit_params = {
-            NAME: BaseIntegrationTest.ORBIT_NAME,
+            NAME: ORBIT_NAME,
             DOMAIN: BaseIntegrationTest.APP_DOMAIN,
-            REGIONS: ['us-east-1'],
+            REGIONS: ORBIT_REGIONS,
             'defaults': {
                 BASTION_INSTANCE_COUNT: 0
             }

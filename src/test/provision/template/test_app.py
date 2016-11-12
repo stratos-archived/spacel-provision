@@ -2,10 +2,10 @@ from mock import MagicMock
 
 from spacel.aws import AmiFinder
 from spacel.model import SpaceServicePort, SpaceDockerService
-from spacel.provision.alarm import AlarmFactory
-from spacel.provision.db import CacheFactory, RdsFactory
+from spacel.provision.app.alarm import AlarmFactory
+from spacel.provision.app.db import CacheFactory, RdsFactory
 from spacel.provision.template.app import AppTemplate
-from spacel.provision.template.app_spot import AppSpotTemplateDecorator
+from spacel.provision.app.app_spot import AppSpotTemplateDecorator
 from spacel.security import AcmCertificates, KmsKeyFactory
 from test import REGION, BaseSpaceAppTest
 from test.provision.template import SUBNETS
