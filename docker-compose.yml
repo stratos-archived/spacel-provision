@@ -15,3 +15,18 @@ services:
       dockerfile: Dockerfile.test
       args:
         PYTHON_VERSION: 2
+
+  test-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./build:/build
+    environment:
+      - LAMBDA_BUCKET=spacel-pebbledev
+      - LAMBDA_REGION=us-east-1
+    env_file: .env
+    entrypoint:
+      - sh
+      - -c
+      - "nosetests --with-xunit --xunit-file=/build/nosetests-integration.xml test_integ; cd /app && python3 -m test_integ.teardown"

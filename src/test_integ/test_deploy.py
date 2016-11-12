@@ -18,7 +18,6 @@ class TestDeploy(BaseIntegrationTest):
     def test_01_deploy_simple_http(self):
         """Deploy a HTTP/S service, verify it's running."""
         self.provision()
-        self._verify_deploy('http://%s' % BaseIntegrationTest.APP_HOSTNAME)
         self._verify_deploy()
 
     def test_02_upgrade(self):

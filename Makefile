@@ -32,4 +32,15 @@ composetest:
 	docker-compose run --rm test
 	docker-compose run --rm test-python2
 
-.PHONY: composetest test lint
+
+# Adjust this to execute a single integration test:
+test_integ_one: build/venv
+	@( . build/venv/bin/activate; \
+		cd src && \
+		LAMBDA_BUCKET=spacel-pebbledev \
+		LAMBDA_REGION=us-east-1 \
+		nosetests --with-xunit --xunit-file=../build/nosetests-integration.xml \
+		test_integ.test_deploy:TestDeploy.test_01_deploy_simple_http \
+	)
+
+.PHONY: composetest test test_integ_one lint

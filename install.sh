@@ -13,6 +13,7 @@ fi
 apk add --update \
     gcc \
     musl-dev \
+    ca-certificates \
     ${PY_PACKAGES} \
     ${PY_PACKAGES_BUILD} \
   && ${PIP_COMMAND} install -r /app/requirements.txt \
