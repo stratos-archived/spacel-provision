@@ -33,7 +33,8 @@
     "ElbScheme": {
       "Description": "Scheme for ELB",
       "Type": "String",
-      "Default": "internet-facing"
+      "Default": "disabled",
+      "AllowedValues": ["internet-facing", "internal", "disabled"]
     },
     "HealthCheckTarget": {
       "Description": "Target for HealthCheck.",
@@ -113,14 +114,10 @@
         "internal"
       ]
     },
-    "HasElb": {
-      "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {"Ref": "ElbScheme"},
-            ""
-          ]
-        }
+    "ElbDisabled": {
+      "Fn::Equals": [
+        {"Ref": "ElbScheme"},
+        "disabled"
       ]
     },
     "AddVolumePermissions": {
@@ -543,7 +540,7 @@
             "Fn::Join": [
               "", [
                 { "Fn::If": [
-                  "HasElb",
+                  "ElbDisabled",
                   {"Fn::Join": [
                     "", [
                       "{\"elb\":{\"name\":\"",
@@ -639,7 +636,7 @@
     "Elb": {
       "Value": {
         "Fn::If": [
-          "HasElb",
+          "ElbDisabled",
           {"Fn::If": [
             "ElbPublic",
             {"Ref": "PublicElb"},

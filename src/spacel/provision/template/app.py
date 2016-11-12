@@ -73,7 +73,7 @@ class AppTemplate(BaseTemplateCache):
             app_hostname = '%s-%s.%s' % (app.name, orbit.name, orbit.domain)
             params['VirtualHost']['Default'] = app_hostname
 
-        if app.loadbalancer == 'true':
+        if app.loadbalancer:
             params['ElbScheme']['Default'] = app.scheme
             # Expand ELB to all AZs:
             public_elb_subnets = orbit.public_elb_subnets(region)
@@ -107,7 +107,7 @@ class AppTemplate(BaseTemplateCache):
         private_elb = resources['PrivateElb']['Properties']['Listeners']
         elb_ingress_ports = set()
         for port_number, port_config in sorted(app.public_ports.items()):
-            if app.loadbalancer != 'true':
+            if not app.loadbalancer:
                 for ip_source in port_config.sources:
                     instance_ingress.append({
                         'IpProtocol': 'tcp',
@@ -196,7 +196,7 @@ class AppTemplate(BaseTemplateCache):
                 })
 
         # Clean up loadbalancer if it's unwanted
-        if app.loadbalancer != 'true':
+        if not app.loadbalancer:
             params['PublicElb'] = {
                 'Type': 'String',
                 'Default': False
@@ -211,7 +211,7 @@ class AppTemplate(BaseTemplateCache):
                  resources['ElbHealthPolicy'],
                  resources['Asg']['Properties']['LoadBalancerNames'])
             resources['Asg']['Properties']['HealthCheckType'] = 'EC2'
-            params['ElbScheme']['Default'] = ''
+            params['ElbScheme']['Default'] = 'disabled'
 
         self._alarm_factory.add_alarms(app_template, app.alarms)
         self._cache_factory.add_caches(app, region, app_template, app.caches)

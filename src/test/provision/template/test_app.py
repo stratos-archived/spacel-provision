@@ -76,7 +76,7 @@ class TestAppTemplate(BaseSpaceAppTest):
         self.assertEqual(True, public_addr)
 
     def test_app_no_loadbalancer(self):
-        self.app.loadbalancer = 'false'
+        self.app.loadbalancer = False
 
         app, _ = self.cache.app(self.app, REGION)
 
@@ -91,7 +91,7 @@ class TestAppTemplate(BaseSpaceAppTest):
                                                  ['Properties'])
         self.assertNotIn('PrivateElbSubnet01', app['Parameters'])
         self.assertNotIn('PublicElbSubnet01', app['Parameters'])
-        self.assertEqual('', app['Parameters']['ElbScheme']['Default'])
+        self.assertEqual('disabled', app['Parameters']['ElbScheme']['Default'])
         self.assertEqual('EC2', app['Resources']['Asg']['Properties']
                                    ['HealthCheckType'])
 

@@ -24,7 +24,7 @@ class SpaceApp(object):
         self.scheme = params.get('scheme', 'internet-facing')
         self.health_check = params.get('health_check', 'TCP:80')
         self.local_health_check = params.get('health_check', 'TCP:80')
-        self.loadbalancer = params.get('loadbalancer', 'true')
+        self.loadbalancer = self._str2bool(params.get('loadbalancer', 'true'))
         self.availability = params.get('availability', 'private')
 
         public_ports = params.get('public_ports', {80: {}})
@@ -82,6 +82,10 @@ class SpaceApp(object):
             return spot
         else:
             return None
+
+    @staticmethod
+    def _str2bool(v):
+        return str(v).lower() in ('yes', 'true', '1')
 
     @property
     def full_name(self):
