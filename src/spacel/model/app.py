@@ -21,11 +21,17 @@ class SpaceApp(object):
         self.instance_type = params.get('instance_type', 't2.nano')
         self.instance_min = params.get('instance_min', 1)
         self.instance_max = params.get('instance_max', 2)
-        self.scheme = params.get('scheme', 'internet-facing')
         self.health_check = params.get('health_check', 'TCP:80')
         self.local_health_check = params.get('health_check', 'TCP:80')
         self.loadbalancer = self._str2bool(params.get('loadbalancer', 'true'))
-        self.availability = params.get('availability', 'private')
+
+        self.instance_scheme = params.get('instance_scheme', 'private')
+        self.instance_availability = params.get('instance_availability',
+                                                self.instance_scheme)
+
+        self.elb_scheme = params.get('elb_scheme', 'internet-facing')
+        self.elb_availability = params.get('elb_availability', self.elb_scheme)
+        self.scheme = params.get('scheme', self.elb_availability)
 
         public_ports = params.get('public_ports', {80: {}})
         self.public_ports = {port: SpaceServicePort(port, port_params)

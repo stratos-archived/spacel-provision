@@ -87,18 +87,19 @@ class AppTemplate(BaseTemplateCache):
             self._elb_subnets(resources, 'PrivateElb', private_elb_subnets)
 
         # Expand ASG to all AZs:
-        if app.availability == 'public':
-            public_instance_subnets = orbit.public_instance_subnets(region)
-            self._subnet_params(params, 'PrivateInstance',
-                                public_instance_subnets)
-            self._asg_subnets(resources, 'PrivateInstance',
+        public_instance_subnets = orbit.public_instance_subnets(region)
+        self._subnet_params(params, 'PublicInstance',
+                            public_instance_subnets)
+        private_instance_subnets = orbit.private_instance_subnets(region)
+        self._subnet_params(params, 'PrivateInstance',
+                            private_instance_subnets)
+        if app.instance_availability == 'internet-facing' or \
+                app.instance_availability == 'multi-region':
+            self._asg_subnets(resources, 'PublicInstance',
                               public_instance_subnets)
             # There is no other means of getting internet (out) otherwise!
             resources['Lc']['Properties']['AssociatePublicIpAddress'] = True
         else:
-            private_instance_subnets = orbit.private_instance_subnets(region)
-            self._subnet_params(params, 'PrivateInstance',
-                                private_instance_subnets)
             self._asg_subnets(resources, 'PrivateInstance',
                               private_instance_subnets)
 

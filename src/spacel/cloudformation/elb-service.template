@@ -30,6 +30,10 @@
       "Type": "AWS::EC2::Subnet::Id",
       "Description": "First private subnet for instances."
     },
+    "PublicInstanceSubnet01": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "First public subnet for instances."
+    },
     "ElbScheme": {
       "Description": "Scheme for ELB",
       "Type": "String",
