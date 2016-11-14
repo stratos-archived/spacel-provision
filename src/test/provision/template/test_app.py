@@ -33,6 +33,7 @@ class TestAppTemplate(BaseSpaceAppTest):
         self.orbit._public_elb_subnets = {REGION: SUBNETS}
         self.orbit._private_elb_subnets = {REGION: SUBNETS}
         self.orbit._private_instance_subnets = {REGION: SUBNETS}
+        self.orbit._public_instance_subnets = {REGION: SUBNETS}
 
     def test_app(self):
         app, _ = self.cache.app(self.app, REGION)
@@ -67,7 +68,7 @@ class TestAppTemplate(BaseSpaceAppTest):
         self.assertEqual('sg-123tes', bastion_sg_param)
 
     def test_app_availability(self):
-        self.app.availability = 'public'
+        self.app.instance_availability = 'internet-facing'
         self.orbit.public_instance_subnets = MagicMock(return_value=('test',))
 
         app, _ = self.cache.app(self.app, REGION)
