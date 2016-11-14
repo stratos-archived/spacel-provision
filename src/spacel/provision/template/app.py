@@ -97,6 +97,9 @@ class AppTemplate(BaseTemplateCache):
                 app.instance_availability == 'multi-region':
             self._asg_subnets(resources, 'PublicInstance',
                               public_instance_subnets)
+            resources['Asg']['Properties']['VPCZoneIdentifier'][0] = {
+                'Ref': 'PublicInstanceSubnet01'
+            }
             # There is no other means of getting internet (out) otherwise!
             resources['Lc']['Properties']['AssociatePublicIpAddress'] = True
         else:
