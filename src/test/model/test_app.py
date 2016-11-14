@@ -119,6 +119,10 @@ class TestSpaceApp(unittest.TestCase):
         app = SpaceApp(self.orbit, {})
         self.assertEquals(app.full_name, 'test-orbit-test')
 
+    def test_no_elb(self):
+        app = SpaceApp(self.orbit, {'elb_availability': 'disabled'})
+        self.assertEqual(False, app.loadbalancer)
+
     def test_files_raw_string(self):
         app = SpaceApp(self.orbit, {
             'files': {
@@ -156,25 +160,6 @@ class TestSpaceApp(unittest.TestCase):
 
         self.assertEquals(1, len(app.files))
         self.assertEquals(encrypted_payload, app.files['test-file'])
-
-    def test_str2bool(self):
-        app = SpaceApp(self.orbit, {'loadbalancer': False})
-        self.assertEqual(False, app.loadbalancer)
-
-        app = SpaceApp(self.orbit, {'loadbalancer': True})
-        self.assertEqual(True, app.loadbalancer)
-
-        app = SpaceApp(self.orbit, {'loadbalancer': 'false'})
-        self.assertEqual(False, app.loadbalancer)
-
-        app = SpaceApp(self.orbit, {'loadbalancer': 'true'})
-        self.assertEqual(True, app.loadbalancer)
-
-        app = SpaceApp(self.orbit, {'loadbalancer': 1})
-        self.assertEqual(True, app.loadbalancer)
-
-        app = SpaceApp(self.orbit, {'loadbalancer': 0})
-        self.assertEqual(False, app.loadbalancer)
 
 
 class TestSpaceDockerService(unittest.TestCase):

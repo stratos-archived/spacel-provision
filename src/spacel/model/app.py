@@ -23,15 +23,12 @@ class SpaceApp(object):
         self.instance_max = params.get('instance_max', 2)
         self.health_check = params.get('health_check', 'TCP:80')
         self.local_health_check = params.get('health_check', 'TCP:80')
-        self.loadbalancer = self._str2bool(params.get('loadbalancer', 'true'))
 
-        self.instance_scheme = params.get('instance_scheme', 'private')
         self.instance_availability = params.get('instance_availability',
-                                                self.instance_scheme)
-
-        self.elb_scheme = params.get('elb_scheme', 'internet-facing')
-        self.elb_availability = params.get('elb_availability', self.elb_scheme)
-        self.scheme = params.get('scheme', self.elb_availability)
+                                                'private')
+        self.elb_availability = params.get('elb_availability',
+                                           'internet-facing')
+        self.loadbalancer = self.elb_availability != 'disabled'
 
         public_ports = params.get('public_ports', {80: {}})
         self.public_ports = {port: SpaceServicePort(port, port_params)
@@ -88,10 +85,6 @@ class SpaceApp(object):
             return spot
         else:
             return None
-
-    @staticmethod
-    def _str2bool(v):
-        return str(v).lower() in ('yes', 'true', '1')
 
     @property
     def full_name(self):

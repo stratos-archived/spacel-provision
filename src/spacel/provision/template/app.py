@@ -76,7 +76,7 @@ class AppTemplate(BaseTemplateCache):
             params['VirtualHost']['Default'] = app_hostname
 
         if app.loadbalancer:
-            params['ElbScheme']['Default'] = app.scheme
+            params['ElbScheme']['Default'] = app.elb_availability
             # Expand ELB to all AZs:
             public_elb_subnets = orbit.public_elb_subnets(region)
             private_elb_subnets = orbit.private_elb_subnets(region)
