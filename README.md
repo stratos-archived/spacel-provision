@@ -31,6 +31,7 @@ Environment Variables:
 * `TEMPLATE_REGION` Region of `TEMPLATE_BUCKET` (if not specified, `LAMBDA_REGION` is used).
 * `WEBHOOKS_PAGERDUTY` Default endpoint for PagerDuty notifications: should use PagerDuty [CloudWatch Integration](https://www.pagerduty.com/docs/guides/aws-cloudwatch-integration-guide/)
 * `PAGERDUTY_API_KEY` API key for PagerDuty, for auto-registering PagerDuty services when applications are added.
+* `SPACEL_AGENT_CHANNEL` Channel of [spacel-agent AMI](https://github.com/pebble/vz-spacel-agent) to use. This can be `stable` (default) or `latest`.
 
 
 ## Architecture

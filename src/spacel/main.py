@@ -53,7 +53,8 @@ def provision(app):
     cache_factory = CacheFactory(ingress_factory)
     rds_factory = RdsFactory(clients, ingress_factory, password_manager)
     # Templates:
-    ami_finder = AmiFinder()
+    ami_channel = os.environ.get('SPACEL_AGENT_CHANNEL')
+    ami_finder = AmiFinder(ami_channel)
     app_spot = AppSpotTemplateDecorator()
     acm = AcmCertificates(clients)
     app_template = AppTemplate(ami_finder, alarm_factory, cache_factory,

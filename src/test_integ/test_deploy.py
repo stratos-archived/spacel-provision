@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from test_integ import BaseIntegrationTest
@@ -61,6 +62,14 @@ ExecStop=/usr/bin/docker stop %n
     def test_05_encrypted_file(self):
         """Encrypted file is decrypted."""
         self.app_params['files'] = {'laika.env': ENCRYPTED_ENV}
+        self.provision()
+        self._verify_message('top secret')
+
+    def test_06_encrypted_entry(self):
+        """Encrypted file is decrypted."""
+        self.app_params['files'] = {
+            'laika.env': 'MESSAGE=%s' % json.dumps(ENCRYPTED_ENV)
+        }
         self.provision()
         self._verify_message('top secret')
 

@@ -25,6 +25,7 @@ services:
     environment:
       - LAMBDA_BUCKET=spacel-pebbledev
       - LAMBDA_REGION=us-east-1
+      - SPACEL_AGENT_CHANNEL=latest
     env_file: .env
     entrypoint:
       - sh
