@@ -4,7 +4,7 @@
   "instance_min": 1,
   "instance_max": 1,
   "loadbalancer": false,
-  "availability": "public",
+  "instance_availability": "internet-facing",
   "services": {
     "http-env-echo": {
       "image": "pwagner/http-env-echo",
