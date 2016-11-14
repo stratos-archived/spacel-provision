@@ -1,7 +1,8 @@
-from io import BytesIO
 import json
-from mock import MagicMock, patch
 import unittest
+from io import BytesIO
+
+from mock import MagicMock, patch
 
 from spacel.aws.ami import AmiFinder
 
@@ -37,9 +38,19 @@ class TestAmiFinder(unittest.TestCase):
 
         self.assertEqual(1, mock_urlopen.call_count)
 
+    @patch('spacel.aws.ami.urlopen')
+    def test_ami_found_cache_bust(self, mock_urlopen):
+        self.ami_finder.cache_bust = True
+        self._mock_response(mock_urlopen)
+
+        self.ami_finder.spacel_ami(REGION)
+        self.ami_finder.spacel_ami(REGION)
+
+        self.assertEqual(2, mock_urlopen.call_count)
+
     @staticmethod
     def _mock_response(mock_urlopen):
         response_bytes = json.dumps({
             REGION: AMI
         }).encode('utf-8')
-        mock_urlopen.return_value = BytesIO(response_bytes)
+        mock_urlopen.side_effect = lambda x: BytesIO(response_bytes)

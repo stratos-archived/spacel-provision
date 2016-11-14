@@ -102,6 +102,11 @@ class BaseIntegrationTest(unittest.TestCase):
         full_url = '%s/%s' % (BaseIntegrationTest.APP_URL, url)
         return requests.get(full_url)
 
+    @staticmethod
+    def _post(url):
+        full_url = '%s/%s' % (BaseIntegrationTest.APP_URL, url)
+        return requests.post(full_url)
+
     def _set_unit_file(self, unit_file):
         del self.app_params['services']['laika']['image']
         self.app_params['services']['laika']['unit_file'] = unit_file
