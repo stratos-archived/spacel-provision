@@ -545,6 +545,7 @@
               "", [
                 { "Fn::If": [
                   "ElbDisabled",
+                  "{",
                   {"Fn::Join": [
                     "", [
                       "{\"elb\":{\"name\":\"",
@@ -557,8 +558,7 @@
                       },
                       "\"},"
                     ]
-                  ]},
-                  "{"
+                  ]}
                 ]},
                 "\"orbit\":\"",
                 {"Ref": "Orbit"},
@@ -642,12 +642,12 @@
       "Value": {
         "Fn::If": [
           "ElbDisabled",
+          "",
           {"Fn::If": [
             "ElbPublic",
             {"Ref": "PublicElb"},
             {"Ref": "PrivateElb"}
-          ]},
-          ""
+          ]}
         ]
       }
     }
