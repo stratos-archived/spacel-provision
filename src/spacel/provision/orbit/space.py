@@ -1,5 +1,7 @@
 import logging
+
 from botocore.exceptions import ClientError
+
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              key_sorted)
 
@@ -28,7 +30,7 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
         self._orbit_stack(orbit, regions, 'tables')
         self._orbit_stack(orbit, regions, 'bastion')
 
-        for region in orbit.regions:
+        for region in regions:
             bastion_eips = sorted(orbit.bastion_eips(region).values())
             logger.debug('Bastions: %s - %s', region, ' '.join(bastion_eips))
 
@@ -146,3 +148,27 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
                 orbit._bastion_sgs[region] = value
             else:
                 logger.warning('Unrecognized output key: %s', key)
+
+    def delete_orbit(self, orbit, regions=None):
+        regions = regions or orbit.regions
+
+        bastion_name = '%s-bastion' % orbit.name
+        tables_name = '%s-tables' % orbit.name
+        vpc_name = '%s-vpc' % orbit.name
+
+        # Bastions and tables can be deleted concurrently:
+        bastion_updates = {}
+        tables_updates = {}
+        for region in regions:
+            bastion_updates[region] = self._delete_stack(bastion_name, region)
+            tables_updates[region] = self._delete_stack(tables_name, region)
+        self._wait_for_updates(bastion_name, bastion_updates)
+
+        # VPC can be deleted after bastion completes:
+        vpc_updates = {}
+        for region in regions:
+            vpc_updates[region] = self._delete_stack(vpc_name, region)
+        self._wait_for_updates(vpc_name, vpc_updates)
+
+        # Tables should be gone by now, but let's 100%:
+        self._wait_for_updates(tables_name, tables_updates)

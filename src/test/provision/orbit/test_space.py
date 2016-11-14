@@ -1,15 +1,15 @@
+import unittest
+
 from botocore.exceptions import ClientError
 from mock import MagicMock
-import unittest
 
 from spacel.aws import ClientCache
 from spacel.model import Orbit
 from spacel.provision.changesets import ChangeSetEstimator
-from spacel.provision.template import (VpcTemplate, BastionTemplate,
-                                       TablesTemplate)
 from spacel.provision.orbit.space import SpaceElevatorOrbitFactory
 from spacel.provision.s3 import TemplateUploader
-
+from spacel.provision.template import (VpcTemplate, BastionTemplate,
+                                       TablesTemplate)
 from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs)
 
 SECURITY_GROUP_ID = 'sg-123456'
@@ -194,3 +194,10 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.assertEquals(SECURITY_GROUP_ID, self.orbit.bastion_sg(REGION))
         self.assertEquals({'01': IP_ADDRESS, '02': '127.0.0.2'},
                           self.orbit.bastion_eips(REGION))
+
+    def test_delete_orbit(self):
+        self.orbit_factory._delete_stack = MagicMock(return_value=None)
+
+        self.orbit_factory.delete_orbit(self.orbit)
+
+        self.assertEquals(3, self.orbit_factory._delete_stack.call_count)

@@ -1,11 +1,6 @@
 import base64
 import re
 
-from .changesets import ChangeSetEstimator
-from .orbit import ProviderOrbitFactory
-from .provision import CloudProvisioner
-from .s3 import LambdaUploader, TemplateUploader
-
 
 def clean_name(name):
     return re.sub('[^A-Za-z0-9]', '', name)
@@ -24,3 +19,9 @@ def base64_encode(some_data):
 
 def base64_decode(some_string):
     return base64.b64decode(some_string)
+
+
+from .app import SpaceElevatorAppFactory
+from .changesets import ChangeSetEstimator
+from .orbit import ProviderOrbitFactory
+from .s3 import LambdaUploader, TemplateUploader

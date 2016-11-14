@@ -3,18 +3,19 @@ import os
 import sys
 
 from colorlog import ColoredFormatter
-from spacel.aws import AmiFinder, ClientCache
+
 from spacel.args import parse_args
+from spacel.aws import AmiFinder, ClientCache
 from spacel.model import SpaceApp, Orbit
-from spacel.provision import (ChangeSetEstimator, CloudProvisioner,
+from spacel.provision import (ChangeSetEstimator, SpaceElevatorAppFactory,
                               LambdaUploader, ProviderOrbitFactory,
                               TemplateUploader)
-
-from spacel.provision.template import (AppTemplate, AppSpotTemplateDecorator,
-                                       BastionTemplate, IngressResourceFactory,
+from spacel.provision.app import (AppSpotTemplateDecorator,
+                                  IngressResourceFactory)
+from spacel.provision.app.alarm import AlarmFactory
+from spacel.provision.app.db import CacheFactory, RdsFactory
+from spacel.provision.template import (AppTemplate, BastionTemplate,
                                        TablesTemplate, VpcTemplate)
-from spacel.provision.alarm import AlarmFactory
-from spacel.provision.db import CacheFactory, RdsFactory
 from spacel.security import (AcmCertificates, KmsCrypto, KmsKeyFactory,
                              PasswordManager)
 
@@ -66,23 +67,23 @@ def provision(app):
                                              bastion_template,
                                              tables_template)
     orbit_factory.get_orbit(app.orbit)
-    provisioner = CloudProvisioner(clients, change_sets, template_up,
-                                   app_template)
+    provisioner = SpaceElevatorAppFactory(clients, change_sets, template_up,
+                                          app_template)
     if not provisioner.app(app):
         return 1
     return 0
 
 
-if __name__ == '__main__':  # pragma: no cover
+def setup_logging():
     formatter = ColoredFormatter(
         "%(log_color)s%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         datefmt='%Y-%m-%d %H:%M:%S',
         reset=True,
         log_colors={
-            'DEBUG':    'cyan',
-            'INFO':     'green',
-            'WARNING':  'yellow',
-            'ERROR':    'red',
+            'DEBUG': 'cyan',
+            'INFO': 'green',
+            'WARNING': 'yellow',
+            'ERROR': 'red',
             'CRITICAL': 'red'
         }
     )
@@ -92,7 +93,12 @@ if __name__ == '__main__':  # pragma: no cover
     logging.getLogger().addHandler(stream_out)
     logging.getLogger('boto3').setLevel(logging.CRITICAL)
     logging.getLogger('botocore').setLevel(logging.CRITICAL)
+    logging.getLogger('tldextract').setLevel(logging.CRITICAL)
     logging.getLogger('spacel').setLevel(logging.DEBUG)
+
+
+if __name__ == '__main__':  # pragma: no cover
+    setup_logging()
 
     result = main(sys.argv[1:], sys.stdin)
     sys.exit(result)

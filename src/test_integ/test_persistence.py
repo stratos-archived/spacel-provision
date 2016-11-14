@@ -1,6 +1,6 @@
 import requests
 
-from spacel.provision.db.cache import REDIS_PORT, REDIS_VERSION
+from spacel.provision.app.db.cache import REDIS_PORT, REDIS_VERSION
 from test_integ import BaseIntegrationTest
 
 
