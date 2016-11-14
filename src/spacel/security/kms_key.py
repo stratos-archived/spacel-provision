@@ -39,7 +39,8 @@ class KmsKeyFactory(object):
             return key_arn
         except ClientError as e:
             e_message = e.response['Error'].get('Message', '')
-            if 'Invalid keyId' not in e_message:
+            if 'Invalid keyId' not in e_message and \
+                    'is not found' not in e_message:
                 raise e
 
         if create:

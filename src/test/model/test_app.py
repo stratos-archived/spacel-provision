@@ -119,6 +119,10 @@ class TestSpaceApp(unittest.TestCase):
         app = SpaceApp(self.orbit, {})
         self.assertEquals(app.full_name, 'test-orbit-test')
 
+    def test_no_elb(self):
+        app = SpaceApp(self.orbit, {'elb_availability': 'disabled'})
+        self.assertEqual(False, app.loadbalancer)
+
     def test_files_raw_string(self):
         app = SpaceApp(self.orbit, {
             'files': {

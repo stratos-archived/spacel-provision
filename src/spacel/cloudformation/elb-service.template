@@ -30,11 +30,15 @@
       "Type": "AWS::EC2::Subnet::Id",
       "Description": "First private subnet for instances."
     },
+    "PublicInstanceSubnet01": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "First public subnet for instances."
+    },
     "ElbScheme": {
       "Description": "Scheme for ELB",
       "Type": "String",
-      "Default": "internet-facing",
-      "AllowedValues": ["internet-facing", "internal"]
+      "Default": "disabled",
+      "AllowedValues": ["internet-facing", "internal", "disabled"]
     },
     "HealthCheckTarget": {
       "Description": "Target for HealthCheck.",
@@ -112,6 +116,12 @@
       "Fn::Equals": [
         {"Ref": "ElbScheme"},
         "internal"
+      ]
+    },
+    "ElbDisabled": {
+      "Fn::Equals": [
+        {"Ref": "ElbScheme"},
+        "disabled"
       ]
     },
     "AddVolumePermissions": {
@@ -533,15 +543,24 @@
           "Fn::Base64": {
             "Fn::Join": [
               "", [
-                "{\"elb\":{\"name\":\"",
-                {
-                  "Fn::If": [
-                    "ElbPublic",
-                    {"Ref": "PublicElb"},
-                    {"Ref": "PrivateElb"}
-                  ]
-                },
-                "\"},\"orbit\":\"",
+                { "Fn::If": [
+                  "ElbDisabled",
+                  "{",
+                  {"Fn::Join": [
+                    "", [
+                      "{\"elb\":{\"name\":\"",
+                      {
+                        "Fn::If": [
+                          "ElbPublic",
+                          {"Ref": "PublicElb"},
+                          {"Ref": "PrivateElb"}
+                        ]
+                      },
+                      "\"},"
+                    ]
+                  ]}
+                ]},
+                "\"orbit\":\"",
                 {"Ref": "Orbit"},
                 "\",\"name\":\"",
                 {"Ref": "Service"},
@@ -622,9 +641,13 @@
     "Elb": {
       "Value": {
         "Fn::If": [
-          "ElbPublic",
-          {"Ref": "PublicElb"},
-          {"Ref": "PrivateElb"}
+          "ElbDisabled",
+          "",
+          {"Fn::If": [
+            "ElbPublic",
+            {"Ref": "PublicElb"},
+            {"Ref": "PrivateElb"}
+          ]}
         ]
       }
     }
