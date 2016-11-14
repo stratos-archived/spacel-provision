@@ -54,7 +54,8 @@ def provision(app):
     rds_factory = RdsFactory(clients, ingress_factory, password_manager)
     # Templates:
     ami_channel = os.environ.get('SPACEL_AGENT_CHANNEL')
-    ami_finder = AmiFinder(ami_channel)
+    ami_cache = os.environ.get('SPACEL_AGENT_CACHE_BUST') == 'true'
+    ami_finder = AmiFinder(ami_channel, cache_bust=ami_cache)
     app_spot = AppSpotTemplateDecorator()
     acm = AcmCertificates(clients)
     app_template = AppTemplate(ami_finder, alarm_factory, cache_factory,

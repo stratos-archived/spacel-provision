@@ -1,5 +1,3 @@
-import requests
-
 from spacel.provision.app.db.cache import REDIS_PORT, REDIS_VERSION
 from test_integ import BaseIntegrationTest
 
@@ -26,13 +24,13 @@ class TestDeployPersistence(BaseIntegrationTest):
 
         self.provision()
 
-        initial = self._verify_disk()
+        initial = self._verify_counter('disk')
         self.assertNotEquals(0, initial)
 
         # Upgrade, verify persistence:
         self.image(BaseIntegrationTest.UPGRADE_VERSION)
         self.provision()
-        self._verify_disk(expected_count=initial)
+        self._verify_counter('disk', expected_count=initial)
 
     def test_02_cache(self):
         """Deploy a service with ElastiCache, verify."""
@@ -40,7 +38,14 @@ class TestDeployPersistence(BaseIntegrationTest):
             'redis': {}
         }
         self.provision()
-        self._verify_redis()
+
+        # Info path:
+        r = self._get('redis/info')
+        redis_info = r.json()
+        self.assertEquals(REDIS_PORT, redis_info['tcp_port'])
+        self.assertEquals(REDIS_VERSION, redis_info['redis_version'])
+
+        self._verify_counter('redis', post_count=10)
 
     def test_03_rds(self):
         """Deploy a service with RDS, verify."""
@@ -48,25 +53,14 @@ class TestDeployPersistence(BaseIntegrationTest):
             'postgres': {}
         }
         self.provision()
-        # FIXME: verify_rds
+        self._verify_counter('postgres', post_count=10)
 
-    def _verify_redis(self):
-        r = requests.get('%s/redis/info' % BaseIntegrationTest.APP_URL)
-        redis_info = r.json()
-        self.assertEquals(REDIS_PORT, redis_info['tcp_port'])
-        self.assertEquals(REDIS_VERSION, redis_info['redis_version'])
-        counter_url = '%s/redis/counter' % BaseIntegrationTest.APP_URL
-        self._verify_counter(counter_url, post_count=10)
-
-    def _verify_disk(self, expected_count=0, post_count=10):
-        counter_url = '%s/disk/counter' % BaseIntegrationTest.APP_URL
-        return self._verify_counter(counter_url, expected_count, post_count)
-
-    def _verify_counter(self, counter_url, expected_count=0, post_count=10):
-        r = requests.get(counter_url)
+    def _verify_counter(self, counter_type, expected_count=0, post_count=10):
+        counter_url = '%s/counter' % counter_type
+        r = self._get(counter_url)
         count = r.json()['count']
         self.assertTrue(count >= expected_count)
         for i in range(post_count):
-            r = requests.post(counter_url)
+            r = self._post(counter_url)
             count = r.json()['count']
         return count
