@@ -3,7 +3,7 @@ import unittest
 
 from spacel.aws import ClientCache
 from spacel.security.acm import AcmCertificates
-from test import REGION
+from test import ORBIT_REGION
 
 TEST_EXAMPLE_COM = '111111'
 STAR_EXAMPLE_COM = '222222'
@@ -54,17 +54,17 @@ class TestAcmCertificates(unittest.TestCase):
 
     def test_get_certificate_exact(self):
         self._mock_certs()
-        cert = self.acm_certs.get_certificate(REGION, 'test.example.com')
+        cert = self.acm_certs.get_certificate(ORBIT_REGION, 'test.example.com')
         self.assertEquals(cert, TEST_EXAMPLE_COM)
 
     def test_get_certificate_wildcard(self):
         self._mock_certs()
-        cert = self.acm_certs.get_certificate(REGION, 'other.example.com')
+        cert = self.acm_certs.get_certificate(ORBIT_REGION, 'other.example.com')
         self.assertEquals(cert, STAR_EXAMPLE_COM)
 
     def test_get_certificate_best_wildcard(self):
         self._mock_certs()
-        cert = self.acm_certs.get_certificate(REGION, 'test.test.double.com')
+        cert = self.acm_certs.get_certificate(ORBIT_REGION, 'test.test.double.com')
         # Both STAR_STAR and STAR_TEST will work, we want the most specific:
         self.assertEquals(cert, STAR_TEST_DOUBLE_COM)
 

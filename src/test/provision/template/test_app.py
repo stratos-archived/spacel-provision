@@ -7,7 +7,7 @@ from spacel.provision.app.db import CacheFactory, RdsFactory
 from spacel.provision.template.app import AppTemplate
 from spacel.provision.app.app_spot import AppSpotTemplateDecorator
 from spacel.security import AcmCertificates, KmsKeyFactory
-from test import REGION, BaseSpaceAppTest
+from test import ORBIT_REGION, BaseSpaceAppTest
 from test.provision.template import SUBNETS
 from test.security import KEY_ARN
 
@@ -30,13 +30,13 @@ class TestAppTemplate(BaseSpaceAppTest):
                                  self.rds, self.spot, self.acm, self.kms_key)
         base_template = self.cache.get('elb-service')
         self.base_resources = len(base_template['Resources'])
-        self.orbit._public_elb_subnets = {REGION: SUBNETS}
-        self.orbit._private_elb_subnets = {REGION: SUBNETS}
-        self.orbit._private_instance_subnets = {REGION: SUBNETS}
-        self.orbit._public_instance_subnets = {REGION: SUBNETS}
+        self.orbit._public_elb_subnets = {ORBIT_REGION: SUBNETS}
+        self.orbit._private_elb_subnets = {ORBIT_REGION: SUBNETS}
+        self.orbit._private_instance_subnets = {ORBIT_REGION: SUBNETS}
+        self.orbit._public_instance_subnets = {ORBIT_REGION: SUBNETS}
 
     def test_app(self):
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         app_resources = len(app['Resources'])
         self.assertEquals(self.base_resources, app_resources)
@@ -53,7 +53,7 @@ class TestAppTemplate(BaseSpaceAppTest):
     def test_app_domain(self):
         self.app.hostnames = ('app.test.com',)
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         params = app['Parameters']
         self.assertEquals(params['VirtualHostDomain']['Default'], 'test.com.')
@@ -62,7 +62,7 @@ class TestAppTemplate(BaseSpaceAppTest):
     def test_app_bastion(self):
         self.orbit.bastion_sg = MagicMock(return_value='sg-123tes')
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         bastion_sg_param = app['Parameters']['BastionSecurityGroup']['Default']
         self.assertEqual('sg-123tes', bastion_sg_param)
@@ -71,7 +71,7 @@ class TestAppTemplate(BaseSpaceAppTest):
         self.app.instance_availability = 'internet-facing'
         self.orbit.public_instance_subnets = MagicMock(return_value=('test',))
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         self.orbit.public_instance_subnets.assert_called_once()
         public_addr = (app['Resources']['Lc']['Properties']
@@ -81,7 +81,7 @@ class TestAppTemplate(BaseSpaceAppTest):
     def test_app_no_loadbalancer(self):
         self.app.loadbalancer = False
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         self.assertEqual(False, app['Parameters']['PublicElb']['Default'])
         self.assertEqual(False, app['Parameters']['PrivateElb']['Default'])
@@ -101,7 +101,7 @@ class TestAppTemplate(BaseSpaceAppTest):
     def test_app_private_ports(self):
         self.app.private_ports = {123: ['TCP']}
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         sg_properties = app['Resources']['PrivatePort123TCP']['Properties']
         self.assertEquals('123', sg_properties['FromPort'])
@@ -110,7 +110,7 @@ class TestAppTemplate(BaseSpaceAppTest):
     def test_app_private_ports_split(self):
         self.app.private_ports = {'123-456': ['TCP']}
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         sg_properties = app['Resources']['PrivatePort123to456TCP']['Properties']
         self.assertEquals('123', sg_properties['FromPort'])
@@ -123,7 +123,7 @@ class TestAppTemplate(BaseSpaceAppTest):
             })
         }
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         self.acm.get_certificate.assert_not_called()
 
@@ -131,9 +131,9 @@ class TestAppTemplate(BaseSpaceAppTest):
         self.app.public_ports = {
             443: SpaceServicePort(443, {})
         }
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
-        self.acm.get_certificate.assert_called_with(REGION, DOMAIN_NAME)
+        self.acm.get_certificate.assert_called_with(ORBIT_REGION, DOMAIN_NAME)
 
     def test_app_public_ports_ssl_not_found(self):
         self.app.public_ports = {
@@ -141,36 +141,36 @@ class TestAppTemplate(BaseSpaceAppTest):
         }
         self.acm.get_certificate.return_value = None
 
-        self.assertRaises(Exception, self.cache.app, self.app, REGION)
+        self.assertRaises(Exception, self.cache.app, self.app, ORBIT_REGION)
 
     def test_app_instance_storage(self):
         self.app.instance_type = 'c1.medium'
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         block_devs = app['Resources']['Lc']['Properties']['BlockDeviceMappings']
         self.assertEquals(2, len(block_devs))
 
     def test_app_cache_subnet_group(self):
-        self.orbit._private_cache_subnet_groups[REGION] = SUBNET_GROUP
+        self.orbit._private_cache_subnet_groups[ORBIT_REGION] = SUBNET_GROUP
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
         self.assertEquals(SUBNET_GROUP, (app['Parameters']
                                          ['PrivateCacheSubnetGroup']
                                          ['Default']))
 
     def test_app_public_rds_subnet_group(self):
-        self.orbit._public_rds_subnet_groups[REGION] = SUBNET_GROUP
+        self.orbit._public_rds_subnet_groups[ORBIT_REGION] = SUBNET_GROUP
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
         self.assertEquals(SUBNET_GROUP, (app['Parameters']
                                          ['PublicRdsSubnetGroup']
                                          ['Default']))
 
     def test_app_private_rds_subnet_group(self):
-        self.orbit._private_rds_subnet_groups[REGION] = SUBNET_GROUP
+        self.orbit._private_rds_subnet_groups[ORBIT_REGION] = SUBNET_GROUP
 
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
         self.assertEquals(SUBNET_GROUP, (app['Parameters']
                                          ['PrivateRdsSubnetGroup']
                                          ['Default']))
@@ -178,7 +178,7 @@ class TestAppTemplate(BaseSpaceAppTest):
     def test_app_min_in_service(self):
         self.app.instance_min = 2
         self.app.instance_max = 2
-        app, _ = self.cache.app(self.app, REGION)
+        app, _ = self.cache.app(self.app, ORBIT_REGION)
 
         self.assertEquals(1, (app['Parameters']
                               ['InstanceMinInService']
@@ -214,14 +214,14 @@ class TestAppTemplate(BaseSpaceAppTest):
 
     def test_add_kms_iam_policy_noop(self):
         resources = {}
-        self.cache._add_kms_iam_policy(self.app, REGION, resources)
+        self.cache._add_kms_iam_policy(self.app, ORBIT_REGION, resources)
 
         self.assertEquals({}, resources)
 
     def test_add_kms_iam_policy(self):
         self.kms_key.get_key.return_value = KEY_ARN
         resources = {}
-        self.cache._add_kms_iam_policy(self.app, REGION, resources)
+        self.cache._add_kms_iam_policy(self.app, ORBIT_REGION, resources)
 
         self.assertEquals(1, len(resources))
         self.assertIn('KmsKeyPolicy', resources)

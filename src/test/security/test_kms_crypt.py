@@ -5,7 +5,7 @@ import six
 from spacel.security.kms_crypt import KmsCrypto
 from spacel.security.kms_key import KmsKeyFactory
 
-from test import REGION
+from test import ORBIT_REGION
 from test.security import BaseKmsTest, PLAINTEXT_KEY, ENCRYPTED_KEY
 
 
@@ -30,7 +30,7 @@ class TestKmsCrypto(BaseKmsTest):
                           b'1234567890123456',
                           b'1234567890123456',
                           b'1234567890123456',
-                          REGION,
+                          ORBIT_REGION,
                           'bytes')
 
     def test_encrypt_missing_key(self):
@@ -49,15 +49,15 @@ class TestKmsCrypto(BaseKmsTest):
             }
         ]
 
-        self.kms_crypt.encrypt(self.app, REGION, 'test')
+        self.kms_crypt.encrypt(self.app, ORBIT_REGION, 'test')
 
         self.assertEquals(2, self.kms.generate_data_key.call_count)
-        self.kms_key.create_key.assert_called_with(self.app, REGION)
+        self.kms_key.create_key.assert_called_with(self.app, ORBIT_REGION)
 
     def _round_trip(self, data):
-        item = self.kms_crypt.encrypt(self.app, REGION, data)
+        item = self.kms_crypt.encrypt(self.app, ORBIT_REGION, data)
         self.assertEquals(ENCRYPTED_KEY, item.key)
-        self.assertEquals(REGION, item.key_region)
+        self.assertEquals(ORBIT_REGION, item.key_region)
 
         decrypted = self.kms_crypt.decrypt_payload(item)
         self.assertEquals(decrypted, data)

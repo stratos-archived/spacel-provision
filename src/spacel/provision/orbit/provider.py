@@ -22,7 +22,7 @@ class ProviderOrbitFactory(object):
         # Index regions by provider:
         provider_regions = defaultdict(list)
         for region in regions:
-            provider_name = orbit.get_param(region, PROVIDER)
+            provider_name = orbit._get_param(region, PROVIDER)
             logger.debug('Orbit "%s" uses provider: %s', orbit.name,
                          provider_name)
             provider_regions[provider_name].append(region)

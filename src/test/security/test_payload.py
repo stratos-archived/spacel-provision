@@ -2,7 +2,7 @@ import json
 import unittest
 
 from spacel.security.payload import EncryptedPayload
-from test import REGION
+from test import ORBIT_REGION
 
 IV = b'0000000000000000'
 CIPHERTEXT = b'0000000000000000'
@@ -12,7 +12,7 @@ ENCODING = 'utf-8'
 
 class TestEncryptedPayload(unittest.TestCase):
     def setUp(self):
-        self.payload = EncryptedPayload(IV, CIPHERTEXT, KEY, REGION, ENCODING)
+        self.payload = EncryptedPayload(IV, CIPHERTEXT, KEY, ORBIT_REGION, ENCODING)
 
     def test_roundtrip_dynamodb(self):
         dynamodb_item = self.payload.dynamodb_item()
@@ -20,7 +20,7 @@ class TestEncryptedPayload(unittest.TestCase):
         self.assertEquals(IV, payload.iv)
         self.assertEquals(CIPHERTEXT, payload.ciphertext)
         self.assertEquals(KEY, payload.key)
-        self.assertEquals(REGION, payload.key_region)
+        self.assertEquals(ORBIT_REGION, payload.key_region)
         self.assertEquals(ENCODING, payload.encoding)
 
     def test_roundtrip_json(self):
@@ -29,5 +29,5 @@ class TestEncryptedPayload(unittest.TestCase):
         self.assertEquals(IV, payload.iv)
         self.assertEquals(CIPHERTEXT, payload.ciphertext)
         self.assertEquals(KEY, payload.key)
-        self.assertEquals(REGION, payload.key_region)
+        self.assertEquals(ORBIT_REGION, payload.key_region)
         self.assertEquals(ENCODING, payload.encoding)

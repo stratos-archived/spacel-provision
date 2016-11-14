@@ -75,6 +75,6 @@ class TestSshAccess(BaseIntegrationTest):
         bastion_ips = [o['OutputValue'] for o in stack['Outputs']
                        if o['OutputKey'].startswith('ElasticIp')]
 
-        expected_count = orbit.get_param(region, BASTION_INSTANCE_COUNT)
+        expected_count = orbit._get_param(region, BASTION_INSTANCE_COUNT)
         self.assertEquals(expected_count, len(bastion_ips))
         return bastion_ips

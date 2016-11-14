@@ -1,37 +1,26 @@
 import unittest
 
-from spacel.model.orbit import (Orbit, PRIVATE_NETWORK, BASTION_INSTANCE_TYPE,
-                                BASTION_INSTANCE_COUNT)
+from spacel.model import NAME, REGIONS, DEFAULTS
+from spacel.model.orbit import (Orbit,
+                                BASTION_INSTANCE_COUNT,
+                                BASTION_INSTANCE_TYPE,
+                                PRIVATE_NETWORK)
+from test import ORBIT_NAME, ORBIT_REGION, TWO_REGIONS
 
-NAME = 'test'
-REGION = 'us-east-1'
-REGION2 = 'us-west-2'
 NETWORK = '192.168.0.0/16'
 
 
 class TestOrbit(unittest.TestCase):
     def setUp(self):
         self.params = {
-            'name': NAME,
-            'regions': (REGION, REGION2),
-            'defaults': {
+            NAME: ORBIT_NAME,
+            REGIONS: TWO_REGIONS,
+            DEFAULTS: {
                 PRIVATE_NETWORK: NETWORK,
             },
-            REGION: {
+            ORBIT_REGION: {
                 BASTION_INSTANCE_TYPE: 't2.small',
                 BASTION_INSTANCE_COUNT: 2
             }
         }
         self.orbit = Orbit(self.params)
-
-    def test_get_value_param_defaults(self):
-        network = self.orbit.get_param(REGION2, PRIVATE_NETWORK)
-        self.assertEquals(NETWORK, network)
-
-    def test_get_value_class_defaults(self):
-        network = self.orbit.get_param(REGION2, BASTION_INSTANCE_TYPE)
-        self.assertEquals('t2.nano', network)
-
-    def test_get_value_region(self):
-        instance = self.orbit.get_param(REGION, BASTION_INSTANCE_COUNT)
-        self.assertEquals(2, instance)

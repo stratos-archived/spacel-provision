@@ -18,10 +18,10 @@ class VpcTemplate(BaseTemplateCache):
         vpc_template = self.get('vpc')
         params = vpc_template['Parameters']
 
-        nat_per_az = orbit.get_param(region, NAT_PER_AZ)
+        nat_per_az = orbit._get_param(region, NAT_PER_AZ)
         params['NatPerAz']['Default'] = nat_per_az and 'true' or 'false'
 
-        params['VpcCidr']['Default'] = orbit.get_param(region, PRIVATE_NETWORK)
+        params['VpcCidr']['Default'] = orbit._get_param(region, PRIVATE_NETWORK)
 
         azs = orbit.azs(region)
         if not azs:

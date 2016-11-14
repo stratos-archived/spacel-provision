@@ -1,31 +1,26 @@
 import unittest
 
-from spacel.model import Orbit
 from spacel.model.app import SpaceApp, SpaceDockerService
+from spacel.model.base import NAME, REGIONS
+from test import BaseSpaceAppTest
+from test import ORBIT_REGIONS, APP_NAME, TWO_REGIONS
 
-ORBIT_REGIONS = ('us-east-1', 'us-west-2')
 CONTAINER = 'pwagner/elasticsearch-aws'
 SERVICE_NAME = 'elasticsearch.service'
 SERVICE_NAME_NO_EXT = 'elasticsearch'
 
 
-class TestSpaceApp(unittest.TestCase):
-    def setUp(self):
-        self.orbit = Orbit({
-            'name': 'test-orbit',
-            'regions': ORBIT_REGIONS
-        })
-
+class TestSpaceApp(BaseSpaceAppTest):
     def test_constructor_default_regions(self):
         app = SpaceApp(self.orbit)
         self.assertEqual(ORBIT_REGIONS, app.regions)
 
     def test_constructor_custom_regions(self):
         app = SpaceApp(self.orbit, {
-            'regions': ('us-east-1', 'us-west-1')
+            REGIONS: TWO_REGIONS
         })
         # us-west-1 is blocked since it's not in the orbit:
-        self.assertEqual(['us-east-1'], app.regions)
+        self.assertEqual(ORBIT_REGIONS, app.regions)
 
     def test_public_ports_default(self):
         app = SpaceApp(self.orbit)
@@ -116,8 +111,10 @@ class TestSpaceApp(unittest.TestCase):
         self.assertEqual(app._spot(spot_dict), spot_dict['spot'])
 
     def test_full_name(self):
-        app = SpaceApp(self.orbit, {})
-        self.assertEquals(app.full_name, 'test-orbit-test')
+        app = SpaceApp(self.orbit, {
+            NAME: APP_NAME
+        })
+        self.assertEquals(app.full_name, 'test-orbit-test-app')
 
     def test_no_elb(self):
         app = SpaceApp(self.orbit, {'elb_availability': 'disabled'})

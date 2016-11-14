@@ -15,7 +15,7 @@ class BastionTemplate(BaseTemplateCache):
         :param region: Region.
         :return: Bastion template.
         """
-        bastion_count = int(orbit.get_param(region, BASTION_INSTANCE_COUNT))
+        bastion_count = int(orbit._get_param(region, BASTION_INSTANCE_COUNT))
         if not bastion_count:
             return False
 
@@ -31,7 +31,7 @@ class BastionTemplate(BaseTemplateCache):
             params['VirtualHostDomain']['Default'] = orbit.domain + '.'
 
         # Bastion parameters:
-        bastion_type = orbit.get_param(region, BASTION_INSTANCE_TYPE)
+        bastion_type = orbit._get_param(region, BASTION_INSTANCE_TYPE)
         params['InstanceType']['Default'] = bastion_type
         params['Ami']['Default'] = self._ami.spacel_ami(region)
 

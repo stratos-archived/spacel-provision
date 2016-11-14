@@ -1,5 +1,5 @@
 from spacel.provision.app.db.cache import CacheFactory
-from test import REGION
+from test import ORBIT_REGION
 from test.provision.app.db import BaseDbTest
 
 CACHE_NAME = 'test-cache'
@@ -22,19 +22,19 @@ class TestCacheFactory(BaseDbTest):
 
     def test_add_caches_noop(self):
         del self.caches[CACHE_NAME]
-        self.cache_factory.add_caches(self.app, REGION, self.template,
+        self.cache_factory.add_caches(self.app, ORBIT_REGION, self.template,
                                       self.caches)
         self.assertEquals(1, len(self.resources))
 
     def test_add_caches_invalid_replicas(self):
         self.cache_params['replicas'] = 'meow'
 
-        self.cache_factory.add_caches(self.app, REGION, self.template,
+        self.cache_factory.add_caches(self.app, ORBIT_REGION, self.template,
                                       self.caches)
         self.assertEquals(1, len(self.resources))
 
     def test_add_caches(self):
-        self.cache_factory.add_caches(self.app, REGION, self.template,
+        self.cache_factory.add_caches(self.app, ORBIT_REGION, self.template,
                                       self.caches)
         self.assertEquals(4, len(self.resources))
 

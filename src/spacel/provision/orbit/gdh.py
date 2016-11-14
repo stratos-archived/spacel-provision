@@ -19,8 +19,8 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
     def get_orbit(self, orbit, regions=None):
         regions = regions or orbit.regions
         for region in regions:
-            parent_stack_name = orbit.get_param(region, GDH_PARENT)
-            deploy_stack_name = orbit.get_param(region, GDH_DEPLOY)
+            parent_stack_name = orbit._get_param(region, GDH_PARENT)
+            deploy_stack_name = orbit._get_param(region, GDH_DEPLOY)
             cf = self._clients.cloudformation(region)
 
             # Check for parent in region:

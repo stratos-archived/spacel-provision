@@ -1,44 +1,40 @@
 import logging
 import os
+
 import six
+
+from spacel.model.base import BaseModelObject
 from spacel.provision import base64_encode
 
-logger = logging.getLogger('spacel')
+logger = logging.getLogger('spacel.model.app')
 
 
-class SpaceApp(object):
+class SpaceApp(BaseModelObject):
     def __init__(self, orbit, params=None):
-        params = params or {}
-        self.name = params.get('name', 'test')
         self.orbit = orbit
-        regions = params.get('regions')
-        if regions:
-            self.regions = [region for region in regions
-                            if region in orbit.regions]
-        else:
-            self.regions = orbit.regions
-        self.hostnames = params.get('hostnames', ())
-        self.instance_type = params.get('instance_type', 't2.nano')
-        self.instance_min = params.get('instance_min', 1)
-        self.instance_max = params.get('instance_max', 2)
-        self.health_check = params.get('health_check', 'TCP:80')
-        self.local_health_check = params.get('health_check', 'TCP:80')
+        super(SpaceApp, self).__init__(params)
+        self.hostnames = self._params.get('hostnames', ())
+        self.instance_type = self._params.get('instance_type', 't2.nano')
+        self.instance_min = self._params.get('instance_min', 1)
+        self.instance_max = self._params.get('instance_max', 2)
+        self.health_check = self._params.get('health_check', 'TCP:80')
+        self.local_health_check = self._params.get('health_check', 'TCP:80')
 
-        self.instance_availability = params.get('instance_availability',
-                                                'private')
-        self.elb_availability = params.get('elb_availability',
-                                           'internet-facing')
+        self.instance_availability = self._params.get('instance_availability',
+                                                      'private')
+        self.elb_availability = self._params.get('elb_availability',
+                                                 'internet-facing')
         self.loadbalancer = self.elb_availability != 'disabled'
 
-        public_ports = params.get('public_ports', {80: {}})
+        public_ports = self._params.get('public_ports', {80: {}})
         self.public_ports = {port: SpaceServicePort(port, port_params)
                              for port, port_params in public_ports.items()}
 
-        self.private_ports = params.get('private_ports', {})
-        self.volumes = params.get('volumes', {})
+        self.private_ports = self._params.get('private_ports', {})
+        self.volumes = self._params.get('volumes', {})
 
         self.services = {}
-        services = params.get('services', {})
+        services = self._params.get('services', {})
         for service_name, service_params in services.items():
             if '.' not in service_name:
                 service_name += '.service'
@@ -61,7 +57,7 @@ class SpaceApp(object):
             logger.warning('Invalid service: %s', service_name)
 
         self.files = {}
-        files = params.get('files', {})
+        files = self._params.get('files', {})
         for file_name, file_params in files.items():
             if isinstance(file_params, six.string_types):
                 encoded_body = base64_encode(file_params.encode('utf-8'))
@@ -69,10 +65,15 @@ class SpaceApp(object):
             else:
                 self.files[file_name] = file_params
 
-        self.alarms = params.get('alarms', {})
-        self.caches = params.get('caches', {})
-        self.databases = params.get('databases', {})
-        self.spot = self._spot(params)
+        self.alarms = self._params.get('alarms', {})
+        self.caches = self._params.get('caches', {})
+        self.databases = self._params.get('databases', {})
+        self.spot = self._spot(self._params)
+
+    def _regions(self):
+        orbit_regions = self.orbit.regions
+        return super(SpaceApp, self)._regions(valid_regions=orbit_regions,
+                                              default_regions=orbit_regions)
 
     @staticmethod
     def _spot(params):

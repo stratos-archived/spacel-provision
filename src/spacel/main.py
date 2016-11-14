@@ -26,7 +26,12 @@ def main(args, in_stream):
         return -1
 
     orbit = Orbit(orbit_json)
+    if not orbit.valid:
+        return -1
+
     app = SpaceApp(orbit, app_json)
+    if not app.valid:
+        return -1
 
     return provision(app)
 

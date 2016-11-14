@@ -63,7 +63,7 @@ class IngressResourceFactory(object):
 
             # This orbit region:
             if client == region:
-                network = '%s.0.0/16' % orbit.get_param(region, PRIVATE_NETWORK)
+                network = '%s.0.0/16' % orbit._get_param(region, PRIVATE_NETWORK)
                 ingress_resource('Orbit%s' % client, CidrIp=network)
                 continue
 

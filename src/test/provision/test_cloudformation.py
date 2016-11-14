@@ -9,7 +9,7 @@ from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.cloudformation import (BaseCloudFormationFactory,
                                              NO_CHANGES, CF_STACK)
 from spacel.provision.s3.template_uploader import TemplateUploader
-from test import REGION
+from test import ORBIT_REGION
 
 NAME = 'test-stack'
 TEMPLATE = {}
@@ -43,7 +43,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         }}, 'CreateChangeSet')
         self.cloudformation.create_change_set.side_effect = not_found
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.assertEqual(result, 'create')
         self.cloudformation.create_stack.assert_called_with(
@@ -59,7 +59,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         mock_json.dumps = MagicMock(return_value='unicorns' * 64001)
         self.cloudformation.create_change_set.side_effect = NOT_FOUND
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.assertEqual(result, 'create')
         self.cloudformation.create_stack.assert_called_with(
@@ -73,7 +73,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
     def test_stack_no_changes(self):
         self.cloudformation.describe_change_set.return_value = NO_CHANGE_SET
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.assertIsNone(result)
         self.change_sets.estimate.assert_not_called()
@@ -83,7 +83,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         mock_json.dumps = MagicMock(return_value='unicorns' * 64001)
         self.cloudformation.describe_change_set.return_value = NO_CHANGE_SET
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.assertIsNone(result)
         self.change_sets.estimate.assert_not_called()
@@ -102,7 +102,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
             'StatusReason': 'Kaboom'
         }
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.assertEqual(result, 'failed')
         self.change_sets.estimate.assert_not_called()
@@ -113,7 +113,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
             {'Status': 'CREATE_COMPLETE', 'Changes': []}
         ]
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.change_sets.estimate.assert_called_with(ANY)
         self.assertEqual(result, 'update')
@@ -128,7 +128,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         ]
         self.cloudformation.describe_change_set.return_value = NO_CHANGE_SET
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.assertIsNone(result)
         self.cloudformation.get_waiter.assert_called_with(
@@ -144,7 +144,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         ]
         self.cloudformation.describe_change_set.return_value = NO_CHANGE_SET
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.assertIsNone(result)
         self.cloudformation.get_waiter.assert_called_with(
@@ -153,7 +153,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
     def test_stack_exception(self):
         self.cloudformation.create_change_set.side_effect = CLIENT_ERROR
 
-        self.assertRaises(ClientError, self.cf_factory._stack, NAME, REGION,
+        self.assertRaises(ClientError, self.cf_factory._stack, NAME, ORBIT_REGION,
                           TEMPLATE)
 
     def test_stack_rollback_complete(self):
@@ -166,7 +166,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         ]
         self.cloudformation.describe_change_set.return_value = NO_CHANGE_SET
 
-        result = self.cf_factory._stack(NAME, REGION, TEMPLATE)
+        result = self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE)
 
         self.assertIsNone(result)
         self.cloudformation.get_waiter.assert_called_with(
@@ -178,7 +178,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         ]
 
         secret_func = MagicMock()
-        self.cf_factory._stack(NAME, REGION, TEMPLATE,
+        self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE,
                                secret_parameters={
                                    'TopSecret': secret_func
                                })
@@ -196,7 +196,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
             {'Status': 'CREATE_COMPLETE', 'Changes': []}
 
         secret_func = MagicMock()
-        self.cf_factory._stack(NAME, REGION, TEMPLATE,
+        self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE,
                                secret_parameters={
                                    'TopSecret': secret_func
                                })
@@ -222,12 +222,12 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         self.assertEquals('test', params)
 
     def test_delete_stack(self):
-        self.cf_factory._delete_stack(NAME, REGION)
+        self.cf_factory._delete_stack(NAME, ORBIT_REGION)
         self.cloudformation.delete_stack.assert_called_with(StackName=NAME)
 
     def test_wait_for_updates_skip_noops(self):
         updated = self.cf_factory._wait_for_updates(NAME, {
-            REGION: None
+            ORBIT_REGION: None
         })
         self.assertTrue(updated)
 
@@ -235,7 +235,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
 
     def test_wait_for_updates_skip_failed(self):
         updated = self.cf_factory._wait_for_updates(NAME, {
-            REGION: 'failed'
+            ORBIT_REGION: 'failed'
         })
         self.assertTrue(updated)
 
@@ -252,7 +252,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         }
 
         updated = self.cf_factory._wait_for_updates(NAME, {
-            REGION: 'update'
+            ORBIT_REGION: 'update'
         }, poll_interval=0.001)
         self.assertFalse(updated)
 
@@ -262,14 +262,14 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
     def test_wait_for_updates_does_not_exist_delete(self):
         self.cloudformation.describe_stack_events.side_effect = NOT_FOUND
 
-        updated = self.cf_factory._wait_for_updates(NAME, {REGION: 'delete'})
+        updated = self.cf_factory._wait_for_updates(NAME, {ORBIT_REGION: 'delete'})
         self.assertTrue(updated)
 
     def test_wait_for_updates_does_not_exist_update(self):
         self.cloudformation.describe_stack_events.side_effect = NOT_FOUND
 
         self.assertRaises(ClientError, self.cf_factory._wait_for_updates, NAME,
-                          {REGION: 'update'})
+                          {ORBIT_REGION: 'update'})
 
     def test_wait_for_updates(self):
         self.cloudformation.describe_stack_events.return_value = {
@@ -298,7 +298,7 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
         }
 
         updated = self.cf_factory._wait_for_updates(NAME, {
-            REGION: 'update'
+            ORBIT_REGION: 'update'
         }, poll_interval=0.001)
         self.assertTrue(updated)
 

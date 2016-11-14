@@ -1,8 +1,8 @@
 from mock import MagicMock
 import unittest
 
-from spacel.model import Orbit
-from spacel.model.orbit import (DEFAULTS, PROVIDER, REGIONS)
+from spacel.model import Orbit, REGIONS, DEFAULTS
+from spacel.model.orbit import PROVIDER
 from spacel.provision.orbit.provider import ProviderOrbitFactory
 from test.provision.orbit import (NAME, REGION)
 

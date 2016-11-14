@@ -1,11 +1,10 @@
-from collections import defaultdict
 import logging
+from collections import defaultdict
 
-logger = logging.getLogger('spacel')
+from spacel.model.base import BaseModelObject
 
-DEFAULTS = 'defaults'
+logger = logging.getLogger('spacel.model.orbit')
 
-NAME = 'name'
 DOMAIN = 'domain'
 PRIVATE_NETWORK = 'private_network'
 
@@ -14,13 +13,12 @@ BASTION_INSTANCE_TYPE = 'bastion_instance_type'
 BASTION_SOURCE = 'bastion_source'
 NAT_PER_AZ = 'nat_per_az'
 PROVIDER = 'provider'
-REGIONS = 'regions'
 
 GDH_PARENT = 'parent_stack'
 GDH_DEPLOY = 'deploy_stack'
 
 
-class Orbit(object):
+class Orbit(BaseModelObject):
     DEFAULT_VALUES = {
         PRIVATE_NETWORK: '192.168',
         BASTION_INSTANCE_COUNT: 1,
@@ -31,9 +29,8 @@ class Orbit(object):
     }
 
     def __init__(self, params):
-        self.name = params.get(NAME, 'test')
-        self.domain = params.get(DOMAIN, '')
-        self._params = params
+        super(Orbit, self).__init__(params, Orbit.DEFAULT_VALUES)
+        self.domain = self._required(DOMAIN)
 
         # Queried from EC2:
         self._azs = {}
@@ -54,26 +51,8 @@ class Orbit(object):
         self._bastion_eips = defaultdict(dict)
         self._bastion_sgs = {}
 
-    @property
-    def regions(self):
-        return self._params.get(REGIONS, ())
-
     def azs(self, region):
         return self._azs.get(region, ())
-
-    def get_param(self, region, key):
-        region_map = self._params.get(region)
-        if region_map:
-            region_value = region_map.get(key)
-            if region_value is not None:
-                return region_value
-
-        defaults_map = self._params.get(DEFAULTS)
-        if defaults_map:
-            defaults_value = defaults_map.get(key)
-            if defaults_value is not None:
-                return defaults_value
-        return self.DEFAULT_VALUES.get(key)
 
     def vpc_id(self, region):
         return self._vpc_ids.get(region)

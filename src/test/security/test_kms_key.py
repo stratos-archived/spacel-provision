@@ -1,7 +1,7 @@
 from botocore.exceptions import ClientError
 
 from spacel.security.kms_key import KmsKeyFactory
-from test import REGION
+from test import ORBIT_REGION
 from test.security import BaseKmsTest, KEY_ARN, CLIENT_ERROR
 
 ALIAS = 'alias/test-orbit-test-app'
@@ -25,7 +25,7 @@ class TestKmsKeyFactory(BaseKmsTest):
     def test_get_key_exists(self):
         self.kms.describe_key.return_value = KEY_METADATA
 
-        key = self.kms_factory.get_key(self.app, REGION)
+        key = self.kms_factory.get_key(self.app, ORBIT_REGION)
         self.assertEquals(KEY_ARN, key)
 
         self.kms.describe_key.assert_called_with(KeyId=ALIAS)
@@ -36,7 +36,7 @@ class TestKmsKeyFactory(BaseKmsTest):
         key_metadata['KeyMetadata']['Enabled'] = False
         self.kms.describe_key.return_value = key_metadata
 
-        key = self.kms_factory.get_key(self.app, REGION)
+        key = self.kms_factory.get_key(self.app, ORBIT_REGION)
         self.assertIsNone(key)
 
         self.kms.describe_key.assert_called_with(KeyId=ALIAS)
@@ -44,14 +44,14 @@ class TestKmsKeyFactory(BaseKmsTest):
     def test_get_key_not_found(self):
         self._key_not_found()
 
-        self.kms_factory.get_key(self.app, REGION, create=False)
+        self.kms_factory.get_key(self.app, ORBIT_REGION, create=False)
 
         self.kms.create_key.assert_not_called()
 
     def test_get_key_not_found_create(self):
         self._key_not_found()
 
-        self.kms_factory.get_key(self.app, REGION)
+        self.kms_factory.get_key(self.app, ORBIT_REGION)
 
         # Key is created:
         self.kms.create_key.assert_called_once_with()
@@ -60,12 +60,12 @@ class TestKmsKeyFactory(BaseKmsTest):
         self.kms.describe_key.side_effect = CLIENT_ERROR
 
         self.assertRaises(ClientError, self.kms_factory.get_key,
-                          self.app, REGION)
+                          self.app, ORBIT_REGION)
 
     def test_create_key(self):
         self.kms.create_key.return_value = KEY_METADATA
 
-        key = self.kms_factory.create_key(self.app, REGION)
+        key = self.kms_factory.create_key(self.app, ORBIT_REGION)
         self.assertEquals(KEY_ARN, key)
 
         self.kms.describe_key.assert_not_called()
@@ -79,7 +79,7 @@ class TestKmsKeyFactory(BaseKmsTest):
         self.kms.create_alias.side_effect = CLIENT_ERROR
 
         self.assertRaises(ClientError, self.kms_factory.create_key,
-                          self.app, REGION)
+                          self.app, ORBIT_REGION)
         self.kms.schedule_key_deletion.assert_called_with(
             KeyId=KEY_ARN,
             PendingWindowInDays=7
