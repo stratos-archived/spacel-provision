@@ -3,7 +3,7 @@
   "instance_type": "t2.nano",
   "instance_min": 1,
   "instance_max": 1,
-  "loadbalancer": false,
+  "elb_availability": "disabled",
   "instance_availability": "internet-facing",
   "services": {
     "http-env-echo": {
