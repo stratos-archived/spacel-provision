@@ -17,11 +17,12 @@ class KmsKeyFactory(object):
         """
         return 'alias/%s-%s' % (app.orbit.name, app.name)
 
-    def get_key(self, app, region):
+    def get_key(self, app, region, create=True):
         """
         Get a KMS key ARN, creating if necessary.
         :param app: App descriptor.
         :param region: Region.
+        :param create: Create key if it does not exist.
         :return: KMS key ARN.
         """
         alias_name = self.get_key_alias(app)
@@ -40,8 +41,13 @@ class KmsKeyFactory(object):
             e_message = e.response['Error'].get('Message', '')
             if 'Invalid keyId' not in e_message:
                 raise e
-        logger.debug('Unable to find key "%s", creating...', alias_name)
-        return self.create_key(app, region)
+
+        if create:
+            logger.debug('Unable to find key "%s", creating...', alias_name)
+            return self.create_key(app, region)
+        else:
+            logger.debug('Unable to find key "%s".', alias_name)
+            return None
 
     def create_key(self, app, region):
         """

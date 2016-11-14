@@ -2,14 +2,14 @@ from mock import MagicMock
 
 from spacel.aws import AmiFinder
 from spacel.model import SpaceServicePort, SpaceDockerService
-from spacel.provision.template.app import AppTemplate
-from spacel.provision.template.app_spot import AppSpotTemplateDecorator
 from spacel.provision.alarm import AlarmFactory
 from spacel.provision.db import CacheFactory, RdsFactory
-from spacel.security import AcmCertificates
-
+from spacel.provision.template.app import AppTemplate
+from spacel.provision.template.app_spot import AppSpotTemplateDecorator
+from spacel.security import AcmCertificates, KmsKeyFactory
 from test import REGION, BaseSpaceAppTest
 from test.provision.template import SUBNETS
+from test.security import KEY_ARN
 
 DOMAIN_NAME = 'test-app-test-orbit.test.com'
 SUBNET_GROUP = 'subnet-123456'
@@ -24,8 +24,10 @@ class TestAppTemplate(BaseSpaceAppTest):
         self.rds = MagicMock(spec=RdsFactory)
         self.spot = MagicMock(spec=AppSpotTemplateDecorator)
         self.acm = MagicMock(spec=AcmCertificates)
+        self.kms_key = MagicMock(spec=KmsKeyFactory)
+        self.kms_key.get_key.return_value = None
         self.cache = AppTemplate(self.ami_finder, self.alarms, self.caches,
-                                 self.rds, self.spot, self.acm)
+                                 self.rds, self.spot, self.acm, self.kms_key)
         base_template = self.cache.get('elb-service')
         self.base_resources = len(base_template['Resources'])
         self.orbit._public_elb_subnets = {REGION: SUBNETS}
@@ -178,8 +180,8 @@ class TestAppTemplate(BaseSpaceAppTest):
         app, _ = self.cache.app(self.app, REGION)
 
         self.assertEquals(1, (app['Parameters']
-                                 ['InstanceMinInService']
-                                 ['Default']))
+                              ['InstanceMinInService']
+                              ['Default']))
 
     def test_user_data(self):
         params = {}
@@ -208,3 +210,17 @@ class TestAppTemplate(BaseSpaceAppTest):
 
         self.assertIn('"test"', user_data)
         self.assertEquals(params['VolumeSupport']['Default'], 'true')
+
+    def test_add_kms_iam_policy_noop(self):
+        resources = {}
+        self.cache._add_kms_iam_policy(self.app, REGION, resources)
+
+        self.assertEquals({}, resources)
+
+    def test_add_kms_iam_policy(self):
+        self.kms_key.get_key.return_value = KEY_ARN
+        resources = {}
+        self.cache._add_kms_iam_policy(self.app, REGION, resources)
+
+        self.assertEquals(1, len(resources))
+        self.assertIn('KmsKeyPolicy', resources)

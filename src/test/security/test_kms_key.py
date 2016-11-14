@@ -42,11 +42,14 @@ class TestKmsKeyFactory(BaseKmsTest):
         self.kms.describe_key.assert_called_with(KeyId=ALIAS)
 
     def test_get_key_not_found(self):
-        self.kms.describe_key.side_effect = ClientError({
-            'Error': {
-                'Message': 'Invalid keyId %s' % ALIAS
-            }
-        }, 'DescribeKey')
+        self._key_not_found()
+
+        self.kms_factory.get_key(self.app, REGION, create=False)
+
+        self.kms.create_key.assert_not_called()
+
+    def test_get_key_not_found_create(self):
+        self._key_not_found()
 
         self.kms_factory.get_key(self.app, REGION)
 
@@ -81,3 +84,10 @@ class TestKmsKeyFactory(BaseKmsTest):
             KeyId=KEY_ARN,
             PendingWindowInDays=7
         )
+
+    def _key_not_found(self):
+        self.kms.describe_key.side_effect = ClientError({
+            'Error': {
+                'Message': 'Invalid keyId %s' % ALIAS
+            }
+        }, 'DescribeKey')
