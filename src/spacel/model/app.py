@@ -19,8 +19,8 @@ class SpaceApp(object):
             self.regions = orbit.regions
         self.hostnames = params.get('hostnames', ())
         self.instance_type = params.get('instance_type', 't2.nano')
-        self.instance_min = params.get('instance_min', 1)
-        self.instance_max = params.get('instance_max', 2)
+        self.instance_min = int(params.get('instance_min', 1))
+        self.instance_max = int(params.get('instance_max', 2))
         self.health_check = params.get('health_check', 'TCP:80')
         self.local_health_check = params.get('health_check', 'TCP:80')
 
@@ -29,6 +29,8 @@ class SpaceApp(object):
         self.elb_availability = params.get('elb_availability',
                                            'internet-facing')
         self.loadbalancer = self.elb_availability != 'disabled'
+
+        self.elastic_ips = params.get('elastic_ips', 'disabled') == 'enabled'
 
         public_ports = params.get('public_ports', {80: {}})
         self.public_ports = {port: SpaceServicePort(port, port_params)

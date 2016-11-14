@@ -98,6 +98,18 @@ class TestAppTemplate(BaseSpaceAppTest):
         self.assertEqual('EC2', app['Resources']['Asg']['Properties']
                                    ['HealthCheckType'])
 
+    def test_app_elastic_ips(self):
+        self.app.elastic_ips = True
+        self.app.max_instances = 2
+
+        app, _ = self.cache.app(self.app, REGION)
+
+        self.assertIn('ElasticIp01', app['Resources'])
+        self.assertIn('ElasticIp02', app['Resources'])
+
+        self.assertIn('"eips":',
+                      str(app['Resources']['Lc']['Properties']['UserData']))
+
     def test_app_private_ports(self):
         self.app.private_ports = {123: ['TCP']}
 

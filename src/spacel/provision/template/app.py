@@ -29,6 +29,7 @@ class AppTemplate(BaseTemplateCache):
         orbit = app.orbit
         params = app_template['Parameters']
         resources = app_template['Resources']
+        outputs = app_template['Outputs']
 
         # Link to VPC:
         params['VpcId']['Default'] = orbit.vpc_id(region)
@@ -85,6 +86,54 @@ class AppTemplate(BaseTemplateCache):
 
             self._elb_subnets(resources, 'PublicElb', public_elb_subnets)
             self._elb_subnets(resources, 'PrivateElb', private_elb_subnets)
+
+        if app.elastic_ips and app.instance_max > 0:
+            eip_pos = (resources['Lc']
+                       ['Properties']
+                       ['UserData']
+                       ['Fn::Base64']
+                       ['Fn::Join'][1])
+            eip_pos.insert(1, '"eips":[')
+            for instance_index in range(1, app.instance_max + 1):
+                eip_name = 'ElasticIp%02d' % instance_index
+                # Add resource, output:
+                resources[eip_name] = {
+                    'Type': 'AWS::EC2::EIP',
+                    'Properties': {
+                        'Domain': 'vpc'
+                    }
+                }
+                outputs[eip_name] = {'Value': {'Ref': eip_name}}
+
+                # Append to `eips` list in UserData (reverse!)
+                if instance_index == 1:
+                    eip_pos.insert(2, '],')
+                else:
+                    eip_pos.insert(2, ',')
+                eip_pos.insert(2, '"')
+                eip_pos.insert(2, {'Fn::GetAtt': [eip_name, 'AllocationId']})
+                eip_pos.insert(2, '"')
+
+            resources['ElasticIpPolicy'] = {
+                'DependsOn': 'Role',
+                'Type': 'AWS::IAM::Policy',
+                'Properties': {
+                    'PolicyName': 'AssociateElasticIpAddress',
+                    'Roles': [{'Ref': 'Role'}],
+                    'PolicyDocument': {
+                        'Statement': [
+                            {
+                                'Effect': 'Allow',
+                                'Action': [
+                                    'ec2:AssociateAddress',
+                                    'ec2:DescribeAddresses'
+                                ],
+                                'Resource': '*'
+                            }
+                        ]
+                    }
+                }
+            }
 
         # Expand ASG to all AZs:
         public_instance_subnets = orbit.public_instance_subnets(region)
