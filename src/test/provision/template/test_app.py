@@ -98,6 +98,27 @@ class TestAppTemplate(BaseSpaceAppTest):
         self.assertEqual('EC2', app['Resources']['Asg']['Properties']
                                    ['HealthCheckType'])
 
+    def test_app_no_loadbalancer_elastic_ips(self):
+        self.app.loadbalancer = False
+        self.app.elastic_ips = True
+        self.app.max_instances = 2
+
+        app, _ = self.cache.app(self.app, REGION)
+
+        self.assertIn('DnsRecord', app['Resources'])
+        self.assertIn(
+            'ElasticIp01',
+            app['Resources']['DnsRecord']['Properties']['RecordSets'][0]
+               ['ResourceRecords'][0]['Ref'])
+
+    def test_app_no_loadbalancer_no_elastic_ips(self):
+        self.app.loadbalancer = False
+        self.app.elastic_ips = False
+
+        app, _ = self.cache.app(self.app, REGION)
+
+        self.assertNotIn('DnsRecord', app['Resources'])
+
     def test_app_elastic_ips(self):
         self.app.elastic_ips = True
         self.app.max_instances = 2
