@@ -1,23 +1,22 @@
-import unittest
-
 from botocore.exceptions import ClientError
 from mock import MagicMock
 
 from spacel.aws import ClientCache
-from spacel.model import Orbit
 from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.orbit.space import SpaceElevatorOrbitFactory
 from spacel.provision.s3 import TemplateUploader
 from spacel.provision.template import (VpcTemplate, BastionTemplate,
                                        TablesTemplate)
-from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs)
+from test import BaseSpaceAppTest, ORBIT_REGION
+from test.provision.orbit import (VPC_ID, IP_ADDRESS, cf_outputs)
 
 SECURITY_GROUP_ID = 'sg-123456'
 SPOTFLEET_ROLE_ARN = 'arn:aws:iam::1234567890:role/spot-fleet-role'
 
 
-class TestSpaceElevatorOrbitFactory(unittest.TestCase):
+class TestSpaceElevatorOrbitFactory(BaseSpaceAppTest):
     def setUp(self):
+        super(TestSpaceElevatorOrbitFactory, self).setUp()
         self.vpc_template = MagicMock(spec=VpcTemplate)
         self.vpc_template.vpc.return_value = {'Spacel': 'Rules'}
         self.bastion_template = MagicMock(spec=BastionTemplate)
@@ -29,10 +28,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         self.templates = MagicMock(spec=TemplateUploader)
         self.ec2 = MagicMock()
         self.clients.ec2.return_value = self.ec2
-        self.orbit = Orbit({
-            'name': NAME,
-            'regions': (REGION,)
-        })
+
         self.orbit_factory = SpaceElevatorOrbitFactory(self.clients,
                                                        self.change_sets,
                                                        self.templates,
@@ -41,7 +37,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
                                                        self.tables_template)
 
     def test_get_orbit(self):
-        self.orbit._bastion_eips[REGION] = {'01': IP_ADDRESS}
+        self.orbit_region.bastion_eips.append(IP_ADDRESS)
 
         self.orbit_factory._azs = MagicMock()
         self.orbit_factory._orbit_stack = MagicMock()
@@ -59,7 +55,7 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
 
         self.orbit_factory._orbit_stack(self.orbit, self.orbit.regions, 'vpc')
 
-        self.vpc_template.vpc.assert_called_once_with(self.orbit, REGION)
+        self.vpc_template.vpc.assert_called_once_with(self.orbit_region)
         self.orbit_factory._wait_for_updates.assert_called_once()
         self.orbit_factory._orbit_from_vpc.assert_called_once()
         self.orbit_factory._orbit_from_bastion.assert_not_called()
@@ -74,8 +70,8 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
                                         'bastion')
 
         self.vpc_template.vpc.assert_not_called()
-        self.bastion_template.bastion.assert_called_once_with(self.orbit,
-                                                              REGION)
+        self.bastion_template.bastion.assert_called_once_with(
+            self.orbit_region)
         self.orbit_factory._wait_for_updates.assert_called_once()
         self.orbit_factory._orbit_from_vpc.assert_not_called()
         self.orbit_factory._orbit_from_bastion.assert_called_once()
@@ -121,14 +117,26 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
 
     def test_azs(self):
         self._create_subnet_error(
-            'us-east-1zzz is invalid. Subnets can currently only be created in '
-            'the following availability zones: us-east-1a, us-east-1b')
+            'us-west-2zzz is invalid. Subnets can currently only be created in '
+            'the following availability zones: us-west-2a, us-west-2b')
 
         self.orbit_factory._azs(self.orbit, self.orbit.regions)
 
-        self.clients.ec2.assert_called_once_with(REGION)
+        self.clients.ec2.assert_called_once_with(ORBIT_REGION)
         self.ec2.create_subnet.assert_called_once()
-        self.assertEquals(['us-east-1a', 'us-east-1b'], self.orbit.azs(REGION))
+        self.assertEquals(['us-west-2a', 'us-west-2b'],
+                          self.orbit_region.az_keys)
+
+    def test_azs_skip(self):
+        self.orbit_region.az_keys = []
+        self._create_subnet_error(
+            'us-west-2zzz is invalid. Subnets can currently only be created in '
+            'the following availability zones: us-west-2a, us-west-2b')
+
+        self.orbit_factory._azs(self.orbit, ['eu-west-1'])
+
+        self.clients.ec2.assert_not_called()
+        self.assertEquals([], self.orbit_region.az_keys)
 
     def test_azs_error(self):
         self._create_subnet_error('Kaboom')
@@ -146,12 +154,12 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
         outputs = {
             'PrivateInstanceSubnet01': 'subnet-000001',
             'PrivateInstanceSubnet02': 'subnet-000002',
-            'PrivateElbSubnet01': 'subnet-000012',
-            'PrivateElbSubnet02': 'subnet-000011',
-            'PublicInstanceSubnet': 'subnet-000101',
-            'PublicElbSubnet': 'subnet-000111',
-            'PublicNatSubnet': 'subnet-000121',
-            'NatEip': IP_ADDRESS,
+            'PrivateElbSubnet01': 'subnet-000011',
+            'PrivateElbSubnet02': 'subnet-000012',
+            'PublicInstanceSubnet01': 'subnet-000101',
+            'PublicElbSubnet01': 'subnet-000111',
+            'PublicNatSubnet01': 'subnet-000121',
+            'NatEip01': IP_ADDRESS,
             'VpcId': VPC_ID,
             'PublicRdsSubnetGroup': 'public-rds',
             'PrivateRdsSubnetGroup': 'private-rds',
@@ -163,22 +171,26 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
 
         }
 
-        self.orbit_factory._orbit_from_vpc(self.orbit, REGION,
+        self.orbit_factory._orbit_from_vpc(self.orbit_region,
                                            cf_outputs(outputs))
 
-        self.assertEquals(['subnet-000001', 'subnet-000002'],
-                          self.orbit.private_instance_subnets(REGION))
-        self.assertEquals(['subnet-000012', 'subnet-000011'],
-                          self.orbit.private_elb_subnets(REGION))
-        self.assertEquals(['subnet-000101'],
-                          self.orbit.public_instance_subnets(REGION))
-        self.assertEquals(['subnet-000111'],
-                          self.orbit.public_elb_subnets(REGION))
-        self.assertEquals(VPC_ID, self.orbit.vpc_id(REGION))
-        self.assertEquals(SPOTFLEET_ROLE_ARN,
-                          self.orbit.spot_fleet_role(REGION))
+        self.assertEquals('subnet-000011', (self.orbit_region.azs['us-west-2a']
+                                            .private_elb_subnet))
+        self.assertEquals('subnet-000012', (self.orbit_region.azs['us-west-2b']
+                                            .private_elb_subnet))
+        self.assertEquals('subnet-000001', (self.orbit_region.azs['us-west-2a']
+                                            .private_instance_subnet))
+        self.assertEquals('subnet-000002', (self.orbit_region.azs['us-west-2b']
+                                            .private_instance_subnet))
+
+        self.assertEquals('subnet-000101', (self.orbit_region.azs['us-west-2a']
+                                            .public_instance_subnet))
+        self.assertEquals('subnet-000111', (self.orbit_region.azs['us-west-2a']
+                                            .public_elb_subnet))
+        self.assertEquals(VPC_ID, self.orbit_region.vpc_id)
+        self.assertEquals(SPOTFLEET_ROLE_ARN, self.orbit_region.spot_fleet_role)
         self.assertEquals('private-rds',
-                          self.orbit.private_rds_subnet_group(REGION))
+                          self.orbit_region.private_rds_subnet_group)
 
     def test_orbit_from_bastion(self):
         outputs = {
@@ -188,12 +200,12 @@ class TestSpaceElevatorOrbitFactory(unittest.TestCase):
             'Unknown': 'AndThatsOk'
         }
 
-        self.orbit_factory._orbit_from_bastion(self.orbit, REGION,
+        self.orbit_factory._orbit_from_bastion(self.orbit_region,
                                                cf_outputs(outputs))
 
-        self.assertEquals(SECURITY_GROUP_ID, self.orbit.bastion_sg(REGION))
-        self.assertEquals({'01': IP_ADDRESS, '02': '127.0.0.2'},
-                          self.orbit.bastion_eips(REGION))
+        self.assertEquals(SECURITY_GROUP_ID, self.orbit_region.bastion_sg)
+        self.assertEquals({IP_ADDRESS, '127.0.0.2'},
+                          set(self.orbit_region.bastion_eips))
 
     def test_delete_orbit(self):
         self.orbit_factory._delete_stack = MagicMock(return_value=None)

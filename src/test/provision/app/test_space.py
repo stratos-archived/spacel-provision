@@ -1,19 +1,19 @@
-import unittest
-
 from mock import MagicMock
 
 from spacel.aws import ClientCache
-from spacel.model import Orbit, SpaceApp
+from spacel.model import OrbitRegion, SpaceAppRegion
 from spacel.provision.app.space import SpaceElevatorAppFactory
 from spacel.provision.changesets import ChangeSetEstimator
 from spacel.provision.s3 import TemplateUploader
 from spacel.provision.template import AppTemplate
+from test import BaseSpaceAppTest
 
-REGIONS = ('us-east-1', 'us-west-2')
+OTHER_REGION = 'us-east-1'
 
 
-class TestSpaceElevatorAppFactory(unittest.TestCase):
+class TestSpaceElevatorAppFactory(BaseSpaceAppTest):
     def setUp(self):
+        super(TestSpaceElevatorAppFactory, self).setUp()
         self.clients = MagicMock(spec=ClientCache)
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
         self.templates = MagicMock(spec=TemplateUploader)
@@ -28,22 +28,20 @@ class TestSpaceElevatorAppFactory(unittest.TestCase):
         self.provisioner._stack = MagicMock()
         self.provisioner._delete_stack = MagicMock()
 
-        self.orbit = Orbit({
-            'regions': REGIONS
-        })
-        self.app = SpaceApp(self.orbit, {})
+        other_region = OrbitRegion(self.orbit, OTHER_REGION)
+        self.orbit.regions[OTHER_REGION] = other_region
+        self.app.regions[OTHER_REGION] = SpaceAppRegion(self.app, other_region)
 
     def test_app_create(self):
         self.provisioner._stack.return_value = 'create'
         self.provisioner.app(self.app)
 
-        self.assertEquals(len(REGIONS), self.provisioner._stack.call_count)
+        self.assertEquals(2, self.provisioner._stack.call_count)
         self.assertEquals(1, self.provisioner._wait_for_updates.call_count)
 
     def test_app_delete(self):
         self.provisioner._stack.return_value = 'delete'
         self.provisioner.delete_app(self.app)
 
-        self.assertEquals(len(REGIONS),
-                          self.provisioner._delete_stack.call_count)
+        self.assertEquals(2, self.provisioner._delete_stack.call_count)
         self.assertEquals(1, self.provisioner._wait_for_updates.call_count)

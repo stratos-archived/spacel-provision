@@ -24,18 +24,18 @@ class KmsCrypto(object):
         self._clients = clients
         self._random = Random.new()
 
-    def encrypt(self, app, region, plaintext):
+    def encrypt(self, app_region, plaintext):
         """
         Encrypt data for an application.
-        :param app:  Space app.
-        :param region:  Region.
+        :param app_region:  SpaceAppRegion.
         :param plaintext: Plaintext blob.
         :return: EncryptedPayload.
         """
+        region = app_region.region
         # Get DEK:
         logger.debug('Fetching fresh data key...')
         try:
-            alias_name = self._kms_key.get_key_alias(app)
+            alias_name = self._kms_key.get_key_alias(app_region)
             kms = self._clients.kms(region)
             data_key = kms.generate_data_key(KeyId=alias_name,
                                              KeySpec='AES_256')
@@ -43,8 +43,9 @@ class KmsCrypto(object):
             e_message = e.response['Error'].get('Message', '')
             if 'is not found' in e_message:
                 # Key not found, create and try again:
-                self._kms_key.create_key(app, region)
-                return self.encrypt(app, region, plaintext)
+                self._kms_key.create_key(app_region)
+                return self.encrypt(app_region, plaintext)
+            raise e
 
         # Encode and pad data:
         encoding = 'bytes'

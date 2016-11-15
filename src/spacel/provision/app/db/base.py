@@ -7,14 +7,15 @@ class BaseTemplateDecorator(object):
     def __init__(self, ingress):
         self._ingress = ingress
 
-    def _add_client_resources(self, resources, app, region, port, params,
+    def _add_client_resources(self, resources, app_region, port, params,
                               sg_ref):
         clients = params.get('clients', ())
-        ingress_resources = self._ingress.ingress_resources(app.orbit,
-                                                            region,
-                                                            port,
-                                                            clients,
-                                                            sg_ref=sg_ref)
+        ingress_resources = self._ingress.ingress_resources(
+            app_region.app.orbit,
+            app_region.region,
+            port,
+            clients,
+            sg_ref=sg_ref)
         logger.debug('Adding %s ingress rules.', len(ingress_resources))
         resources.update(ingress_resources)
 

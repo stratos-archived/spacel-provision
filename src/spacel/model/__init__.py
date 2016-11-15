@@ -1,3 +1,3 @@
-from .app import SpaceApp, SpaceServicePort
-from .orbit import Orbit
+from .app import SpaceApp, SpaceAppRegion, SpaceServicePort
+from .orbit import Orbit, OrbitRegion, OrbitRegionAz
 from .service import SpaceDockerService, SpaceService

@@ -1,20 +1,21 @@
-import unittest
-
-from spacel.model import Orbit
 from spacel.provision.template.tables import TablesTemplate
+from test import ORBIT_NAME
+from test.provision.template import BaseTemplateTest
 
-REGION = 'us-east-1'
 
+class TestTablesTemplate(BaseTemplateTest):
+    def _template_name(self):
+        return 'tables'
 
-class TestTablesTemplate(unittest.TestCase):
-    def setUp(self):
-        self.cache = TablesTemplate()
-        base_template = self.cache.get('tables')
-        self.base_resources = len(base_template['Resources'])
-        self.orbit = Orbit({})
+    def _cache(self, ami_finder):
+        return TablesTemplate()
 
     def test_tables(self):
         tables = self.cache.tables(self.orbit)
 
-        table_resources = len(tables['Resources'])
-        self.assertEquals(self.base_resources, table_resources)
+        self.assertEquals(self.base_resources, len(tables['Resources']))
+
+    def test_tables_name(self):
+        tables = self.cache.tables(self.orbit)
+        orbit_name = tables['Parameters']['Orbit']['Default']
+        self.assertEquals(ORBIT_NAME, orbit_name)

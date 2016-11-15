@@ -1,4 +1,5 @@
 import logging
+
 from botocore.exceptions import ClientError
 
 from spacel.provision import clean_name, bool_param
@@ -23,13 +24,14 @@ class RdsFactory(BaseTemplateDecorator):
         self._clients = clients
         self._passwords = passwords
 
-    def add_rds(self, app, region, template):
-        if not app.databases:
+    def add_rds(self, app_region, template):
+        if not app_region.databases:
             logger.debug('No databases specified.')
             return
 
         params = template['Parameters']
         resources = template['Resources']
+        app = app_region.app
         app_name = app.name
         orbit_name = app.orbit.name
 
@@ -39,15 +41,15 @@ class RdsFactory(BaseTemplateDecorator):
         added_databases = 0
         secret_params = {}
         iam_statements = []
-        for name, db_params in app.databases.items():
+        for name, db_params in app_region.databases.items():
             password_label = 'rds:%s' % name
             rds_resource = 'Db%s' % clean_name(name)
 
             db_global = db_params.get('global')
-            if db_global and db_global != region:
+            if db_global and db_global != app_region.region:
                 # If connecting to a global DB, query for stored password:
                 encrypted, _ = \
-                    self._passwords.get_password(app, region, password_label,
+                    self._passwords.get_password(app_region, password_label,
                                                  generate=False)
                 if not encrypted:
                     continue
@@ -165,15 +167,15 @@ class RdsFactory(BaseTemplateDecorator):
             }
 
             encrypted, plaintext_func = \
-                self._passwords.get_password(app, region, password_label)
+                self._passwords.get_password(app_region, password_label)
 
             # If hosting a global DB, store the password in each region:
             if db_global:
                 region_clients = []
-                for other_region in app.regions:
-                    if region == other_region:
+                for other_region, other_app_region in app.regions.items():
+                    if app_region.region == other_region:
                         continue
-                    self._passwords.set_password(app, other_region,
+                    self._passwords.set_password(other_app_region,
                                                  password_label, plaintext_func)
                     region_clients.append(other_region)
 
@@ -188,7 +190,7 @@ class RdsFactory(BaseTemplateDecorator):
                 'Effect': 'Allow',
                 'Action': 'rds:DescribeDBInstances',
                 'Resource': {'Fn::Join': ['', [
-                    'arn:aws:rds:%s:' % region,
+                    'arn:aws:rds:%s:' % app_region.region,
                     {'Ref': 'AWS::AccountId'},
                     ':db:',
                     {'Ref': rds_resource},
@@ -198,13 +200,13 @@ class RdsFactory(BaseTemplateDecorator):
             # Inject a labeled reference to this cache replication group:
             # Read this backwards, and note the trailing comma.
             user_data.insert(db_intro, ',')
-            user_data.insert(db_intro, ',"region": "%s"}' % region)
+            user_data.insert(db_intro, ',"region": "%s"}' % app_region.region)
             user_data.insert(db_intro, '","password": %s' % encrypted.json())
             user_data.insert(db_intro, {'Ref': rds_resource})
             user_data.insert(db_intro, '"%s":{"name":"' % name)
             added_databases += 1
 
-            self._add_client_resources(resources, app, region, db_port,
+            self._add_client_resources(resources, app_region, db_port,
                                        db_params, rds_sg_resource)
             secret_params[password_param] = plaintext_func
 
@@ -226,9 +228,13 @@ class RdsFactory(BaseTemplateDecorator):
 
         return secret_params
 
-    def _rds_id(self, app, region, rds_resource):
+    def _rds_id(self, app_region, rds_resource):
+        region = app_region.region
+        app_name = app_region.app.name
+        orbit_name = app_region.orbit_region.orbit.name
         cloudformation = self._clients.cloudformation(region)
-        stack_name = '%s-%s' % (app.orbit.name, app.name)
+
+        stack_name = '%s-%s' % (orbit_name, app_name)
         try:
             resource = cloudformation.describe_stack_resource(
                 StackName=stack_name,
@@ -238,8 +244,8 @@ class RdsFactory(BaseTemplateDecorator):
         except ClientError as e:
             e_message = e.response['Error'].get('Message', '')
             if 'does not exist' in e_message:
-                logger.debug('App %s not found in %s in %s.', app.name,
-                             app.orbit.name, region)
+                logger.debug('App %s not found in %s in %s.', app_name,
+                             orbit_name, region)
                 return None
             raise e
 

@@ -32,7 +32,7 @@ class TestPasswordManager(BaseKmsTest):
                      .dynamodb_item())
         }
 
-        encrypted, decrypt_func = self.password.get_password(self.app, ORBIT_REGION,
+        encrypted, decrypt_func = self.password.get_password(self.app_region,
                                                              PASSWORD_NAME)
         self.assertIsInstance(encrypted, EncryptedPayload)
         self.assertEquals(encrypted.iv, 'a')
@@ -46,7 +46,7 @@ class TestPasswordManager(BaseKmsTest):
 
     def test_get_password_generate_noop(self):
         self.dynamodb.get_item.return_value = {}
-        encrypted, decrypt_func = self.password.get_password(self.app, ORBIT_REGION,
+        encrypted, decrypt_func = self.password.get_password(self.app_region,
                                                              PASSWORD_NAME,
                                                              generate=False)
         self.assertIsNone(encrypted)
@@ -54,10 +54,10 @@ class TestPasswordManager(BaseKmsTest):
 
     def test_get_password_generate(self):
         self.dynamodb.get_item.return_value = {}
-        encrypted, decrypt_func = self.password.get_password(self.app, ORBIT_REGION,
+        encrypted, decrypt_func = self.password.get_password(self.app_region,
                                                              PASSWORD_NAME)
 
-        self.kms_crypto.encrypt.assert_called_with(self.app, ORBIT_REGION, ANY)
+        self.kms_crypto.encrypt.assert_called_with(self.app_region, ANY)
         self.dynamodb.put_item.assert_called_with(TableName=ANY,
                                                   Item=ANY,
                                                   ConditionExpression=ANY)
@@ -71,21 +71,21 @@ class TestPasswordManager(BaseKmsTest):
             'Item': (EncryptedPayload('a', 'b', 'c', ORBIT_REGION, 'utf-8')
                      .dynamodb_item())
         }
-        was_set = self.password.set_password(self.app, ORBIT_REGION, PASSWORD_NAME,
+        was_set = self.password.set_password(self.app_region, PASSWORD_NAME,
                                              lambda: PASSWORD)
         self.assertFalse(was_set)
         self.dynamodb.put_item.assert_not_called()
 
     def test_set_password(self):
         self.dynamodb.get_item.return_value = {}
-        was_set = self.password.set_password(self.app, ORBIT_REGION, PASSWORD_NAME,
+        was_set = self.password.set_password(self.app_region, PASSWORD_NAME,
                                              lambda: PASSWORD)
         self.assertTrue(was_set)
 
     def test_set_password_exception(self):
         self.dynamodb.get_item.return_value = {}
         self.dynamodb.put_item.side_effect = CLIENT_ERROR
-        was_set = self.password.set_password(self.app, ORBIT_REGION, PASSWORD_NAME,
+        was_set = self.password.set_password(self.app_region, PASSWORD_NAME,
                                              lambda: PASSWORD)
         self.assertFalse(was_set)
 

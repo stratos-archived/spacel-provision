@@ -6,7 +6,6 @@ import requests
 from spacel.aws import ClientCache
 from spacel.main import provision
 from spacel.model import Orbit, SpaceApp
-from spacel.model.orbit import (NAME, BASTION_INSTANCE_COUNT, DOMAIN, REGIONS)
 from spacel.user import SpaceSshDb
 
 FORENSICS_USERS = {
@@ -21,12 +20,13 @@ FORENSICS_USERS = {
 
 APP_NAME = 'laika'
 ORBIT_NAME = 'sl-test'
-ORBIT_REGIONS = ['us-east-1']
+ORBIT_REGION = 'us-east-1'
+# ORBIT_REGIONS = ['us-east-1']
+ORBIT_DOMAIN = 'pebbledev.com'
 
 
 class BaseIntegrationTest(unittest.TestCase):
-    APP_DOMAIN = 'pebbledev.com'
-    APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, APP_DOMAIN)
+    APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, ORBIT_DOMAIN)
     APP_VERSION = '0.1.1'
     UPGRADE_VERSION = '0.0.2'
     APP_URL = 'https://%s' % APP_HOSTNAME
@@ -42,39 +42,50 @@ class BaseIntegrationTest(unittest.TestCase):
         logging.getLogger('spacel').setLevel(logging.DEBUG)
 
     def setUp(self):
-        self.orbit_params = {
-            NAME: ORBIT_NAME,
-            DOMAIN: BaseIntegrationTest.APP_DOMAIN,
-            REGIONS: ORBIT_REGIONS,
-            'defaults': {
-                BASTION_INSTANCE_COUNT: 0
-            }
-        }
+        self.orbit = Orbit(
+            name=ORBIT_NAME,
+            regions=[ORBIT_REGION],
+            domain=ORBIT_DOMAIN,
+            bastion_instance_count=0
+        )
+        self.app = SpaceApp(
+            self.orbit,
+            name=APP_NAME
+        )
 
-        self.app_params = {
-            'name': APP_NAME,
-            'health_check': 'HTTP:80/',
-            'instance_type': 't2.nano',
-            'instance_min': 1,
-            'instance_max': 2,
-            'services': {
-                'laika': {
-                    'ports': {
-                        '80': 8080
-                    }
-                }
-            },
-            'public_ports': {
-                '80': {
-                    'sources': ['0.0.0.0/0']
-                },
-                '443': {
-                    'sources': ['0.0.0.0/0'],
-                    'internal_port': 80
-                }
-            }
-        }
-        self.image()
+        # self.orbit_params = {
+        #     NAME: ORBIT_NAME,
+        #     DOMAIN: BaseIntegrationTest.APP_DOMAIN,
+        #     REGIONS: ORBIT_REGIONS,
+        #     'defaults': {
+        #         BASTION_INSTANCE_COUNT: 0
+        #     }
+        # }
+
+        # self.app_params = {
+        #     'name': APP_NAME,
+        #     'health_check': 'HTTP:80/',
+        #     'instance_type': 't2.nano',
+        #     'instance_min': 1,
+        #     'instance_max': 2,
+        #     'services': {
+        #         'laika': {
+        #             'ports': {
+        #                 '80': 8080
+        #             }
+        #         }
+        #     },
+        #     'public_ports': {
+        #         '80': {
+        #             'sources': ['0.0.0.0/0']
+        #         },
+        #         '443': {
+        #             'sources': ['0.0.0.0/0'],
+        #             'internal_port': 80
+        #         }
+        #     }
+        # }
+        # self.image()
         self.clients = ClientCache()
         self.ssh_db = SpaceSshDb(self.clients)
 
@@ -82,20 +93,12 @@ class BaseIntegrationTest(unittest.TestCase):
         docker_tag = 'pebbletech/spacel-laika:%s' % version
         self.app_params['services']['laika']['image'] = docker_tag
 
-    def orbit(self):
-        return Orbit(self.orbit_params)
-
-    def app(self):
-        return SpaceApp(self.orbit(), self.app_params)
-
     def provision(self, expected=0):
-        app = self.app()
-        result = provision(app)
+        result = provision(self.app)
         self.assertEquals(expected, result)
         for user, key in FORENSICS_USERS.items():
-            self.ssh_db.add_key(app.orbit, user, key)
-            self.ssh_db.grant(app, user)
-        return app
+            self.ssh_db.add_key(self.orbit, user, key)
+            self.ssh_db.grant(self.app, user)
 
     @staticmethod
     def _get(url):

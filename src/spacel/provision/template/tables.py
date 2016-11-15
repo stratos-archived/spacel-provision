@@ -2,9 +2,6 @@ from spacel.provision.template.base import BaseTemplateCache
 
 
 class TablesTemplate(BaseTemplateCache):
-    def __init__(self):
-        super(TablesTemplate, self).__init__()
-
     def tables(self, orbit):
         """
         Get customized template for DynamoDb tables.

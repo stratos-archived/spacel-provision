@@ -1,5 +1,5 @@
-import logging
 import json
+import logging
 
 logger = logging.getLogger('spacel.provision.template.app_spot')
 
@@ -14,26 +14,26 @@ GDH_ASG_RESOURCE = ('SpScaleDown',
 
 
 class AppSpotTemplateDecorator(object):
-    def spotify(self, app, region, template):
+    def spotify(self, app_region, template):
         """
         Replace ASG with SpotFleet. Literally spot-ify.
         :return:
         """
-        if app.spot is None:
+        if app_region.spot is None:
             return
 
         resources = template['Resources']
         parameters = template['Parameters']
-        self._add_spot_fleet(app, region, resources, parameters)
+        self._add_spot_fleet(app_region, resources, parameters)
         self._clean_up_asg(template)
 
     @staticmethod
-    def _add_spot_fleet(app, region, resources, parameters):
-        spot_price = app.spot.get('price', '1.00')
+    def _add_spot_fleet(app_region, resources, parameters):
+        spot_price = app_region.spot.get('price', '1.00')
 
         if parameters.get('UserData') is not None:
             # Set Name tag
-            tags = {'Name': app.full_name}
+            tags = {'Name': app_region.app.full_name}
             user_data_param = parameters['UserData']['Default'] or ''
             if user_data_param:
                 user_data_param += ','
@@ -59,9 +59,9 @@ class AppSpotTemplateDecorator(object):
         subnets = resources['Asg']['Properties']['VPCZoneIdentifier']
 
         # Instance weights can be specified
-        weights = app.spot.get('weights')
+        weights = app_region.spot.get('weights')
         if not weights:
-            weights = {app.instance_type: 1}
+            weights = {app_region.instance_type: 1}
 
         # If we're bidding on a single instance type, prefer AZ saturation
         # else prefer lowest price.
@@ -69,7 +69,8 @@ class AppSpotTemplateDecorator(object):
             default_allocation_strat = 'diversified'
         else:
             default_allocation_strat = 'lowestPrice'
-        allocation_strat = app.spot.get('strategy', default_allocation_strat)
+        allocation_strat = app_region.spot.get('strategy',
+                                               default_allocation_strat)
 
         # Build launch specs:
         launch_specs = []
@@ -94,7 +95,7 @@ class AppSpotTemplateDecorator(object):
             'Properties': {
                 'SpotFleetRequestConfigData': {
                     'AllocationStrategy': allocation_strat,
-                    'IamFleetRole': app.orbit.spot_fleet_role(region),
+                    'IamFleetRole': app_region.orbit_region.spot_fleet_role,
                     'SpotPrice': spot_price,
                     'TargetCapacity': {'Ref': 'InstanceMin'},
                     'TerminateInstancesWithExpiration': 'true',

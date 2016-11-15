@@ -2,13 +2,9 @@ import logging
 
 from botocore.exceptions import ClientError
 
-from spacel.provision.cloudformation import (BaseCloudFormationFactory,
-                                             key_sorted)
+from spacel.provision.cloudformation import (BaseCloudFormationFactory)
 
 logger = logging.getLogger('spacel.provision.orbit.spacel')
-
-
-# pylint: disable=W0212
 
 
 class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
@@ -24,15 +20,11 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
         self._tables = tables
 
     def get_orbit(self, orbit, regions=None):
-        regions = regions or orbit.regions
+        regions = regions or orbit.regions.keys()
         self._azs(orbit, regions)
         self._orbit_stack(orbit, regions, 'vpc')
         self._orbit_stack(orbit, regions, 'tables')
         self._orbit_stack(orbit, regions, 'bastion')
-
-        for region in regions:
-            bastion_eips = sorted(orbit.bastion_eips(region).values())
-            logger.debug('Bastions: %s - %s', region, ' '.join(bastion_eips))
 
     def _orbit_stack(self, orbit, regions, stack_suffix):
         stack_name = '%s-%s' % (orbit.name, stack_suffix)
@@ -40,10 +32,11 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
         updates = {}
         for region in regions:
             logger.debug('Provisioning %s in %s.', stack_name, region)
+            orbit_region = orbit.regions[region]
             if stack_suffix == 'vpc':
-                template = self._vpc.vpc(orbit, region)
+                template = self._vpc.vpc(orbit_region)
             elif stack_suffix == 'bastion':
-                template = self._bastion.bastion(orbit, region)
+                template = self._bastion.bastion(orbit_region)
             elif stack_suffix == 'tables':
                 template = self._tables.tables(orbit)
             else:
@@ -51,7 +44,6 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
                 return
 
             if not template:
-                logger.debug('Skipping %s, not a valid template', stack_suffix)
                 return
 
             updates[region] = self._stack(stack_name, region, template)
@@ -66,17 +58,21 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
             cf = self._clients.cloudformation(region)
             cf_stack = self._describe_stack(cf, stack_name)
             cf_outputs = cf_stack.get('Outputs', {})
+            orbit_region = orbit.regions[region]
             if stack_suffix == 'tables':
                 continue
             elif stack_suffix == 'vpc':
-                self._orbit_from_vpc(orbit, region, cf_outputs)
+                self._orbit_from_vpc(orbit_region, cf_outputs)
             elif stack_suffix == 'bastion':
-                self._orbit_from_bastion(orbit, region, cf_outputs)
+                self._orbit_from_bastion(orbit_region, cf_outputs)
             else:  # pragma: no cover
                 logger.warning('Unknown suffix: %s', stack_suffix)
 
     def _azs(self, orbit, regions):
-        for region in regions:
+        for region, orbit_region in orbit.regions.items():
+            if regions and region not in regions:
+                continue
+
             ec2 = self._clients.ec2(region)
             try:
                 vpcs = ec2.describe_vpcs()
@@ -92,60 +88,74 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
                 message_split = message.split(region)
                 # Invalid region echoed, every mention after that is an AZ:
                 azs = sorted([region + s[0] for s in message_split[2:]])
-                orbit._azs[region] = azs
+                orbit_region.az_keys = azs
 
     @staticmethod
-    def _orbit_from_vpc(orbit, region, cf_outputs):
-        logger.debug('Updating %s from VPC CloudFormation.', orbit.name)
-        pub_instance = {}
-        pub_elb = {}
-        priv_instance = {}
-        priv_elb = {}
+    def _orbit_from_vpc(orbit_region, cf_outputs):
+        logger.debug('Updating %s in %s from VPC CloudFormation.',
+                     orbit_region.orbit.name, orbit_region.region)
+
+        # Index AZs of the region by label: {01:us-east-1a, 02:us-east-1b} etc.
+        az_map = {'%02d' % (i + 1): orbit_region.azs[az_key]
+                  for i, az_key in enumerate(orbit_region.az_keys)}
+
         for output in cf_outputs:
             key = output['OutputKey']
             value = output['OutputValue']
-            if key.startswith('PrivateInstanceSubnet'):
-                priv_instance[key[-2:]] = value
-            elif key.startswith('PrivateElbSubnet'):
-                priv_elb[key[-2:]] = value
-            elif key.startswith('PublicInstanceSubnet'):
-                pub_instance[key[-2:]] = value
-            elif key.startswith('PublicElbSubnet'):
-                pub_elb[key[-2:]] = value
-            elif key.startswith('PublicNatSubnet'):
-                pass
-            elif key.startswith('NatEip'):
-                orbit._nat_eips[region][key[-2:]] = value
-            elif key.startswith('VpcId'):
-                orbit._vpc_ids[region] = value
-            elif key == 'PublicRdsSubnetGroup':
-                orbit._public_rds_subnet_groups[region] = value
-            elif key == 'PrivateRdsSubnetGroup':
-                orbit._private_rds_subnet_groups[region] = value
-            elif key == 'PrivateCacheSubnetGroup':
-                orbit._private_cache_subnet_groups[region] = value
-            elif key == 'RoleSpotFleet':
-                orbit._spot_fleet_role[region] = value
-            elif 'CacheSubnet' in key or 'RdsSubnet' in key:
-                continue
-            else:
-                logger.warning('Unrecognized output key: %s', key)
 
-        orbit._public_instance_subnets[region] = key_sorted(pub_instance)
-        orbit._public_elb_subnets[region] = key_sorted(pub_elb)
-        orbit._private_instance_subnets[region] = key_sorted(priv_instance)
-        orbit._private_elb_subnets[region] = key_sorted(priv_elb)
+            # Keys ending in ## are per-AZ:
+            orbit_region_az = az_map.get(key[-2:])
+            if orbit_region_az:
+                # Per-AZ outputs:
+                if key.startswith('PrivateInstanceSubnet'):
+                    orbit_region_az.private_instance_subnet = value
+                    continue
+                elif key.startswith('NatEip'):
+                    orbit_region_az.nat_eip = value
+                    continue
+                elif key.startswith('PrivateElbSubnet'):
+                    orbit_region_az.private_elb_subnet = value
+                    continue
+                elif key.startswith('PublicInstanceSubnet'):
+                    orbit_region_az.public_instance_subnet = value
+                    continue
+                elif key.startswith('PublicElbSubnet'):
+                    orbit_region_az.public_elb_subnet = value
+                    continue
+                elif ('PublicNatSubnet' in key
+                      or 'CacheSubnet' in key
+                      or 'RdsSubnet' in key):
+                    continue
+            else:
+                # Per-region outputs:
+                if key.startswith('VpcId'):
+                    orbit_region.vpc_id = value
+                    continue
+                elif key == 'PublicRdsSubnetGroup':
+                    orbit_region.public_rds_subnet_group = value
+                    continue
+                elif key == 'PrivateRdsSubnetGroup':
+                    orbit_region.private_rds_subnet_group = value
+                    continue
+                elif key == 'PrivateCacheSubnetGroup':
+                    orbit_region.private_cache_subnet_group = value
+                    continue
+                elif key == 'RoleSpotFleet':
+                    orbit_region.spot_fleet_role = value
+                    continue
+            logger.warning('Unrecognized output key: %s', key)
 
     @staticmethod
-    def _orbit_from_bastion(orbit, region, cf_outputs):
-        logger.debug('Updating %s from Bastion CloudFormation.', orbit.name)
+    def _orbit_from_bastion(orbit_region, cf_outputs):
+        logger.debug('Updating %s from Bastion CloudFormation.',
+                     orbit_region.orbit.name)
         for output in cf_outputs:
             key = output['OutputKey']
             value = output['OutputValue']
             if key.startswith('ElasticIp'):
-                orbit._bastion_eips[region][key[-2:]] = value
+                orbit_region.bastion_eips.append(value)
             elif key.startswith('BastionSecurityGroup'):
-                orbit._bastion_sgs[region] = value
+                orbit_region.bastion_sg = value
             else:
                 logger.warning('Unrecognized output key: %s', key)
 

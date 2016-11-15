@@ -1,7 +1,6 @@
-from collections import defaultdict
 import logging
+from collections import defaultdict
 
-from spacel.model.orbit import PROVIDER
 from spacel.provision.orbit.gdh import GitDeployHooksOrbitFactory
 from spacel.provision.orbit.space import SpaceElevatorOrbitFactory
 
@@ -16,16 +15,13 @@ class ProviderOrbitFactory(object):
     def __init__(self, providers):
         self._providers = providers
 
-    def get_orbit(self, orbit, regions=None):
-        regions = regions or orbit.regions
-
+    def orbit(self, orbit):
         # Index regions by provider:
         provider_regions = defaultdict(list)
-        for region in regions:
-            provider_name = orbit._get_param(region, PROVIDER)
-            logger.debug('Orbit "%s" uses provider: %s', orbit.name,
-                         provider_name)
-            provider_regions[provider_name].append(region)
+        for region, orbit_region in orbit.regions.items():
+            provider = orbit_region.provider
+            logger.debug('Orbit "%s" uses provider: %s', orbit.name, provider)
+            provider_regions[provider].append(region)
 
         # Fire providers sequentially:
         logger.debug('Region provider map: %s', dict(provider_regions))
@@ -34,7 +30,7 @@ class ProviderOrbitFactory(object):
             if not provider:
                 logger.warning('Unknown provider: %s', provider_name)
                 continue
-            provider.get_orbit(orbit, regions=provider_regions)
+            provider.orbit(orbit, regions=provider_regions)
 
     @staticmethod
     def get(clients, change_sets, uploader, vpc, bastion, tables):

@@ -1,14 +1,12 @@
 from botocore.exceptions import ClientError
 from mock import MagicMock
-import unittest
 
 from spacel.aws import ClientCache
 from spacel.provision.changesets import ChangeSetEstimator
-from spacel.model import Orbit
-from spacel.model.orbit import (GDH_DEPLOY, GDH_PARENT)
 from spacel.provision.orbit.gdh import GitDeployHooksOrbitFactory
 from spacel.provision.s3 import TemplateUploader
-from test.provision.orbit import (NAME, REGION, VPC_ID, IP_ADDRESS, cf_outputs,
+from test import BaseSpaceAppTest, ORBIT_REGION
+from test.provision.orbit import (NAME, VPC_ID, IP_ADDRESS, cf_outputs,
                                   cf_parameters)
 
 PARENT_NAME = 'daddy'
@@ -17,8 +15,9 @@ STACK_ID = 'arn:cloudformation:123456'
 ROLE_SPOT_FLEET = 'arn:iam:role:123456'
 
 
-class TestGitDeployHooksOrbitFactory(unittest.TestCase):
+class TestGitDeployHooksOrbitFactory(BaseSpaceAppTest):
     def setUp(self):
+        super(TestGitDeployHooksOrbitFactory, self).setUp()
         self.clients = MagicMock(spec=ClientCache)
         self.cloudformation = MagicMock()
         self.cloudformation.describe_stack_resource.return_value = {
@@ -27,14 +26,8 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
             }
         }
         self.clients.cloudformation.return_value = self.cloudformation
-        self.orbit = Orbit({
-            'name': NAME,
-            'regions': (REGION,),
-            REGION: {
-                GDH_DEPLOY: PARENT_NAME,
-                GDH_PARENT: DEPLOY_NAME
-            }
-        })
+        self.orbit.regions[ORBIT_REGION].parent_stack = PARENT_NAME
+        self.orbit.regions[ORBIT_REGION].deploy_stack = DEPLOY_NAME
 
         self.change_sets = MagicMock(spec=ChangeSetEstimator)
         self.templates = MagicMock(spec=TemplateUploader)
@@ -56,7 +49,7 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
 
         self.cloudformation.describe_stack_resource.assert_called_once()
         self.orbit_factory._orbit_from_child.assert_called_once()
-        self.assertEqual(self.orbit.bastion_sg(REGION), 'sg-000001')
+        self.assertEqual(self.orbit_region.bastion_sg, 'sg-000001')
 
     def test_get_orbit_not_found(self):
         self._describe_stack_resource_error('Stack does not exist')
@@ -100,25 +93,30 @@ class TestGitDeployHooksOrbitFactory(unittest.TestCase):
             'Unknown': 'AndThatsOk'
         }
 
-        self.orbit_factory._orbit_from_child(self.orbit, REGION, NAME,
+        self.orbit_factory._orbit_from_child(self.orbit_region, NAME,
                                              cf_parameters(params),
                                              cf_outputs(outputs))
-
-        self.assertEquals(['subnet-000001', 'subnet-000002'],
-                          self.orbit.private_instance_subnets(REGION))
-        self.assertEquals(['subnet-000001', 'subnet-000002'],
-                          self.orbit.private_elb_subnets(REGION))
-        self.assertEquals(['subnet-000101'],
-                          self.orbit.public_instance_subnets(REGION))
-        self.assertEquals(['subnet-000101'],
-                          self.orbit.public_elb_subnets(REGION))
-        self.assertEquals(VPC_ID, self.orbit.vpc_id(REGION))
-        self.assertEquals(ROLE_SPOT_FLEET, self.orbit.spot_fleet_role(REGION))
-        self.assertEquals('subnet-000000',
-                          self.orbit.public_rds_subnet_group(REGION))
-        self.assertEquals('subnet-000000',
-                          self.orbit.private_rds_subnet_group(REGION))
-        self.assertEquals('subnet-000000',
-                          self.orbit.private_cache_subnet_group(REGION))
         self.assertEquals(['us-west-2a', 'us-west-2b', 'us-west-2c'],
-                          self.orbit.azs(REGION))
+                          self.orbit_region.az_keys)
+
+        self.assertEquals('subnet-000001', (self.orbit_region.azs['us-west-2a']
+                                            .private_elb_subnet))
+        self.assertEquals('subnet-000002', (self.orbit_region.azs['us-west-2b']
+                                            .private_elb_subnet))
+        self.assertEquals('subnet-000001', (self.orbit_region.azs['us-west-2a']
+                                            .private_instance_subnet))
+        self.assertEquals('subnet-000002', (self.orbit_region.azs['us-west-2b']
+                                            .private_instance_subnet))
+
+        self.assertEquals('subnet-000101', (self.orbit_region.azs['us-west-2a']
+                                            .public_elb_subnet))
+
+        self.assertEquals(VPC_ID, self.orbit_region.vpc_id)
+        self.assertEquals(ROLE_SPOT_FLEET,
+                          self.orbit_region.spot_fleet_role)
+        self.assertEquals('subnet-000000',
+                          self.orbit_region.public_rds_subnet_group)
+        self.assertEquals('subnet-000000',
+                          self.orbit_region.private_rds_subnet_group)
+        self.assertEquals('subnet-000000',
+                          self.orbit_region.private_cache_subnet_group)

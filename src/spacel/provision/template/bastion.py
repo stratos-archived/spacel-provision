@@ -1,23 +1,25 @@
+import logging
 from copy import deepcopy
 
-from spacel.model.orbit import BASTION_INSTANCE_TYPE, BASTION_INSTANCE_COUNT
 from spacel.provision.template.base import BaseTemplateCache
+
+logger = logging.getLogger('spacel.provision.template.bastion')
 
 
 class BastionTemplate(BaseTemplateCache):
     def __init__(self, ami_finder):
         super(BastionTemplate, self).__init__(ami_finder=ami_finder)
 
-    def bastion(self, orbit, region):
+    def bastion(self, orbit_region):
         """
         Get customized template for bastion hosts.
-        :param orbit: Orbit.
-        :param region: Region.
+        :param orbit_region: Orbit region.
         :return: Bastion template.
         """
-        bastion_count = int(orbit._get_param(region, BASTION_INSTANCE_COUNT))
+        bastion_count = orbit_region.bastion_instance_count
         if not bastion_count:
-            return False
+            logger.debug('Bastion hosts disabled in %s.', orbit_region.region)
+            return None
 
         bastion_template = self.get('asg-bastion')
 
@@ -25,15 +27,14 @@ class BastionTemplate(BaseTemplateCache):
         resources = bastion_template['Resources']
 
         # Link to VPC:
-        params['VpcId']['Default'] = orbit.vpc_id(region)
-        params['Orbit']['Default'] = orbit.name
-        if orbit.domain:
-            params['VirtualHostDomain']['Default'] = orbit.domain + '.'
+        params['VpcId']['Default'] = orbit_region.vpc_id
+        params['Orbit']['Default'] = orbit_region.orbit.name
+        if orbit_region.domain:
+            params['VirtualHostDomain']['Default'] = orbit_region.domain + '.'
 
         # Bastion parameters:
-        bastion_type = orbit._get_param(region, BASTION_INSTANCE_TYPE)
-        params['InstanceType']['Default'] = bastion_type
-        params['Ami']['Default'] = self._ami.spacel_ami(region)
+        params['InstanceType']['Default'] = orbit_region.bastion_instance_type
+        params['Ami']['Default'] = self._ami.spacel_ami(orbit_region.region)
 
         params['InstanceCount']['Default'] = bastion_count
         params['InstanceCountMinusOne']['Default'] = max(bastion_count - 1, 0)
@@ -80,7 +81,7 @@ class BastionTemplate(BaseTemplateCache):
                 resources['DnsRecord%02d' % bastion_index] = eip_dns
 
         # Expand ASG to all AZs:
-        instance_subnets = orbit.public_instance_subnets(region)
+        instance_subnets = orbit_region.public_instance_subnets
         self._subnet_params(params, 'PublicInstance', instance_subnets)
         self._asg_subnets(resources, 'PublicInstance', instance_subnets)
 

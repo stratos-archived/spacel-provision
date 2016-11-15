@@ -1,24 +1,20 @@
-import unittest
-
-from spacel.model import Orbit
 from spacel.provision.template.vpc import VpcTemplate
+from test.provision.template import BaseTemplateTest
 
-REGION = 'us-east-1'
 
+class TestVpcTemplate(BaseTemplateTest):
+    def _template_name(self):
+        return 'vpc'
 
-class TestVpcTemplate(unittest.TestCase):
-    def setUp(self):
-        self.cache = VpcTemplate()
-        base_template = self.cache.get('vpc')
-        self.base_resources = len(base_template['Resources'])
-        self.orbit = Orbit({})
+    def _cache(self, ami_finder):
+        return VpcTemplate()
 
     def test_vpc_no_az(self):
-        vpc = self.cache.vpc(self.orbit, REGION)
+        self.orbit_region.az_keys = []
+        vpc = self.cache.vpc(self.orbit_region)
 
         # No resources injected:
-        vpc_resources = len(vpc['Resources'])
-        self.assertEquals(self.base_resources, vpc_resources)
+        self.assertEquals(self.base_resources, len(vpc['Resources']))
 
     def test_vpc(self):
         self.vpc_regions('us-east-1a', 'us-east-1b')
@@ -26,8 +22,8 @@ class TestVpcTemplate(unittest.TestCase):
         self.vpc_regions('us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d')
 
     def vpc_regions(self, *args):
-        self.orbit._azs = {REGION: args}
-        vpc = self.cache.vpc(self.orbit, REGION)
+        self.orbit_region.az_keys = args
+        vpc = self.cache.vpc(self.orbit_region)
         # For N AZs, N-1 resources are injected:
         injected_resources = len(vpc['Resources']) - self.base_resources
         self.assertEquals(0, injected_resources % (len(args) - 1))

@@ -1,43 +1,34 @@
+import six
 from botocore.exceptions import ClientError
 from mock import MagicMock
-import unittest
-import six
 
 from spacel.aws import ClientCache
-from spacel.model import Orbit
 from spacel.provision.app.ingress_resource import IngressResourceFactory
+from test import BaseSpaceAppTest, ORBIT_REGION
 
-REGION = 'us-west-2'
 OTHER_REGION = 'us-east-1'
 IP_BLOCK = '127.0.0.1/32'
 SECURITY_GROUP = 'sg-123456'
 
 
-class TestIngressResourceFactory(unittest.TestCase):
+class TestIngressResourceFactory(BaseSpaceAppTest):
     def setUp(self):
+        super(TestIngressResourceFactory, self).setUp()
         self.cloudformation = MagicMock()
         self.clients = MagicMock(speck=ClientCache)
         self.clients.cloudformation.return_value = self.cloudformation
-        self.orbit = Orbit({
-            'name': 'test-orbit',
-            'regions': [REGION, OTHER_REGION],
-            'defaults': {
-                'private_network': '10.0'
-            }
-        })
-        self.orbit._nat_eips[OTHER_REGION] = {
-            '%02d' % i: '{0}.{0}.{0}.{0}'.format(i)
-            for i in range(1, 4)
-            }
         self.ingress = IngressResourceFactory(self.clients)
+        for az_index, az in enumerate(self.other_orbit_region.azs.values()):
+            az.nat_eip = '{0}.{0}.{0}.{0}'.format(az_index)
+        self._multi_region()
 
     def test_ingress_resources_ip_block(self):
         resource = self._only(self._http_ingress(IP_BLOCK))
         self.assertEquals(IP_BLOCK, resource['Properties']['CidrIp'])
 
     def test_ingress_resources_region(self):
-        resource = self._only(self._http_ingress(REGION))
-        self.assertEquals('10.0.0.0/16', resource['Properties']['CidrIp'])
+        resource = self._only(self._http_ingress(ORBIT_REGION))
+        self.assertEquals('192.168.0.0/16', resource['Properties']['CidrIp'])
 
     def test_ingress_resources_other_region(self):
         resources = self._http_ingress(OTHER_REGION)
@@ -65,21 +56,23 @@ class TestIngressResourceFactory(unittest.TestCase):
             }
         }
 
-        sg = self.ingress.app_sg(self.orbit, REGION, 'test-app')
+        sg = self.ingress.app_sg(self.orbit, ORBIT_REGION, 'test-app')
         self.assertEquals(SECURITY_GROUP, sg)
 
     def test_app_sg_not_found(self):
         self._describe_stack_resource_error('Stack does not exist')
-        sg = self.ingress.app_sg(self.orbit, REGION, 'test-app')
+        sg = self.ingress.app_sg(self.orbit, ORBIT_REGION, 'test-app')
         self.assertIsNone(sg)
 
     def test_app_sg_error(self):
         self._describe_stack_resource_error('Kaboom')
-        self.assertRaises(ClientError, self.ingress.app_sg, self.orbit, REGION,
+        self.assertRaises(ClientError, self.ingress.app_sg, self.orbit,
+                          ORBIT_REGION,
                           'test-app')
 
     def _http_ingress(self, *args):
-        return self.ingress.ingress_resources(self.orbit, REGION, 80, args)
+        return self.ingress.ingress_resources(self.orbit, ORBIT_REGION, 80,
+                                              args)
 
     def _only(self, resources):
         self.assertEquals(1, len(resources))

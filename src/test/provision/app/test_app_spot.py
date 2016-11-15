@@ -1,6 +1,6 @@
 from spacel.provision.app.app_spot import AppSpotTemplateDecorator
 from spacel.provision.template.base import BaseTemplateCache
-from test import BaseSpaceAppTest, ORBIT_REGION
+from test import BaseSpaceAppTest
 
 
 class TestAppSpotTemplateDecorator(BaseSpaceAppTest):
@@ -25,14 +25,14 @@ class TestAppSpotTemplateDecorator(BaseSpaceAppTest):
         self.assertEquals('SpotFleet', outputs['AsgName']['Value']['Ref'])
 
     def test_spotify_noop(self):
-        self.app_spot.spotify(self.app, ORBIT_REGION, self.template)
+        self.app_spot.spotify(self.app_region, self.template)
         self.assertNotIn('SpotFleet', self.template['Resources'])
 
     def test_spotify(self):
-        self.app.spot = {}
+        self.app_region.spot = {}
 
         self.template['Parameters']['UserData']['Default'] = 'taken'
-        self.app_spot.spotify(self.app, ORBIT_REGION, self.template)
+        self.app_spot.spotify(self.app_region, self.template)
 
         params = self.template['Parameters']
         resources = self.template['Resources']
@@ -46,7 +46,7 @@ class TestAppSpotTemplateDecorator(BaseSpaceAppTest):
         self.assertIn(',"tags":', params['UserData']['Default'])
 
     def test_spotify_weights(self):
-        self.app.spot = {
+        self.app_region.spot = {
             'weights': {
                 't2.nano': 1,
                 't2.micro': 2,
@@ -54,7 +54,7 @@ class TestAppSpotTemplateDecorator(BaseSpaceAppTest):
             }
         }
 
-        self.app_spot.spotify(self.app, ORBIT_REGION, self.template)
+        self.app_spot.spotify(self.app_region, self.template)
 
         fleet_config = (self.template['Resources']
                         ['SpotFleet']

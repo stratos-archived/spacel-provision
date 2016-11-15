@@ -1,8 +1,9 @@
 import logging
+
 from spacel.provision import clean_name
 from spacel.provision.app.db.base import BaseTemplateDecorator
 
-logger = logging.getLogger('spacel.provision.cache.factory')
+logger = logging.getLogger('spacel.provision.app.db.cache')
 
 REDIS_PORT = '6379'
 
@@ -11,13 +12,13 @@ REDIS_VERSION = '3.2.4'
 
 
 class CacheFactory(BaseTemplateDecorator):
-    def add_caches(self, app, region, template, caches):
-        if not caches:
+    def add_caches(self, app_region, template):
+        if not app_region.caches:
             logger.debug('No caches specified.')
             return
 
-        app_name = app.name
-        orbit_name = app.orbit.name
+        app_name = app_region.app.name
+        orbit_name = app_region.app.orbit.name
         resources = template['Resources']
 
         # Get UserData components:
@@ -26,7 +27,7 @@ class CacheFactory(BaseTemplateDecorator):
         cache_intro = user_data.index('"caches":{') + 1
 
         added_caches = 0
-        for name, params in caches.items():
+        for name, params in app_region.caches.items():
             # How many replicas?
             replicas = self._replicas(params)
             if replicas is None:
@@ -86,7 +87,7 @@ class CacheFactory(BaseTemplateDecorator):
             user_data.insert(cache_intro, '"%s":"' % name)
             added_caches += 1
 
-            self._add_client_resources(resources, app, region, 6379, params,
+            self._add_client_resources(resources, app_region, 6379, params,
                                        cache_sg_resource)
 
         # If we added any caches, remove trailing comma:

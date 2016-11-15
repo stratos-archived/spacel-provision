@@ -4,7 +4,6 @@ import re
 from botocore.exceptions import ClientError
 
 from spacel.provision import clean_name
-from spacel.model.orbit import PRIVATE_NETWORK
 
 IP_BLOCK = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}'
 logger = logging.getLogger('spacel.provision.ingress_resource')
@@ -63,17 +62,18 @@ class IngressResourceFactory(object):
 
             # This orbit region:
             if client == region:
-                network = '%s.0.0/16' % orbit._get_param(region, PRIVATE_NETWORK)
+                network = '%s.0.0/16' % orbit.regions[region].private_network
                 ingress_resource('Orbit%s' % client, CidrIp=network)
                 continue
 
             # Another orbit region (NAT-ed instances in that region):
             if client in orbit.regions:
                 logger.debug('Adding access from %s in %s.', orbit.name, client)
-                for nat_index, nat_eip in orbit.nat_eips(client).items():
-                    if nat_eip:
-                        ingress_resource('Nat%s%s' % (client, nat_index),
-                                         CidrIp='%s/32' % nat_eip)
+                orbit_region = orbit.regions[client]
+                for az, orbit_az in orbit_region.azs.items():
+                    if orbit_az.nat_eip:
+                        ingress_resource('Nat%s%s' % (client, az),
+                                         CidrIp='%s/32' % orbit_az.nat_eip)
                 continue
 
             # An application in the same orbit:

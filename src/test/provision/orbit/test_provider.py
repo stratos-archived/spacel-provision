@@ -1,40 +1,30 @@
 from mock import MagicMock
-import unittest
 
-from spacel.model import Orbit, REGIONS, DEFAULTS
-from spacel.model.orbit import PROVIDER
 from spacel.provision.orbit.provider import ProviderOrbitFactory
-from test.provision.orbit import (NAME, REGION)
+from test import BaseSpaceAppTest, ORBIT_REGION
 
 TEST_PROVIDER = 'test'
-REGION_LIST = [REGION]
 
 
-class TestProviderOrbitFactory(unittest.TestCase):
+class TestProviderOrbitFactory(BaseSpaceAppTest):
     def setUp(self):
-        self.provider = MagicMock()
+        super(TestProviderOrbitFactory, self).setUp()
 
+        self.provider = MagicMock()
         self.orbit_factory = ProviderOrbitFactory({
             TEST_PROVIDER: self.provider
         })
-
-        self.orbit = Orbit({
-            'name': NAME,
-            REGIONS: REGION_LIST,
-            DEFAULTS: {
-                PROVIDER: TEST_PROVIDER
-            }
-        })
+        self.orbit.regions[ORBIT_REGION].provider = TEST_PROVIDER
 
     def test_get_orbit(self):
-        self.orbit_factory.get_orbit(self.orbit)
-        self.provider.get_orbit.assert_called_once_with(self.orbit,
-                                                        regions=REGION_LIST)
+        self.orbit_factory.orbit(self.orbit)
+        self.provider.orbit.assert_called_once_with(self.orbit,
+                                                    regions=[ORBIT_REGION])
 
     def test_get_orbit_provider_not_found(self):
-        self.orbit._params[DEFAULTS][PROVIDER] = 'does-not-exist'
-        self.orbit_factory.get_orbit(self.orbit)
-        self.provider.get_orbit.assert_not_called()
+        self.orbit.regions[ORBIT_REGION].provider = 'does-not-exist'
+        self.orbit_factory.orbit(self.orbit)
+        self.provider.orbit.assert_not_called()
 
     def test_get(self):
         orbit_factory = ProviderOrbitFactory.get(None, None, None, None, None,

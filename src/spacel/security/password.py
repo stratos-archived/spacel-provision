@@ -19,19 +19,20 @@ class PasswordManager(object):
         self._clients = clients
         self._kms_crypt = kms_crypt
 
-    def get_password(self, app, region, label, length=64, generate=True):
+    def get_password(self, app_region, label, length=64, generate=True):
         """
         Get a password for an application in a region.
-        :param app:  Application.
-        :param region: Region.
+        :param app_region:  Application configuration in region.
         :param label: Password label.
         :param length: Password length.
         :param generate: Generate new password if missing.
         :return: Encrypted password.
         """
-        logger.debug('Getting password for %s in %s.', label, app.name)
-        table_name = '%s-passwords' % app.orbit.name
-        password_name = '%s:%s' % (app.name, label)
+        app_name = app_region.app.name
+        region = app_region.region
+        logger.debug('Getting password for %s in %s.', label, app_name)
+        table_name = '%s-passwords' % app_region.app.orbit.name
+        password_name = '%s:%s' % (app_name, label)
 
         dynamodb = self._clients.dynamodb(region)
         existing_item = dynamodb.get_item(
@@ -40,7 +41,7 @@ class PasswordManager(object):
         ).get('Item')
         if existing_item:
             logger.debug('Found existing password for %s in %s.', label,
-                         app.name)
+                         app_name)
             encrypted = EncryptedPayload.from_dynamodb_item(existing_item)
 
             def decrypt_func():
@@ -53,9 +54,9 @@ class PasswordManager(object):
             return None, lambda: None
 
         # Not found, generate:
-        logger.debug('Generating password for %s in %s.', label, app.name)
+        logger.debug('Generating password for %s in %s.', label, app_name)
         plaintext = self._generate_password(length)
-        encrypted_payload = self._kms_crypt.encrypt(app, region, plaintext)
+        encrypted_payload = self._kms_crypt.encrypt(app_region, plaintext)
         password_item = encrypted_payload.dynamodb_item()
         password_item['name'] = {'S': password_name}
 
@@ -68,21 +69,20 @@ class PasswordManager(object):
         # Plaintext can be returned _once_ without Decrypt() permission
         return encrypted_payload, lambda: plaintext
 
-    def set_password(self, app, region, label, password_func):
+    def set_password(self, app_region, label, password_func):
         """
         Set password, if not set already.
-        :param app: SpaceApp.
-        :param region: Region.
+        :param app_region: SpaceAppRegion.
         :param label:  Password label.
         :param password_func:  Function that will return plaintext password.
         :return: True if password was saved.
         """
-        name = app.name
+        name = app_region.app.name
         logger.debug('Setting password for %s in %s.', label, name)
-        table_name = '%s-passwords' % app.orbit.name
+        table_name = '%s-passwords' % app_region.app.orbit.name
         password_name = '%s:%s' % (name, label)
 
-        dynamodb = self._clients.dynamodb(region)
+        dynamodb = self._clients.dynamodb(app_region.region)
         existing_item = dynamodb.get_item(
             TableName=table_name,
             Key={'name': {'S': password_name}}
@@ -93,7 +93,7 @@ class PasswordManager(object):
             return False
 
         plaintext = password_func()
-        encrypted_payload = self._kms_crypt.encrypt(app, region, plaintext)
+        encrypted_payload = self._kms_crypt.encrypt(app_region, plaintext)
         password_item = encrypted_payload.dynamodb_item()
         password_item['name'] = {'S': password_name}
 

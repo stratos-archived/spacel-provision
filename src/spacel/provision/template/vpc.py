@@ -1,6 +1,5 @@
 from copy import deepcopy
 
-from spacel.model.orbit import NAT_PER_AZ, PRIVATE_NETWORK
 from spacel.provision.template.base import BaseTemplateCache
 
 
@@ -8,22 +7,19 @@ class VpcTemplate(BaseTemplateCache):
     def __init__(self):
         super(VpcTemplate, self).__init__()
 
-    def vpc(self, orbit, region):
+    def vpc(self, orbit_region):
         """
         Get customized template for VPC.
-        :param orbit:  Orbit.
-        :param region: Region.
+        :param orbit_region:  Orbit region.
         :return: VPC template.
         """
         vpc_template = self.get('vpc')
         params = vpc_template['Parameters']
 
-        nat_per_az = orbit._get_param(region, NAT_PER_AZ)
-        params['NatPerAz']['Default'] = nat_per_az and 'true' or 'false'
+        params['NatPerAz']['Default'] = orbit_region.nat_per_az
+        params['VpcCidr']['Default'] = orbit_region.private_network
 
-        params['VpcCidr']['Default'] = orbit._get_param(region, PRIVATE_NETWORK)
-
-        azs = orbit.azs(region)
+        azs = orbit_region.az_keys
         if not azs:
             return vpc_template
         resources = vpc_template['Resources']

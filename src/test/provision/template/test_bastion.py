@@ -1,42 +1,30 @@
-import unittest
-
-from mock import MagicMock
-
-from spacel.aws import AmiFinder
-from spacel.model import Orbit
-from spacel.model.orbit import BASTION_INSTANCE_COUNT
 from spacel.provision.template.bastion import BastionTemplate
-from test import ORBIT_REGION
-from test.provision.template import SUBNETS
-
-DOMAIN = 'bastion'
+from test import ORBIT_DOMAIN
+from test.provision.template import BaseTemplateTest
 
 
-class TestBastionTemplate(unittest.TestCase):
-    def setUp(self):
-        self.ami_finder = MagicMock(spec=AmiFinder)
-        self.cache = BastionTemplate(self.ami_finder)
-        base_template = self.cache.get('asg-bastion')
-        self.base_resources = len(base_template['Resources'])
-        self.orbit = Orbit({})
-        self.orbit._public_instance_subnets = {ORBIT_REGION: SUBNETS}
+class TestBastionTemplate(BaseTemplateTest):
+    def _template_name(self):
+        return 'asg-bastion'
 
-    def test_no_bastion(self):
-        self.orbit._params[ORBIT_REGION] = {BASTION_INSTANCE_COUNT: 0}
-        bastion = self.cache.bastion(self.orbit, ORBIT_REGION)
+    def _cache(self, ami_finder):
+        return BastionTemplate(ami_finder)
 
-        self.assertEquals(bastion, False)
+    def test_bastion_disabled(self):
+        self.orbit_region.bastion_instance_count = 0
+        bastion = self.cache.bastion(self.orbit_region)
+        self.assertIsNone(bastion)
 
     def test_bastion(self):
-        bastion = self.cache.bastion(self.orbit, ORBIT_REGION)
+        bastion = self.cache.bastion(self.orbit_region)
 
+        # No resources are injected:
         bastion_resources = len(bastion['Resources'])
         self.assertEquals(self.base_resources, bastion_resources)
 
     def test_bastion_multi_eip(self):
-        self.orbit._params[ORBIT_REGION] = {BASTION_INSTANCE_COUNT: 2}
-
-        bastion = self.cache.bastion(self.orbit, ORBIT_REGION)
+        self.orbit_region.bastion_instance_count = 2
+        bastion = self.cache.bastion(self.orbit_region)
 
         bastion_resources = bastion['Resources']
         # 3 resources: Eip01, DNS:bastion01, DNS:bastion02
@@ -45,9 +33,7 @@ class TestBastionTemplate(unittest.TestCase):
         self.assertIn('DnsRecord02', bastion_resources)
 
     def test_bastion_domain(self):
-        self.orbit.domain = DOMAIN
-        bastion = self.cache.bastion(self.orbit, ORBIT_REGION)
+        bastion = self.cache.bastion(self.orbit_region)
 
-        bastion_params = bastion['Parameters']
-        self.assertEqual(
-            'bastion.', bastion_params['VirtualHostDomain']['Default'])
+        domain = bastion['Parameters']['VirtualHostDomain']['Default']
+        self.assertEqual(ORBIT_DOMAIN + '.', domain)

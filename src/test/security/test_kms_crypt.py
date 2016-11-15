@@ -1,10 +1,9 @@
+import six
 from botocore.exceptions import ClientError
 from mock import MagicMock
-import six
 
 from spacel.security.kms_crypt import KmsCrypto
 from spacel.security.kms_key import KmsKeyFactory
-
 from test import ORBIT_REGION
 from test.security import BaseKmsTest, PLAINTEXT_KEY, ENCRYPTED_KEY
 
@@ -49,13 +48,22 @@ class TestKmsCrypto(BaseKmsTest):
             }
         ]
 
-        self.kms_crypt.encrypt(self.app, ORBIT_REGION, 'test')
+        self.kms_crypt.encrypt(self.app_region, 'test')
 
         self.assertEquals(2, self.kms.generate_data_key.call_count)
-        self.kms_key.create_key.assert_called_with(self.app, ORBIT_REGION)
+        self.kms_key.create_key.assert_called_with(self.app_region)
+
+    def test_encrypt_error(self):
+        # GenerateDataKey fails as key doesn't exist, key is created:
+        key_not_found = ClientError({'Error': {
+            'Message': 'Kaboom'
+        }}, 'GenerateDataKey')
+        self.kms.generate_data_key.side_effect = key_not_found
+        self.assertRaises(ClientError, self.kms_crypt.encrypt, self.app_region,
+                          'test')
 
     def _round_trip(self, data):
-        item = self.kms_crypt.encrypt(self.app, ORBIT_REGION, data)
+        item = self.kms_crypt.encrypt(self.app_region, data)
         self.assertEquals(ENCRYPTED_KEY, item.key)
         self.assertEquals(ORBIT_REGION, item.key_region)
 

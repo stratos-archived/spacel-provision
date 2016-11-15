@@ -6,6 +6,11 @@ NAME = 'name'
 REGIONS = 'regions'
 ALL = 'all'
 
+CUSTOM_KEYS = {
+    'orbit',
+    'services'
+}
+
 
 class BaseJsonModelFactory(object):
     @staticmethod
@@ -16,7 +21,7 @@ class BaseJsonModelFactory(object):
         for region, region_obj in obj.regions.items():
             params = region_params[region]
             for region_key in vars(region_obj):
-                if region_key == 'orbit' or region_key.startswith('_'):
+                if region_key in CUSTOM_KEYS or region_key.startswith('_'):
                     continue
                 value = params.get(region_key)
                 if value is None:

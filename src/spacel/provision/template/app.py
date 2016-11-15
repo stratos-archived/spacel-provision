@@ -1,9 +1,8 @@
 import json
 import logging
-
 import six
 
-from spacel.aws import INSTANCE_VOLUMES
+from spacel.aws.instance_types import INSTANCE_VOLUMES
 from spacel.provision import base64_encode
 from spacel.provision.template.base import BaseTemplateCache
 
@@ -23,63 +22,68 @@ class AppTemplate(BaseTemplateCache):
         self._acm = acm
         self._kms_key = kms_key
 
-    def app(self, app, region):
+    def app(self, app_region):
         app_template = self.get('elb-service')
 
+        app = app_region.app
+        orbit_region = app_region.orbit_region
         orbit = app.orbit
         params = app_template['Parameters']
         resources = app_template['Resources']
 
         # Link to VPC:
-        params['VpcId']['Default'] = orbit.vpc_id(region)
+        params['VpcId']['Default'] = orbit_region.vpc_id
         params['Orbit']['Default'] = orbit.name
         params['Service']['Default'] = app.name
 
-        bastion_sg = orbit.bastion_sg(region)
+        bastion_sg = orbit_region.bastion_sg
         if bastion_sg:
             params['BastionSecurityGroup']['Default'] = bastion_sg
         else:
             del params['BastionSecurityGroup']
             del resources['Sg']['Properties']['SecurityGroupIngress'][0]
-        cache_subnet_group = orbit.private_cache_subnet_group(region)
+        cache_subnet_group = orbit_region.private_cache_subnet_group
         if cache_subnet_group:
             params['PrivateCacheSubnetGroup']['Default'] = cache_subnet_group
-        public_rds_group = orbit.public_rds_subnet_group(region)
+        public_rds_group = orbit_region.public_rds_subnet_group
         if public_rds_group:
             params['PublicRdsSubnetGroup']['Default'] = public_rds_group
-        private_rds_group = orbit.private_rds_subnet_group(region)
+        private_rds_group = orbit_region.private_rds_subnet_group
         if private_rds_group:
             params['PrivateRdsSubnetGroup']['Default'] = private_rds_group
 
         # Inject parameters:
-        params['HealthCheckTarget']['Default'] = app.health_check
-        params['InstanceType']['Default'] = app.instance_type
-        params['InstanceMin']['Default'] = app.instance_min
-        min_in_service = app.instance_min
-        if app.instance_min and app.instance_min == app.instance_max:
-            min_in_service = app.instance_max - 1
+        params['HealthCheckTarget']['Default'] = app_region.health_check
+        params['InstanceType']['Default'] = app_region.instance_type
+        instance_min = app_region.instance_min
+        instance_max = app_region.instance_max
+        params['InstanceMin']['Default'] = instance_min
+        params['InstanceMax']['Default'] = instance_max
+        min_in_service = instance_min
+        if instance_min and instance_min == instance_max:
+            min_in_service = instance_max - 1
         params['InstanceMinInService']['Default'] = min_in_service
-        params['InstanceMax']['Default'] = app.instance_max
-        params['UserData']['Default'] = self._user_data(params, app)
-        params['Ami']['Default'] = self._ami.spacel_ami(region)
+        params['UserData']['Default'] = self._user_data(params, app_region)
+        params['Ami']['Default'] = self._ami.spacel_ami(orbit_region.region)
 
-        if app.hostnames:
+        if app_region.hostnames:
             # TODO: support multiple hostnames
-            app_hostname = app.hostnames[0]
+            app_hostname = app_region.hostnames[0]
             domain = app_hostname.split('.')
             domain = '.'.join(domain[-2:]) + '.'
             params['VirtualHostDomain']['Default'] = domain
             params['VirtualHost']['Default'] = app_hostname
-        elif orbit.domain:
-            params['VirtualHostDomain']['Default'] = orbit.domain + '.'
-            app_hostname = '%s-%s.%s' % (app.name, orbit.name, orbit.domain)
+        elif orbit_region.domain:
+            params['VirtualHostDomain']['Default'] = orbit_region.domain + '.'
+            app_hostname = '%s-%s.%s' % (app.name, orbit.name,
+                                         orbit_region.domain)
             params['VirtualHost']['Default'] = app_hostname
 
-        if app.loadbalancer:
-            params['ElbScheme']['Default'] = app.elb_availability
+        if app_region.load_balancer:
+            params['ElbScheme']['Default'] = app_region.elb_availability
             # Expand ELB to all AZs:
-            public_elb_subnets = orbit.public_elb_subnets(region)
-            private_elb_subnets = orbit.private_elb_subnets(region)
+            public_elb_subnets = orbit_region.public_elb_subnets
+            private_elb_subnets = orbit_region.private_elb_subnets
             self._subnet_params(params, 'PublicElb', public_elb_subnets)
             self._subnet_params(params, 'PrivateElb', private_elb_subnets)
 
@@ -87,14 +91,14 @@ class AppTemplate(BaseTemplateCache):
             self._elb_subnets(resources, 'PrivateElb', private_elb_subnets)
 
         # Expand ASG to all AZs:
-        public_instance_subnets = orbit.public_instance_subnets(region)
+        public_instance_subnets = orbit_region.public_instance_subnets
         self._subnet_params(params, 'PublicInstance',
                             public_instance_subnets)
-        private_instance_subnets = orbit.private_instance_subnets(region)
+        private_instance_subnets = orbit_region.private_instance_subnets
         self._subnet_params(params, 'PrivateInstance',
                             private_instance_subnets)
-        if app.instance_availability == 'internet-facing' or \
-                app.instance_availability == 'multi-region':
+        if app_region.instance_availability == 'internet-facing' or \
+                        app_region.instance_availability == 'multi-region':
             self._asg_subnets(resources, 'PublicInstance',
                               public_instance_subnets)
             resources['Asg']['Properties']['VPCZoneIdentifier'][0] = {
@@ -112,8 +116,8 @@ class AppTemplate(BaseTemplateCache):
         public_elb = resources['PublicElb']['Properties']['Listeners']
         private_elb = resources['PrivateElb']['Properties']['Listeners']
         elb_ingress_ports = set()
-        for port_number, port_config in sorted(app.public_ports.items()):
-            if not app.loadbalancer:
+        for port_number, port_config in sorted(app_region.public_ports.items()):
+            if not app_region.load_balancer:
                 for ip_source in port_config.sources:
                     instance_ingress.append({
                         'IpProtocol': 'tcp',
@@ -152,7 +156,8 @@ class AppTemplate(BaseTemplateCache):
                 if port_config.scheme in SSL_SCHEMES:
                     cert = port_config.certificate
                     if not cert:
-                        cert = self._acm.get_certificate(region, app_hostname)
+                        cert = self._acm.get_certificate(orbit_region.region,
+                                                         app_hostname)
                     if not cert:
                         logger.warning(
                             'Unable to find certificate for %s. ' +
@@ -167,7 +172,7 @@ class AppTemplate(BaseTemplateCache):
                 private_elb.append(elb_listener)
 
         # Private ports:
-        for private_port, protocols in sorted(app.private_ports.items()):
+        for private_port, protocols in sorted(app_region.private_ports.items()):
             port_is_string = isinstance(private_port, six.string_types)
             if port_is_string and '-' in private_port:
                 from_port, to_port = private_port.split('-', 1)
@@ -191,7 +196,7 @@ class AppTemplate(BaseTemplateCache):
                 }
 
         # Map instance storage if available:
-        instance_volumes = INSTANCE_VOLUMES.get(app.instance_type, 0)
+        instance_volumes = INSTANCE_VOLUMES.get(app_region.instance_type, 0)
         if instance_volumes > 0:
             block_devices = resources['Lc']['Properties']['BlockDeviceMappings']
             for volume_index in range(instance_volumes):
@@ -202,7 +207,7 @@ class AppTemplate(BaseTemplateCache):
                 })
 
         # Clean up loadbalancer if it's unwanted
-        if not app.loadbalancer:
+        if not app_region.load_balancer:
             params['PublicElb'] = {
                 'Type': 'String',
                 'Default': False
@@ -219,18 +224,18 @@ class AppTemplate(BaseTemplateCache):
             resources['Asg']['Properties']['HealthCheckType'] = 'EC2'
             params['ElbScheme']['Default'] = 'disabled'
 
-        self._add_kms_iam_policy(app, region, resources)
-        self._alarm_factory.add_alarms(app_template, app.alarms)
-        self._cache_factory.add_caches(app, region, app_template, app.caches)
-        secret_params = self._rds_factory.add_rds(app, region, app_template)
+        self._add_kms_iam_policy(app_region, resources)
+        self._alarm_factory.add_alarms(app_template, app_region.alarms)
+        self._cache_factory.add_caches(app_region, app_template)
+        secret_params = self._rds_factory.add_rds(app_region, app_template)
 
         # Order matters: SpotFleet AFTER Asg/Lc have been fully configured:
-        self._spot_decorator.spotify(app, region, app_template)
+        self._spot_decorator.spotify(app_region, app_template)
 
         return app_template, secret_params
 
-    def _add_kms_iam_policy(self, app, region, resources):
-        kms_key = self._kms_key.get_key(app, region, create=False)
+    def _add_kms_iam_policy(self, app_region, resources):
+        kms_key = self._kms_key.get_key(app_region, create=False)
         if not kms_key:
             return
         resources['KmsKeyPolicy'] = {
@@ -250,11 +255,11 @@ class AppTemplate(BaseTemplateCache):
         }
 
     @staticmethod
-    def _user_data(params, app):
+    def _user_data(params, app_region):
         systemd = {}
         files = {}
-        if app.services:
-            for service_name, service in app.services.items():
+        if app_region.services:
+            for service_name, service in app_region.services.items():
                 unit_file = service.unit_file.encode('utf-8')
                 systemd[service.name] = {
                     'body': base64_encode(unit_file)
@@ -267,7 +272,7 @@ class AppTemplate(BaseTemplateCache):
                         'body': base64_encode(environment_file.encode('utf-8'))
                     }
 
-        files.update(app.files)
+        files.update(app_region.files)
 
         user_data = ''
         if systemd:
@@ -275,7 +280,8 @@ class AppTemplate(BaseTemplateCache):
         if files:
             user_data += ',"files":' + json.dumps(files, sort_keys=True)
 
-        if app.volumes:
+        if app_region.volumes:
             params['VolumeSupport']['Default'] = 'true'
-            user_data += ',"volumes":' + json.dumps(app.volumes, sort_keys=True)
+            user_data += ',"volumes":' + json.dumps(app_region.volumes,
+                                                    sort_keys=True)
         return user_data

@@ -1,6 +1,6 @@
 import unittest
 
-from spacel.model.orbit import Orbit, OrbitRegion
+from spacel.model.orbit import Orbit
 from test import ORBIT_NAME, ORBIT_REGION
 
 
@@ -9,6 +9,7 @@ class TestOrbit(unittest.TestCase):
         self.orbit = Orbit(ORBIT_NAME, [ORBIT_REGION])
 
     def test_constructor_invalid_region(self):
+        """Invalid region is ignored."""
         orbit = Orbit(ORBIT_NAME, [ORBIT_REGION, 'meow'])
         self.assertEquals({ORBIT_REGION}, orbit.regions.keys())
 
@@ -30,7 +31,8 @@ class TestOrbit(unittest.TestCase):
 
 class TestOrbitRegion(unittest.TestCase):
     def setUp(self):
-        self.orbit_region = OrbitRegion()
+        orbit = Orbit(ORBIT_NAME, [ORBIT_REGION])
+        self.orbit_region = orbit.regions[ORBIT_REGION]
 
     def test_valid_spacel(self):
         self.orbit_region.provider = 'spacel'

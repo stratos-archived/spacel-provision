@@ -6,7 +6,7 @@ from colorlog import ColoredFormatter
 
 from spacel.args import parse_args
 from spacel.aws import AmiFinder, ClientCache
-from spacel.model import SpaceApp, Orbit
+from spacel.model.json import OrbitJsonModelFactory, SpaceAppJsonModelFactory
 from spacel.provision import (ChangeSetEstimator, SpaceElevatorAppFactory,
                               LambdaUploader, ProviderOrbitFactory,
                               TemplateUploader)
@@ -25,11 +25,13 @@ def main(args, in_stream):
     if not orbit_json or not app_json:
         return -1
 
-    orbit = Orbit(orbit_json)
+    orbit_json_factory = OrbitJsonModelFactory()
+    orbit = orbit_json_factory.orbit(orbit_json)
     if not orbit.valid:
         return -1
 
-    app = SpaceApp(orbit, app_json)
+    app_json_factory = SpaceAppJsonModelFactory()
+    app = app_json_factory.app(orbit, app_json)
     if not app.valid:
         return -1
 
@@ -73,11 +75,11 @@ def provision(app):
                                              vpc_template,
                                              bastion_template,
                                              tables_template)
-    orbit_factory.get_orbit(app.orbit)
+    orbit_factory.orbit(app.orbit)
     provisioner = SpaceElevatorAppFactory(clients, change_sets, template_up,
                                           app_template)
-    if not provisioner.app(app):
-        return 1
+    # if not provisioner.app(app):
+    #     return 1
     return 0
 
 

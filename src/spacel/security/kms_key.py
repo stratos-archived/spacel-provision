@@ -1,4 +1,5 @@
 import logging
+
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger('spacel.security.kms_key')
@@ -9,23 +10,24 @@ class KmsKeyFactory(object):
         self._clients = clients
 
     @staticmethod
-    def get_key_alias(app):
+    def get_key_alias(app_region):
         """
         Get KMS alias for an application key.
-        :param app: Application.
+        :param app_region: SpaceAppRegion.
         :return: Key alias.
         """
+        app = app_region.app
         return 'alias/%s-%s' % (app.orbit.name, app.name)
 
-    def get_key(self, app, region, create=True):
+    def get_key(self, app_region, create=True):
         """
         Get a KMS key ARN, creating if necessary.
-        :param app: App descriptor.
-        :param region: Region.
+        :param app_region: SpaceAppRegion.
         :param create: Create key if it does not exist.
         :return: KMS key ARN.
         """
-        alias_name = self.get_key_alias(app)
+        alias_name = self.get_key_alias(app_region)
+        region = app_region.region
         logger.debug('Finding key for "%s" in %s.', alias_name, region)
         try:
             kms = self._clients.kms(region)
@@ -40,24 +42,24 @@ class KmsKeyFactory(object):
         except ClientError as e:
             e_message = e.response['Error'].get('Message', '')
             if 'Invalid keyId' not in e_message and \
-                    'is not found' not in e_message:
+                            'is not found' not in e_message:
                 raise e
 
         if create:
             logger.debug('Unable to find key "%s", creating...', alias_name)
-            return self.create_key(app, region)
+            return self.create_key(app_region)
         else:
             logger.debug('Unable to find key "%s".', alias_name)
             return None
 
-    def create_key(self, app, region):
+    def create_key(self, app_region):
         """
         Get a KMS key ARN, assuming it doesn't already exist.
-        :param app: App descriptor.
-        :param region: Region.
+        :param app_region: SpaceAppRegion.
         :return: KMS key ARN.
         """
-        alias_name = self.get_key_alias(app)
+        alias_name = self.get_key_alias(app_region)
+        region = app_region.region
 
         kms = self._clients.kms(region)
         new_key = kms.create_key()

@@ -110,8 +110,7 @@ class SpaceSshDb(object):
             for scan_page in scanner:
                 # Delete user for each app:
                 for service_item in scan_page['Items']:
-                    app = SpaceApp(orbit)
-                    app.name = service_item['name']['S']
+                    app = SpaceApp(orbit, service_item['name']['S'])
                     try:
                         self._update_service_users(app, 'DELETE admins :admins',
                                                    user_name)

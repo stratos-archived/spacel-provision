@@ -27,10 +27,6 @@ ROLLBACK_STATUS = ('UPDATE_ROLLBACK_COMPLETE', 'ROLLBACK_COMPLETE',
                    'UPDATE_ROLLBACK_FAILED')
 
 
-def key_sorted(some_dict):
-    return [value for (key, value) in sorted(some_dict.items())]
-
-
 class BaseCloudFormationFactory(object):
     """
     Shared functionality for CloudFormation provisioning.
@@ -276,7 +272,8 @@ class BaseCloudFormationFactory(object):
                 time.sleep(poll_interval)
 
         if resource_times:
-            times_str = json.dumps(dict(resource_times), indent=2, sort_keys=True)
+            times_str = json.dumps(dict(resource_times), indent=2,
+                                   sort_keys=True)
             logger.debug('Resource times: %s', times_str)
 
         end = datetime.datetime.utcnow()
