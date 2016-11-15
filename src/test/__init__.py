@@ -1,8 +1,6 @@
 import unittest
 
 from spacel.model import Orbit, SpaceApp
-from spacel.model.base import (NAME, REGIONS)
-from spacel.model.orbit import DOMAIN
 
 APP_NAME = 'test-app'
 
@@ -18,13 +16,7 @@ TWO_REGIONS = [ORBIT_REGION, SECOND_REGION]
 
 class BaseSpaceAppTest(unittest.TestCase):
     def setUp(self):
-        self.orbit = Orbit({
-            NAME: ORBIT_NAME,
-            DOMAIN: ORBIT_DOMAIN,
-            REGIONS: ORBIT_REGIONS
-        })
+        self.orbit = Orbit(ORBIT_NAME, ORBIT_REGIONS)
         self.assertTrue(self.orbit.valid)
-
-        self.app = SpaceApp(self.orbit, {
-            NAME: APP_NAME
-        })
+        self.app = SpaceApp(self.orbit, APP_NAME)
+        self.assertTrue(self.app.valid)
