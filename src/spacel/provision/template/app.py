@@ -262,11 +262,27 @@ class AppTemplate(BaseTemplateCache):
             }
             del params['PrivateElbSubnet01'], params['PublicElbSubnet01']
             del (resources['PublicElb'], resources['PrivateElb'],
-                 resources['ElbSg'], resources['DnsRecord'],
+                 resources['ElbSg'],
                  resources['ElbHealthPolicy'],
                  resources['Asg']['Properties']['LoadBalancerNames'])
             resources['Asg']['Properties']['HealthCheckType'] = 'EC2'
             params['ElbScheme']['Default'] = 'disabled'
+
+            # Resolve the DNS record
+            dns_record_set = (resources['DnsRecord']['Properties']
+                                       ['RecordSets'][0])
+            if app.elastic_ips and app.instance_max > 0:
+                del dns_record_set['AliasTarget']
+                dns_record_set['TTL'] = 60
+                eips = []
+                for eip_index, _ in enumerate(range(app.instance_max)):
+                    eip_index += 1
+                    eips.append({'Ref': 'ElasticIp%02d' % eip_index})
+                if eips:
+                    dns_record_set['ResourceRecords'] = eips
+            else:
+                # No ELB and no static IPs, give up
+                del resources['DnsRecord']
 
         self._add_kms_iam_policy(app, region, resources)
         self._alarm_factory.add_alarms(app_template, app.alarms)

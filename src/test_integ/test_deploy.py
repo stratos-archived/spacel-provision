@@ -73,9 +73,19 @@ ExecStop=/usr/bin/docker stop %n
         self.provision()
         self._verify_message('top secret')
 
-    def _verify_deploy(self, version=None):
+    def test_07_eip_no_elb(self):
+        """Deploy a service without ELB and with Elastic IP, verify."""
+        self.app_params['instance_max'] = 1
+        self.app_params['elb_availability'] = 'disabled'
+        self.app_params['instance_availability'] = 'internet-facing'
+        self.app_params['elastic_ips'] = 'enabled'
+
+        self.provision()
+        self._verify_deploy(https=False)
+
+    def _verify_deploy(self, version=None, https=True):
         version = version or BaseIntegrationTest.APP_VERSION
-        r = self._get('')
+        r = self._get('', https=https)
         self.assertEquals(version, r.json()['version'])
 
     def _verify_message(self, message=''):

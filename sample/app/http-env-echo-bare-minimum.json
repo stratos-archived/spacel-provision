@@ -1,0 +1,22 @@
+{
+  "name": "http-env-echo",
+  "elastic_ips": "enabled",
+  "elb_availability": "disabled",
+  "instance_availability": "internet-facing",
+  "instance_type": "t2.nano",
+  "instance_min": 1,
+  "instance_max": 1,
+  "services": {
+    "http-env-echo": {
+      "image": "pwagner/http-env-echo",
+      "ports": {
+        "80": 8080
+      }
+    }
+  },
+  "public_ports": {
+    "80": {
+      "sources": ["0.0.0.0/0"]
+    }
+  }
+}
