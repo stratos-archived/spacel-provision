@@ -70,10 +70,19 @@ class IngressResourceFactory(object):
             # Another orbit region (NAT-ed instances in that region):
             if client in orbit.regions:
                 logger.debug('Adding access from %s in %s.', orbit.name, client)
-                for nat_index, nat_eip in orbit.nat_eips(client).items():
-                    if nat_eip:
-                        ingress_resource('Nat%s%s' % (client, nat_index),
-                                         CidrIp='%s/32' % nat_eip)
+                eips = self.app_eips(orbit, region, client)
+                if eips:
+                    for eip_index, eip in enumerate(eips):
+                        eip_index += 1
+                        if eip:
+                            ingress_resource('ElasticIp%s%s' % (client,
+                                                                eip_index),
+                                             CidrIp='%s/32' % eip)
+                else:
+                    for nat_index, nat_eip in orbit.nat_eips(client).items():
+                        if nat_eip:
+                            ingress_resource('Nat%s%s' % (client, nat_index),
+                                             CidrIp='%s/32' % nat_eip)
                 continue
 
             # An application in the same orbit:
@@ -101,4 +110,20 @@ class IngressResourceFactory(object):
                 logger.debug('App %s not found in %s in %s.', app,
                              orbit.name, region)
                 return None
+            raise e
+
+    def app_eips(self, orbit, region, app, eips=[]):
+        cloudformation = self._clients.cloudformation(region)
+        stack_name = '%s-%s' % (orbit.name, app)
+        try:
+            index = len(eips) + 1
+            resource = cloudformation.describe_stack_resource(
+                StackName=stack_name,
+                LogicalResourceId='ElasticIp%02d' % index)
+            eips.append(resource['StackResourceDetail']['PhysicalResourceId'])
+            return self.app_eips(orbit, region, app, eips)
+        except ClientError as e:
+            e_message = e.response['Error'].get('Message', '')
+            if 'does not exist' in e_message:
+                return eips
             raise e

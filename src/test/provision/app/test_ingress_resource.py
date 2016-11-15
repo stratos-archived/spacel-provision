@@ -11,6 +11,7 @@ REGION = 'us-west-2'
 OTHER_REGION = 'us-east-1'
 IP_BLOCK = '127.0.0.1/32'
 SECURITY_GROUP = 'sg-123456'
+ELASTIC_IP = '1.1.1.1'
 
 
 class TestIngressResourceFactory(unittest.TestCase):
@@ -39,10 +40,19 @@ class TestIngressResourceFactory(unittest.TestCase):
         resource = self._only(self._http_ingress(REGION))
         self.assertEquals('10.0.0.0/16', resource['Properties']['CidrIp'])
 
-    def test_ingress_resources_other_region(self):
+    def test_ingress_resources_other_region_nat(self):
+        self.ingress.app_eips = MagicMock(return_value=[])
         resources = self._http_ingress(OTHER_REGION)
         # 1 per Nat EIP:
         self.assertEquals(3, len(resources))
+        for resource in resources.values():
+            self.assertIn('CidrIp', resource['Properties'])
+
+    def test_ingress_resources_other_region(self):
+        self.ingress.app_eips = MagicMock(return_value=['1.1.1.1', '2.2.2.2'])
+        resources = self._http_ingress(OTHER_REGION)
+        # 1 per Nat EIP:
+        self.assertEquals(2, len(resources))
         for resource in resources.values():
             self.assertIn('CidrIp', resource['Properties'])
 
@@ -77,6 +87,25 @@ class TestIngressResourceFactory(unittest.TestCase):
         self._describe_stack_resource_error('Kaboom')
         self.assertRaises(ClientError, self.ingress.app_sg, self.orbit, REGION,
                           'test-app')
+
+    def test_app_eips(self):
+        self.cloudformation.describe_stack_resource.side_effect = [{
+            'StackResourceDetail': {
+                'PhysicalResourceId': ELASTIC_IP
+            }
+        }, ClientError({
+            'Error': {
+                'Message': 'Resource does not exist'
+            }
+        }, 'ElasticIp')]
+
+        eips = self.ingress.app_eips(self.orbit, REGION, 'test-app')
+        self.assertIn(ELASTIC_IP, eips)
+
+    def test_app_eips_error(self):
+        self._describe_stack_resource_error('Kaboom')
+        self.assertRaises(ClientError, self.ingress.app_eips, self.orbit, 
+                          REGION, 'test-app')
 
     def _http_ingress(self, *args):
         return self.ingress.ingress_resources(self.orbit, REGION, 80, args)
