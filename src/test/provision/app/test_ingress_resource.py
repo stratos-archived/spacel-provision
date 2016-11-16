@@ -41,7 +41,7 @@ class TestIngressResourceFactory(unittest.TestCase):
         self.assertEquals('10.0.0.0/16', resource['Properties']['CidrIp'])
 
     def test_ingress_resources_other_region_nat(self):
-        self.ingress.app_eips = MagicMock(return_value=[])
+        self.ingress._app_eips = MagicMock(return_value=[])
         resources = self._http_ingress(OTHER_REGION)
         # 1 per Nat EIP:
         self.assertEquals(3, len(resources))
@@ -49,7 +49,7 @@ class TestIngressResourceFactory(unittest.TestCase):
             self.assertIn('CidrIp', resource['Properties'])
 
     def test_ingress_resources_other_region(self):
-        self.ingress.app_eips = MagicMock(return_value=['1.1.1.1', '2.2.2.2'])
+        self.ingress._app_eips = MagicMock(return_value=['1.1.1.1', '2.2.2.2'])
         resources = self._http_ingress(OTHER_REGION)
         # 1 per Nat EIP:
         self.assertEquals(2, len(resources))
@@ -57,14 +57,14 @@ class TestIngressResourceFactory(unittest.TestCase):
             self.assertIn('CidrIp', resource['Properties'])
 
     def test_ingress_resource_app(self):
-        self.ingress.app_sg = MagicMock(return_value=SECURITY_GROUP)
+        self.ingress._app_sg = MagicMock(return_value=SECURITY_GROUP)
         resource = self._only(self._http_ingress('foo'))
         self.assertNotIn('CidrIp', resource['Properties'])
         self.assertEquals(SECURITY_GROUP,
                           resource['Properties']['SourceSecurityGroupId'])
 
     def test_ingress_resource_app_not_found(self):
-        self.ingress.app_sg = MagicMock(return_value=None)
+        self.ingress._app_sg = MagicMock(return_value=None)
         resources = self._http_ingress('foo')
         self.assertEquals(0, len(resources))
 
@@ -75,37 +75,50 @@ class TestIngressResourceFactory(unittest.TestCase):
             }
         }
 
-        sg = self.ingress.app_sg(self.orbit, REGION, 'test-app')
+        sg = self.ingress._app_sg(self.orbit, REGION, 'test-app')
         self.assertEquals(SECURITY_GROUP, sg)
 
     def test_app_sg_not_found(self):
         self._describe_stack_resource_error('Stack does not exist')
-        sg = self.ingress.app_sg(self.orbit, REGION, 'test-app')
+        sg = self.ingress._app_sg(self.orbit, REGION, 'test-app')
         self.assertIsNone(sg)
 
     def test_app_sg_error(self):
         self._describe_stack_resource_error('Kaboom')
-        self.assertRaises(ClientError, self.ingress.app_sg, self.orbit, REGION,
+        self.assertRaises(ClientError, self.ingress._app_sg, self.orbit, REGION,
                           'test-app')
 
     def test_app_eips(self):
-        self.cloudformation.describe_stack_resource.side_effect = [{
-            'StackResourceDetail': {
+        resourceList = [{
+            'StackResourceSummaries': [{
+                'LogicalResourceId': 'ElasticIp01',
                 'PhysicalResourceId': ELASTIC_IP
-            }
-        }, ClientError({
-            'Error': {
-                'Message': 'Resource does not exist'
-            }
-        }, 'ElasticIp')]
+            }]
+        }]
+        pages = MagicMock()
+        pages.paginate = MagicMock(return_value=resourceList)
+        self.cloudformation.get_paginator = MagicMock(return_value=pages)
 
-        eips = self.ingress.app_eips(self.orbit, REGION, 'test-app')
+        eips = self.ingress._app_eips(self.orbit, REGION, 'test-app')
         self.assertIn(ELASTIC_IP, eips)
 
     def test_app_eips_error(self):
-        self._describe_stack_resource_error('Kaboom')
-        self.assertRaises(ClientError, self.ingress.app_eips, self.orbit, 
+        self.cloudformation.get_paginator.side_effect = ClientError({
+            'Error': {
+                'Message': 'Kaboom'
+            }
+        }, 'GetPaginator')
+        self.assertRaises(ClientError, self.ingress._app_eips, self.orbit,
                           REGION, 'test-app')
+
+    def test_app_eips_cloudformation_stack_does_not_exist(self):
+        self.cloudformation.get_paginator.side_effect = ClientError({
+            'Error': {
+                'Message': 'CloudFormation stack does not exist'
+            }
+        }, 'GetPaginator')
+        eips = self.ingress._app_eips(self.orbit, REGION, 'test-app')
+        self.assertEquals(0, len(eips))
 
     def _http_ingress(self, *args):
         return self.ingress.ingress_resources(self.orbit, REGION, 80, args)

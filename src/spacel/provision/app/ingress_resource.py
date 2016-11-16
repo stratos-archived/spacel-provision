@@ -70,7 +70,7 @@ class IngressResourceFactory(object):
             # Another orbit region (NAT-ed instances in that region):
             if client in orbit.regions:
                 logger.debug('Adding access from %s in %s.', orbit.name, client)
-                eips = self.app_eips(orbit, region, client)
+                eips = self._app_eips(orbit, region, client, eips=None)
                 if eips:
                     for eip_index, eip in enumerate(eips):
                         eip_index += 1
@@ -86,7 +86,7 @@ class IngressResourceFactory(object):
                 continue
 
             # An application in the same orbit:
-            sg_id = self.app_sg(orbit, region, client)
+            sg_id = self._app_sg(orbit, region, client)
             if sg_id:
                 ingress_resource('App%s' % client, SourceSecurityGroupId=sg_id)
                 continue
@@ -95,7 +95,7 @@ class IngressResourceFactory(object):
 
         return ingress_resources
 
-    def app_sg(self, orbit, region, app, sg_ref='Sg'):
+    def _app_sg(self, orbit, region, app, sg_ref='Sg'):
         cloudformation = self._clients.cloudformation(region)
         stack_name = '%s-%s' % (orbit.name, app)
         try:
@@ -112,16 +112,18 @@ class IngressResourceFactory(object):
                 return None
             raise e
 
-    def app_eips(self, orbit, region, app, eips=[]):
+    def _app_eips(self, orbit, region, app):
+        eips = []
         cloudformation = self._clients.cloudformation(region)
         stack_name = '%s-%s' % (orbit.name, app)
         try:
-            index = len(eips) + 1
-            resource = cloudformation.describe_stack_resource(
-                StackName=stack_name,
-                LogicalResourceId='ElasticIp%02d' % index)
-            eips.append(resource['StackResourceDetail']['PhysicalResourceId'])
-            return self.app_eips(orbit, region, app, eips)
+            p = cloudformation.get_paginator('list_stack_resources')
+            for page in p.paginate(StackName=stack_name):
+                for s in page['StackResourceSummaries']:
+                    r = s['LogicalResourceId']
+                    if r.startswith('ElasticIp') and not r.endswith('Policy'):
+                        eips.append(s['PhysicalResourceId'])
+            return eips
         except ClientError as e:
             e_message = e.response['Error'].get('Message', '')
             if 'does not exist' in e_message:
