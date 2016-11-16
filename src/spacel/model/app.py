@@ -9,7 +9,7 @@ class SpaceApp(object):
     Contains SpaceAppRegion entries for each configured region.
     """
 
-    def __init__(self, orbit, name, regions=None):
+    def __init__(self, orbit, name, regions=None, **kwargs):
         self.orbit = orbit
         self.name = name
 
@@ -18,14 +18,15 @@ class SpaceApp(object):
             for region in regions:
                 orbit_region = orbit.regions.get(region)
                 if orbit_region:
-                    self.regions[region] = SpaceAppRegion(self, orbit_region)
+                    self.regions[region] = SpaceAppRegion(self, orbit_region,
+                                                          **kwargs)
                     continue
 
                 logger.warn(
                     'App "%s" has invalid region "%s". Valid regions: %s',
                     name, region, ', '.join(orbit.regions))
         else:
-            self.regions = {region: SpaceAppRegion(self, orbit_region)
+            self.regions = {region: SpaceAppRegion(self, orbit_region, **kwargs)
                             for region, orbit_region in orbit.regions.items()}
 
     @property

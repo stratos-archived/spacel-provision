@@ -19,8 +19,8 @@ class SpaceElevatorAppFactory(BaseCloudFormationFactory):
         """
         app_name = app.full_name
         updates = {}
-        for region in app.regions:
-            template, secret_params = self._app_template.app(app, region)
+        for region, app_region in app.regions.items():
+            template, secret_params = self._app_template.app(app_region)
             updates[region] = self._stack(app_name, region, template,
                                           secret_parameters=secret_params)
         return self._wait_for_updates(app_name, updates)

@@ -63,12 +63,7 @@ class SpaceAppJsonModelFactory(BaseJsonModelFactory):
             for file_name, file_params in region_files.items():
                 if file_params is None or file_params == {}:
                     continue
-
-                if isinstance(file_params, six.string_types):
-                    encoded_body = base64_encode(file_params.encode('utf-8'))
-                    app_region.files[file_name] = {'body': encoded_body}
-                else:
-                    app_region.files[file_name] = file_params
+                app_region.files[file_name] = file_params
 
     @staticmethod
     def _spot(app, params):

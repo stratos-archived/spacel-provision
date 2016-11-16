@@ -1,26 +1,23 @@
 from spacel.provision.app.db.cache import REDIS_PORT, REDIS_VERSION
+from spacel.provision.app.db.rds import POSTGRES_PORT, POSTGRES_VERSION
 from test_integ import BaseIntegrationTest
 
 
 class TestDeployPersistence(BaseIntegrationTest):
     def test_01_disk(self):
         """Deploy a service with persistent EBS volume, verify."""
-        # 1 EBS volume, which can only by used by 1 instance at a time:
-        self.app_params['instance_max'] = 1
-        self.app_params['volumes'] = {
-            'data0': {
+        for app_region in self.app.regions.values():
+            # 1 EBS volume, which can only by used by 1 instance at a time:
+            app_region.instance_max = 1
+            app_region.volumes['data0'] = {
                 'count': 1,
                 'size': 1
             }
-        }
-        # Mounted by docker service:
-        self.app_params['services']['laika']['volumes'] = {
-            '/mnt/data0': '/mnt/data'
-        }
-        # Configured by application:
-        self.app_params['services']['laika']['environment'] = {
-            'DISK_PATH': '/mnt/data/file.txt'
-        }
+
+            # Mounted by docker service:, configured by application:
+            laika_service = app_region.services['laika']
+            laika_service.volumes['/mnt/data0'] = '/mnt/data'
+            laika_service.environment['DISK_PATH'] = '/mnt/data/file.txt'
 
         self.provision()
 
@@ -34,9 +31,8 @@ class TestDeployPersistence(BaseIntegrationTest):
 
     def test_02_cache(self):
         """Deploy a service with ElastiCache, verify."""
-        self.app_params['caches'] = {
-            'redis': {}
-        }
+        for app_region in self.app.regions.values():
+            app_region.caches['redis'] = {}
         self.provision()
 
         # Info path:
@@ -49,10 +45,16 @@ class TestDeployPersistence(BaseIntegrationTest):
 
     def test_03_rds(self):
         """Deploy a service with RDS, verify."""
-        self.app_params['databases'] = {
-            'postgres': {}
-        }
+        for app_region in self.app.regions.values():
+            app_region.databases['postgres'] = {}
         self.provision()
+
+        # Info path:
+        r = self._get('postgres/info')
+        postgres_info = r.json()
+        self.assertEquals(str(POSTGRES_PORT), postgres_info['port'])
+        self.assertEquals(POSTGRES_VERSION, postgres_info['server_version'])
+
         self._verify_counter('postgres', post_count=10)
 
     def _verify_counter(self, counter_type, expected_count=0, post_count=10):

@@ -10,12 +10,19 @@ class SpaceService(object):
 
 class SpaceDockerService(SpaceService):
     def __init__(self, name, image, ports=None, volumes=None, environment=None):
-        name_base = os.path.splitext(name)[0]
-        docker_run_flags = '--env-file /files/%s.env' % name_base
-        docker_run_flags += SpaceDockerService._dict_flags('p', ports)
-        docker_run_flags += SpaceDockerService._dict_flags('v', volumes)
+        super(SpaceDockerService, self).__init__(name, None, environment)
+        self.image = image
+        self.ports = ports or {}
+        self.volumes = volumes or {}
 
-        unit_file = """[Unit]
+    @property
+    def unit_file(self):
+        name_base = os.path.splitext(self.name)[0]
+        docker_run_flags = '--env-file /files/%s.env' % name_base
+        docker_run_flags += self._dict_flags('p', self.ports)
+        docker_run_flags += self._dict_flags('v', self.volumes)
+
+        return """[Unit]
 Description={0}
 Wants=spacel-agent.service
 
@@ -28,8 +35,11 @@ ExecStartPre=-/usr/bin/docker pull {1}
 ExecStartPre=-/usr/bin/docker rm -f %n
 ExecStart=/usr/bin/docker run --rm --name %n {2} {1}
 ExecStop=/usr/bin/docker stop -t 2 %n
-""".format(name, image, docker_run_flags)
-        super(SpaceDockerService, self).__init__(name, unit_file, environment)
+""".format(self.name, self.image, docker_run_flags)
+
+    @unit_file.setter
+    def unit_file(self, value):
+        pass
 
     @staticmethod
     def _dict_flags(flag, items):

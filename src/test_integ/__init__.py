@@ -5,7 +5,8 @@ import requests
 
 from spacel.aws import ClientCache
 from spacel.main import provision
-from spacel.model import Orbit, SpaceApp
+from spacel.model import (Orbit, SpaceApp, SpaceDockerService, SpaceServicePort,
+                          SpaceService)
 from spacel.user import SpaceSshDb
 
 FORENSICS_USERS = {
@@ -27,8 +28,8 @@ ORBIT_DOMAIN = 'pebbledev.com'
 
 class BaseIntegrationTest(unittest.TestCase):
     APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, ORBIT_DOMAIN)
-    APP_VERSION = '0.1.1'
-    UPGRADE_VERSION = '0.0.2'
+    APP_VERSION = '0.2.0'
+    UPGRADE_VERSION = '0.1.1'
     APP_URL = 'https://%s' % APP_HOSTNAME
 
     @classmethod
@@ -50,48 +51,27 @@ class BaseIntegrationTest(unittest.TestCase):
         )
         self.app = SpaceApp(
             self.orbit,
-            name=APP_NAME
+            name=APP_NAME,
+            health_check='HTTP:80/'
         )
 
-        # self.orbit_params = {
-        #     NAME: ORBIT_NAME,
-        #     DOMAIN: BaseIntegrationTest.APP_DOMAIN,
-        #     REGIONS: ORBIT_REGIONS,
-        #     'defaults': {
-        #         BASTION_INSTANCE_COUNT: 0
-        #     }
-        # }
+        self.docker_service = SpaceDockerService('laika.service', None,
+                                                 ports={80: 8080})
+        http_port = SpaceServicePort(80)
+        https_port = SpaceServicePort(443, internal_port=80)
+        for app_region in self.app.regions.values():
+            app_region.services['laika'] = self.docker_service
+            app_region.public_ports[80] = http_port
+            app_region.public_ports[443] = https_port
 
-        # self.app_params = {
-        #     'name': APP_NAME,
-        #     'health_check': 'HTTP:80/',
-        #     'instance_type': 't2.nano',
-        #     'instance_min': 1,
-        #     'instance_max': 2,
-        #     'services': {
-        #         'laika': {
-        #             'ports': {
-        #                 '80': 8080
-        #             }
-        #         }
-        #     },
-        #     'public_ports': {
-        #         '80': {
-        #             'sources': ['0.0.0.0/0']
-        #         },
-        #         '443': {
-        #             'sources': ['0.0.0.0/0'],
-        #             'internal_port': 80
-        #         }
-        #     }
-        # }
-        # self.image()
+        self.image()
         self.clients = ClientCache()
         self.ssh_db = SpaceSshDb(self.clients)
 
     def image(self, version=APP_VERSION):
         docker_tag = 'pebbletech/spacel-laika:%s' % version
-        self.app_params['services']['laika']['image'] = docker_tag
+        for app_region in self.app.regions.values():
+            app_region.services['laika'].image = docker_tag
 
     def provision(self, expected=0):
         result = provision(self.app)
@@ -111,5 +91,6 @@ class BaseIntegrationTest(unittest.TestCase):
         return requests.post(full_url)
 
     def _set_unit_file(self, unit_file):
-        del self.app_params['services']['laika']['image']
-        self.app_params['services']['laika']['unit_file'] = unit_file
+        for app_region in self.app.regions.values():
+            app_region.services['laika'] = SpaceService('laika.service',
+                                                        unit_file)

@@ -1,6 +1,7 @@
 import json
 import uuid
 
+from spacel.provision import base64_encode
 from test_integ import BaseIntegrationTest
 
 ENCRYPTED_ENV = {
@@ -16,10 +17,15 @@ ENCRYPTED_ENV = {
 
 
 class TestDeploy(BaseIntegrationTest):
+    """
+    Various systemd configurations in a simple VPC.
+    Mostly verifying spacel-agent.
+    """
+
     def test_01_deploy_simple_http(self):
         """Deploy a HTTP/S service, verify it's running."""
         self.provision()
-        # self._verify_deploy()
+        self._verify_deploy()
 
     def test_02_upgrade(self):
         """Deploy a HTTPS service, upgrade and verify."""
@@ -32,9 +38,10 @@ class TestDeploy(BaseIntegrationTest):
     def test_03_environment(self):
         """Deploy a service with custom environment variable, verify."""
         random_message = str(uuid.uuid4())
-        self.app_params['services']['laika']['environment'] = {
-            'MESSAGE': random_message
-        }
+        for app_region in self.app.regions.values():
+            app_region.services['laika'].environment = {
+                'MESSAGE': random_message
+            }
         self.provision()
         self._verify_message(message=random_message)
 
@@ -61,15 +68,16 @@ ExecStop=/usr/bin/docker stop %n
 
     def test_05_encrypted_file(self):
         """Encrypted file is decrypted."""
-        self.app_params['files'] = {'laika.env': ENCRYPTED_ENV}
+        for app_region in self.app.regions.values():
+            app_region.files['laika.env'] = ENCRYPTED_ENV
         self.provision()
         self._verify_message('top secret')
 
     def test_06_encrypted_entry(self):
         """Encrypted file is decrypted."""
-        self.app_params['files'] = {
-            'laika.env': 'MESSAGE=%s' % json.dumps(ENCRYPTED_ENV)
-        }
+        env_file = 'MESSAGE=%s' % json.dumps(ENCRYPTED_ENV)
+        for app_region in self.app.regions.values():
+            app_region.files['laika.env'] = env_file
         self.provision()
         self._verify_message('top secret')
 

@@ -42,7 +42,7 @@ class TestSpaceElevatorOrbitFactory(BaseSpaceAppTest):
         self.orbit_factory._azs = MagicMock()
         self.orbit_factory._orbit_stack = MagicMock()
 
-        self.orbit_factory.get_orbit(self.orbit, self.orbit.regions)
+        self.orbit_factory.orbit(self.orbit, self.orbit.regions)
 
         self.orbit_factory._azs.assert_called_once()
         self.assertEquals(3, self.orbit_factory._orbit_stack.call_count)

@@ -272,7 +272,13 @@ class AppTemplate(BaseTemplateCache):
                         'body': base64_encode(environment_file.encode('utf-8'))
                     }
 
-        files.update(app_region.files)
+        if app_region.files:
+            for file_name, file_params in app_region.files.items():
+                if isinstance(file_params, six.string_types):
+                    encoded_body = base64_encode(file_params.encode('utf-8'))
+                    files[file_name] = {'body': encoded_body}
+                else:
+                    files[file_name] = file_params
 
         user_data = ''
         if systemd:

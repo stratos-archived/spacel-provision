@@ -78,8 +78,8 @@ def provision(app):
     orbit_factory.orbit(app.orbit)
     provisioner = SpaceElevatorAppFactory(clients, change_sets, template_up,
                                           app_template)
-    # if not provisioner.app(app):
-    #     return 1
+    if not provisioner.app(app):
+        return 1
     return 0
 
 

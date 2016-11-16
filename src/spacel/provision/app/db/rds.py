@@ -7,14 +7,17 @@ from spacel.provision.app.db.base import BaseTemplateDecorator
 
 logger = logging.getLogger('spacel.provision.rds.factory')
 
+POSTGRES_PORT = 5432
+POSTGRES_VERSION = '9.5.2'
+
 DEFAULT_VERSIONS = {
     'mysql': '5.7.10',
-    'postgres': '9.5.2'
+    'postgres': POSTGRES_VERSION
 }
 
 DEFAULT_PORTS = {
     'mysql': 3306,
-    'postgres': 5432
+    'postgres': POSTGRES_PORT
 }
 
 

@@ -1,0 +1,32 @@
+{
+  "name": "laika",
+  "all": {
+    "health_check": "HTTP:80/",
+    "instance_type": "t2.nano",
+    "instance_min": 1,
+    "instance_max": 1,
+    "services": {
+      "laika": {
+        "image": "pebbletech/laika:latest",
+        "ports": {
+          "80": 8080
+        }
+      }
+    },
+    "public_ports": {
+      "80": {
+        "sources": ["0.0.0.0/0"]
+      }
+    },
+    "databases": {
+      "postgres": {
+        "encrypted": false,
+        "public": true,
+        "global": "us-east-1",
+        "clients": [
+          "0.0.0.0/0"
+        ]
+      }
+    }
+  }
+}

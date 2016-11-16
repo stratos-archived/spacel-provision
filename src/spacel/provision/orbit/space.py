@@ -19,7 +19,7 @@ class SpaceElevatorOrbitFactory(BaseCloudFormationFactory):
         self._bastion = bastion
         self._tables = tables
 
-    def get_orbit(self, orbit, regions=None):
+    def orbit(self, orbit, regions=None):
         regions = regions or orbit.regions.keys()
         self._azs(orbit, regions)
         self._orbit_stack(orbit, regions, 'vpc')

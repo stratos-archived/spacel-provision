@@ -1,3 +1,5 @@
+import json
+
 from spacel.model.json.app import SpaceAppJsonModelFactory
 from spacel.model.json.base import NAME, REGIONS, ALL
 from test import BaseSpaceAppTest, ORBIT_REGION, APP_NAME
@@ -87,7 +89,7 @@ class TestSpaceAppJsonModelFactory(BaseSpaceAppTest):
         app_region = self._files('meow')
 
         self.assertEquals(1, len(app_region.files))
-        self.assertEquals({'body': 'bWVvdw=='}, app_region.files[FILE_NAME])
+        self.assertEquals('meow', app_region.files[FILE_NAME])
 
     def test_files_raw_encoded(self):
         encoded_body = {'body': 'bWVvdw=='}
@@ -180,3 +182,78 @@ class TestSpaceAppJsonModelFactory(BaseSpaceAppTest):
         app_region = app.regions[ORBIT_REGION]
 
         self.assertEqual(False, app_region.load_balancer)
+
+    def test_sample_elasticsearch(self):
+        app = self._load_sample('elasticsearch.json')
+
+        self.assertEquals('elasticsearch', app.name)
+        self.assertEquals(1, len(app.regions))
+        for app_region in app.regions.values():
+            self.assertEquals('HTTP:9200/', app_region.health_check)
+
+            self.assertEquals(1, len(app_region.services))
+            es_service = app_region.services['elasticsearch.service']
+            self.assertEquals('pwagner/elasticsearch-aws', es_service.image)
+            self.assertEquals({'9200': 9200, '9300': 9300}, es_service.ports)
+
+            self.assertEquals(1, len(app_region.volumes))
+            self.assertEquals(1, len(app_region.public_ports))
+            self.assertEquals(1, len(app_region.private_ports))
+
+    def test_sample_alarms(self):
+        app = self._load_sample('laika-alarms.json')
+        self.assertLaika(app)
+        for app_region in app.regions.values():
+            self.assertEquals(3, len(app_region.alarms['endpoints']))
+            self.assertEquals(4, len(app_region.alarms['triggers']))
+
+    def test_sample_laika(self):
+        app = self._load_sample('laika.json')
+        self.assertLaika(app)
+
+    def test_sample_postgres(self):
+        app = self._load_sample('laika-postgres.json')
+
+        self.assertLaika(app)
+        for app_region in app.regions.values():
+            self.assertEquals(1, len(app_region.databases))
+            postgres = app_region.databases['postgres']
+            self.assertEquals({
+                'encrypted': False,
+                'public': True,
+                'global': 'us-east-1',
+                'clients': ['0.0.0.0/0']
+            }, postgres)
+
+    def test_sample_redis(self):
+        app = self._load_sample('laika-redis.json')
+
+        self.assertLaika(app)
+        for app_region in app.regions.values():
+            self.assertEquals(1, len(app_region.caches))
+            cache = app_region.caches['redis']
+            self.assertEquals({}, cache)
+
+    def test_sample_systemd(self):
+        app = self._load_sample('laika-systemd.json')
+        self.assertLaika(app, docker=False)
+
+    def assertLaika(self, app, docker=True):
+        self.assertEquals('laika', app.name)
+        self.assertEquals(1, len(app.regions))
+        for app_region in app.regions.values():
+            self.assertEquals('HTTP:80/', app_region.health_check)
+
+            self.assertEquals(1, len(app_region.services))
+            laika_service = app_region.services['laika.service']
+            if docker:
+                self.assertEquals('pebbletech/laika:latest',
+                                  laika_service.image)
+                self.assertEquals({'80': 8080}, laika_service.ports)
+            else:
+                self.assertFalse(hasattr(laika_service, 'image'))
+
+    def _load_sample(self, sample_name):
+        with open('../sample/app/%s' % sample_name) as sample_in:
+            sample_json = json.load(sample_in)
+            return self.factory.app(self.orbit, sample_json)

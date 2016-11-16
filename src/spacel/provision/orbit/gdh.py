@@ -12,7 +12,7 @@ class GitDeployHooksOrbitFactory(BaseCloudFormationFactory):
     Queries existing orbital VPCs built by git-deploy.
     """
 
-    def get_orbit(self, orbit, regions=None):
+    def orbit(self, orbit, regions=None):
         regions = regions or orbit.regions
         for region in regions:
             orbit_region = orbit.regions[region]

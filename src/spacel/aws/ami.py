@@ -25,7 +25,7 @@ class AmiFinder(object):
         if not self.cache_bust:
             manifest = self._cache.get(url)
             if manifest:
-                return manifest
+                return manifest.get(region)
             logger.debug('AMI manifest %s not cached, fetching...', url)
         else:
             url += '?cache=%s' % time.time()

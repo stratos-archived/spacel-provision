@@ -45,7 +45,7 @@ class TestGitDeployHooksOrbitFactory(BaseSpaceAppTest):
             }]
         }
 
-        self.orbit_factory.get_orbit(self.orbit)
+        self.orbit_factory.orbit(self.orbit)
 
         self.cloudformation.describe_stack_resource.assert_called_once()
         self.orbit_factory._orbit_from_child.assert_called_once()
@@ -55,14 +55,14 @@ class TestGitDeployHooksOrbitFactory(BaseSpaceAppTest):
         self._describe_stack_resource_error('Stack does not exist')
         self.orbit_factory._orbit_from_child = MagicMock()
 
-        self.orbit_factory.get_orbit(self.orbit)
+        self.orbit_factory.orbit(self.orbit)
 
         self.orbit_factory._orbit_from_child.assert_not_called()
 
     def test_get_orbit_error(self):
         self._describe_stack_resource_error('kaboom')
 
-        self.assertRaises(ClientError, self.orbit_factory.get_orbit, self.orbit)
+        self.assertRaises(ClientError, self.orbit_factory.orbit, self.orbit)
 
     def _describe_stack_resource_error(self, message):
         self.cloudformation.describe_stack_resource.side_effect = ClientError({

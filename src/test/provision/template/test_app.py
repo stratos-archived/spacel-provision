@@ -214,6 +214,18 @@ class TestAppTemplate(BaseTemplateTest):
         self.assertIn('"test"', user_data)
         self.assertEquals(params['VolumeSupport']['Default'], 'true')
 
+    def test_user_data_files_plaintext(self):
+        params = {}
+        self.app_region.files['test.txt'] = 'meow'
+        user_data = self.cache._user_data(params, self.app_region)
+        self.assertNotIn('meow', user_data)
+
+    def test_user_data_files_encoded(self):
+        params = {}
+        self.app_region.files['test.txt'] = {'body': 'meow=='}
+        user_data = self.cache._user_data(params, self.app_region)
+        self.assertIn('meow==', user_data)
+
     def test_add_kms_iam_policy_noop(self):
         resources = {}
         self.cache._add_kms_iam_policy(self.app_region, resources)
