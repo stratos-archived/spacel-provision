@@ -126,7 +126,8 @@ class AppTemplate(BaseTemplateCache):
                                 'Effect': 'Allow',
                                 'Action': [
                                     'ec2:AssociateAddress',
-                                    'ec2:DescribeAddresses'
+                                    'ec2:DescribeAddresses',
+                                    'ec2:DescribeInstances'
                                 ],
                                 'Resource': '*'
                             }
