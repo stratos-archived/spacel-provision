@@ -11,7 +11,7 @@ class TestOrbit(unittest.TestCase):
     def test_constructor_invalid_region(self):
         """Invalid region is ignored."""
         orbit = Orbit(ORBIT_NAME, [ORBIT_REGION, 'meow'])
-        self.assertEquals({ORBIT_REGION}, orbit.regions.keys())
+        self.assertEquals({ORBIT_REGION}, set(orbit.regions.keys()))
 
     def test_valid(self):
         self.assertTrue(self.orbit.valid)

@@ -9,11 +9,11 @@ SERVICE_NAME_NO_EXT = 'elasticsearch'
 class TestSpaceApp(BaseSpaceAppTest):
     def test_default_regions(self):
         """When no regions are specified, use orbit regions."""
-        self.assertEqual({ORBIT_REGION}, self.app.regions.keys())
+        self.assertEqual({ORBIT_REGION}, set(self.app.regions.keys()))
 
     def test_custom_regions(self):
         self.app = SpaceApp(self.orbit, APP_NAME, [ORBIT_REGION, 'meow'])
-        self.assertEqual({ORBIT_REGION}, self.app.regions.keys())
+        self.assertEqual({ORBIT_REGION}, set(self.app.regions.keys()))
 
     def test_valid(self):
         self.assertTrue(self.app.valid)

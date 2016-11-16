@@ -27,14 +27,14 @@ class TestSpaceAppJsonModelFactory(BaseSpaceAppTest):
         """When app doesn't specify regions, all orbit regions."""
         del self.params[REGIONS]
         app = self.factory.app(self.orbit, self.params)
-        self.assertEquals({ORBIT_REGION}, app.regions.keys())
+        self.assertEquals({ORBIT_REGION}, set(app.regions.keys()))
         self.assertTrue(app.valid)
 
     def test_app_region_not_in_orbit(self):
         """Valid region that isn't part of orbit is dropped."""
         self.params[REGIONS] += ['eu-west-1']
         app = self.factory.app(self.orbit, self.params)
-        self.assertEquals({ORBIT_REGION}, app.regions.keys())
+        self.assertEquals({ORBIT_REGION}, set(app.regions.keys()))
         self.assertTrue(app.valid)
 
     def test_app_services_docker(self):

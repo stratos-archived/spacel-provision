@@ -9,6 +9,7 @@ COPY install.sh /app/install.sh
 RUN /app/install.sh
 
 COPY src/ /app
+COPY sample/ /sample
 WORKDIR /app
 
 VOLUME '/build'
