@@ -1,5 +1,5 @@
 import unittest
-from spacel.aws.instance_types import INSTANCE_VOLUMES
+from spacel.model.aws import INSTANCE_VOLUMES
 
 # AWS < Heinz
 INSTANCE_TYPE_COUNT = 54

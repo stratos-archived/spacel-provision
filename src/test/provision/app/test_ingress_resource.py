@@ -42,7 +42,7 @@ class TestIngressResourceFactory(BaseSpaceAppTest):
     def test_ingress_resources_other_region(self):
         self.ingress._app_eips = MagicMock(return_value=['1.1.1.1', '2.2.2.2'])
         resources = self._http_ingress(OTHER_REGION)
-        # 1 per Nat EIP:
+        # 1 per App EIP:
         self.assertEquals(2, len(resources))
         for resource in resources.values():
             self.assertIn('CidrIp', resource['Properties'])

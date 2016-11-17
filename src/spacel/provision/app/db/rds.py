@@ -9,14 +9,16 @@ logger = logging.getLogger('spacel.provision.rds.factory')
 
 POSTGRES_PORT = 5432
 POSTGRES_VERSION = '9.5.2'
+MYSQL_PORT = 3306
+MYSQL_VERSION = '5.7.10'
 
 DEFAULT_VERSIONS = {
-    'mysql': '5.7.10',
+    'mysql': MYSQL_VERSION,
     'postgres': POSTGRES_VERSION
 }
 
 DEFAULT_PORTS = {
-    'mysql': 3306,
+    'mysql': MYSQL_PORT,
     'postgres': POSTGRES_PORT
 }
 

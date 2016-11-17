@@ -3,7 +3,7 @@ import logging
 
 import six
 
-from spacel.aws import INSTANCE_VOLUMES
+from spacel.model.aws import INSTANCE_VOLUMES
 from spacel.provision import base64_encode
 from spacel.provision.template.base import BaseTemplateCache
 

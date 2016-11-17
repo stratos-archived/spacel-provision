@@ -24,18 +24,18 @@ class TestBaseJsonModelFactory(BaseSpaceAppTest):
         self.assertNetwork()
 
     def test_set_property_bool_true(self):
-        self.factory._set_properties(self.orbit, {
-            ALL: {'private_nat_gateway': 'yes'}
+        self.factory._set_properties(self.app, {
+            ALL: {'elastic_ips': 'yes'}
         })
-        self.assertTrue(self.orbit_region.private_nat_gateway)
-        self.assertIsInstance(self.orbit_region.private_nat_gateway, bool)
+        self.assertTrue(self.app_region.elastic_ips)
+        self.assertIsInstance(self.app_region.elastic_ips, bool)
 
     def test_set_property_bool_false(self):
-        self.factory._set_properties(self.orbit, {
-            ALL: {'private_nat_gateway': 'no'}
+        self.factory._set_properties(self.app, {
+            ALL: {'elastic_ips': 'no'}
         })
-        self.assertFalse(self.orbit_region.private_nat_gateway)
-        self.assertIsInstance(self.orbit_region.private_nat_gateway, bool)
+        self.assertFalse(self.app_region.elastic_ips)
+        self.assertIsInstance(self.app_region.elastic_ips, bool)
 
     def test_set_property_int(self):
         self.factory._set_properties(self.orbit, {
