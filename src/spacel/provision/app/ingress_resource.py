@@ -70,14 +70,24 @@ class IngressResourceFactory(object):
             if client in orbit.regions:
                 logger.debug('Adding access from %s in %s.', orbit.name, client)
                 orbit_region = orbit.regions[client]
-                for az, orbit_az in orbit_region.azs.items():
-                    if orbit_az.nat_eip:
-                        ingress_resource('Nat%s%s' % (client, az),
-                                         CidrIp='%s/32' % orbit_az.nat_eip)
+
+                eips = self._app_eips(orbit_region, client)
+                if eips:
+                    for eip_index, eip in enumerate(eips):
+                        eip_index += 1
+                        if eip:
+                            ingress_resource('ElasticIp%s%s' % (client,
+                                                                eip_index),
+                                             CidrIp='%s/32' % eip)
+                else:
+                    for az, orbit_az in orbit_region.azs.items():
+                        if orbit_az.nat_eip:
+                            ingress_resource('Nat%s%s' % (client, az),
+                                             CidrIp='%s/32' % orbit_az.nat_eip)
                 continue
 
             # An application in the same orbit:
-            sg_id = self.app_sg(orbit, region, client)
+            sg_id = self._app_sg(orbit, region, client)
             if sg_id:
                 ingress_resource('App%s' % client, SourceSecurityGroupId=sg_id)
                 continue
@@ -86,7 +96,7 @@ class IngressResourceFactory(object):
 
         return ingress_resources
 
-    def app_sg(self, orbit, region, app, sg_ref='Sg'):
+    def _app_sg(self, orbit, region, app, sg_ref='Sg'):
         cloudformation = self._clients.cloudformation(region)
         stack_name = '%s-%s' % (orbit.name, app)
         try:
@@ -101,4 +111,22 @@ class IngressResourceFactory(object):
                 logger.debug('App %s not found in %s in %s.', app,
                              orbit.name, region)
                 return None
+            raise e
+
+    def _app_eips(self, orbit_region, app):
+        eips = []
+        cloudformation = self._clients.cloudformation(orbit_region.region)
+        stack_name = '%s-%s' % (orbit_region.orbit.name, app)
+        try:
+            p = cloudformation.get_paginator('list_stack_resources')
+            for page in p.paginate(StackName=stack_name):
+                for s in page['StackResourceSummaries']:
+                    r = s['LogicalResourceId']
+                    if r.startswith('ElasticIp') and not r.endswith('Policy'):
+                        eips.append(s['PhysicalResourceId'])
+            return eips
+        except ClientError as e:
+            e_message = e.response['Error'].get('Message', '')
+            if 'does not exist' in e_message:
+                return eips
             raise e

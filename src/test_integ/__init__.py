@@ -81,8 +81,10 @@ class BaseIntegrationTest(unittest.TestCase):
             self.ssh_db.grant(self.app, user)
 
     @staticmethod
-    def _get(url):
+    def _get(url, https=True):
         full_url = '%s/%s' % (BaseIntegrationTest.APP_URL, url)
+        if not https:
+            full_url = full_url.replace('https://', 'http://')
         return requests.get(full_url)
 
     @staticmethod

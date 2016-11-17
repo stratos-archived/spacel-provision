@@ -31,6 +31,7 @@ class AppTemplate(BaseTemplateCache):
         orbit = app.orbit
         params = app_template['Parameters']
         resources = app_template['Resources']
+        outputs = app_template['Outputs']
 
         # Link to VPC:
         params['VpcId']['Default'] = orbit_region.vpc_id
@@ -91,6 +92,55 @@ class AppTemplate(BaseTemplateCache):
             self._elb_subnets(resources, 'PublicElb', public_elb_subnets)
             self._elb_subnets(resources, 'PrivateElb', private_elb_subnets)
 
+        if app_region.elastic_ips and app_region.instance_max > 0:
+            eip_pos = (resources['Lc']
+                       ['Properties']
+                       ['UserData']
+                       ['Fn::Base64']
+                       ['Fn::Join'][1])
+            eip_pos.insert(1, '"eips":[')
+            for instance_index in range(1, app_region.instance_max + 1):
+                eip_name = 'ElasticIp%02d' % instance_index
+                # Add resource, output:
+                resources[eip_name] = {
+                    'Type': 'AWS::EC2::EIP',
+                    'Properties': {
+                        'Domain': 'vpc'
+                    }
+                }
+                outputs[eip_name] = {'Value': {'Ref': eip_name}}
+
+                # Append to `eips` list in UserData (reverse!)
+                if instance_index == 1:
+                    eip_pos.insert(2, '],')
+                else:
+                    eip_pos.insert(2, ',')
+                eip_pos.insert(2, '"')
+                eip_pos.insert(2, {'Fn::GetAtt': [eip_name, 'AllocationId']})
+                eip_pos.insert(2, '"')
+
+            resources['ElasticIpPolicy'] = {
+                'DependsOn': 'Role',
+                'Type': 'AWS::IAM::Policy',
+                'Properties': {
+                    'PolicyName': 'AssociateElasticIpAddress',
+                    'Roles': [{'Ref': 'Role'}],
+                    'PolicyDocument': {
+                        'Statement': [
+                            {
+                                'Effect': 'Allow',
+                                'Action': [
+                                    'ec2:AssociateAddress',
+                                    'ec2:DescribeAddresses',
+                                    'ec2:DescribeInstances'
+                                ],
+                                'Resource': '*'
+                            }
+                        ]
+                    }
+                }
+            }
+
         # Expand ASG to all AZs:
         public_instance_subnets = orbit_region.public_instance_subnets
         self._subnet_params(params, 'PublicInstance',
@@ -98,8 +148,8 @@ class AppTemplate(BaseTemplateCache):
         private_instance_subnets = orbit_region.private_instance_subnets
         self._subnet_params(params, 'PrivateInstance',
                             private_instance_subnets)
-        if app_region.instance_availability == 'internet-facing' or \
-                        app_region.instance_availability == 'multi-region':
+        if (app_region.instance_availability == 'internet-facing' or
+                    app_region.instance_availability == 'multi-region'):
             self._asg_subnets(resources, 'PublicInstance',
                               public_instance_subnets)
             resources['Asg']['Properties']['VPCZoneIdentifier'][0] = {
@@ -227,11 +277,27 @@ class AppTemplate(BaseTemplateCache):
             }
             del params['PrivateElbSubnet01'], params['PublicElbSubnet01']
             del (resources['PublicElb'], resources['PrivateElb'],
-                 resources['ElbSg'], resources['DnsRecord'],
+                 resources['ElbSg'],
                  resources['ElbHealthPolicy'],
                  resources['Asg']['Properties']['LoadBalancerNames'])
             resources['Asg']['Properties']['HealthCheckType'] = 'EC2'
             params['ElbScheme']['Default'] = 'disabled'
+
+            # Resolve the DNS record
+            dns_record_set = (resources['DnsRecord']['Properties']
+                              ['RecordSets'][0])
+            if app_region.elastic_ips and app_region.instance_max > 0:
+                del dns_record_set['AliasTarget']
+                dns_record_set['TTL'] = 60
+                eips = []
+                for eip_index, _ in enumerate(range(app_region.instance_max)):
+                    eip_index += 1
+                    eips.append({'Ref': 'ElasticIp%02d' % eip_index})
+                if eips:
+                    dns_record_set['ResourceRecords'] = eips
+            else:
+                # No ELB and no static IPs, give up
+                del resources['DnsRecord']
 
         self._add_kms_iam_policy(app_region, resources)
         self._alarm_factory.add_alarms(app_template, app_region.alarms)

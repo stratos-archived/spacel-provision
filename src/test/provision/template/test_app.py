@@ -105,6 +105,39 @@ class TestAppTemplate(BaseTemplateTest):
         self.assertEqual('EC2', app['Resources']['Asg']['Properties']
         ['HealthCheckType'])
 
+    def test_app_no_loadbalancer_elastic_ips(self):
+        self.app_region.elb_availability = 'disabled'
+        self.app_region.elastic_ips = True
+        self.app_region.max_instances = 2
+
+        app, _ = self.cache.app(self.app_region)
+
+        self.assertIn('DnsRecord', app['Resources'])
+        self.assertIn(
+            'ElasticIp01',
+            app['Resources']['DnsRecord']['Properties']['RecordSets'][0]
+               ['ResourceRecords'][0]['Ref'])
+
+    def test_app_no_loadbalancer_no_elastic_ips(self):
+        self.app_region.elb_availability = 'disabled'
+        self.app_region.elastic_ips = False
+
+        app, _ = self.cache.app(self.app_region)
+
+        self.assertNotIn('DnsRecord', app['Resources'])
+
+    def test_app_elastic_ips(self):
+        self.app_region.elastic_ips = True
+        self.app_region.max_instances = 2
+
+        app, _ = self.cache.app(self.app_region)
+
+        self.assertIn('ElasticIp01', app['Resources'])
+        self.assertIn('ElasticIp02', app['Resources'])
+
+        self.assertIn('"eips":',
+                      str(app['Resources']['Lc']['Properties']['UserData']))
+
     def test_app_private_ports(self):
         self.app_region.private_ports = {123: ['TCP']}
 
