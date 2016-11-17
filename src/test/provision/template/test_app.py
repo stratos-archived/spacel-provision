@@ -80,7 +80,7 @@ class TestAppTemplate(BaseTemplateTest):
         self.assertEqual(True, public_addr)
 
     def test_app_availability_nat_gateway(self):
-        self.orbit_region.private_nat_gateway = False
+        self.orbit_region.nat = 'disabled'
         self.app_region.instance_availability = 'private'
 
         app, _ = self.cache.app(self.app_region)

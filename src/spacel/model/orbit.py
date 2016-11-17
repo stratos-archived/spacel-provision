@@ -1,8 +1,14 @@
 import logging
 
-from spacel.model.aws import VALID_REGIONS
+from spacel.model.aws import VALID_REGIONS, INSTANCE_TYPES
 
 logger = logging.getLogger('spacel.model.orbit')
+
+NAT_CONFIGURATIONS = {
+    'disabled',  # No NAT, don't even try
+    'enabled',  # Single NAT gateway for every AZ (default)
+    'per-az'  # NAT gateway per AZ (suggested for production)
+}
 
 
 class Orbit(object):
@@ -37,25 +43,25 @@ class OrbitRegion(object):
                  bastion_sources=('0.0.0.0/0',),
                  deploy_stack=None,
                  domain=None,
-                 nat_enabled=True,
-                 nat_per_az=False,
                  parent_stack=None,
-                 private_nat_gateway=True,
+                 nat='enabled',
                  private_network='192.168',
                  provider='spacel'):
         self.orbit = orbit
         self.region = region
+        self.provider = provider
+
+        # provider: spacel:
         self.bastion_instance_count = bastion_instance_count
         self.bastion_instance_type = bastion_instance_type
         self.bastion_sources = bastion_sources
-        self.deploy_stack = deploy_stack
         self.domain = domain
-        self.nat_enabled = nat_enabled
-        self.nat_per_az = nat_per_az
-        self.parent_stack = parent_stack
-        self.private_nat_gateway = private_nat_gateway
+        self.nat = nat
         self.private_network = private_network
-        self.provider = provider
+
+        # provider: GDH:
+        self.deploy_stack = deploy_stack
+        self.parent_stack = parent_stack
 
         # Queried from EC2:
         self._azs = {}
@@ -103,14 +109,51 @@ class OrbitRegion(object):
         return [self._azs[az_key].public_instance_subnet
                 for az_key in self.az_keys]
 
+    @property
+    def private_nat_gateway(self):
+        return self.nat != 'disabled'
+
+    @property
+    def nat_per_az(self):
+        return self.nat == 'per-az'
 
     @property
     def valid(self):
+        name = (self.orbit and self.orbit.name) or '(no name)'
+
+        valid = True
         if self.provider == 'spacel':
-            return True
+            valid = valid and self._valid_spacel(name)
         elif self.provider == 'gdh':
-            return True
-        return False
+            valid = valid and self._valid_gdh(name)
+        else:
+            logger.error('App "%s" has invalid "provider": %s', name,
+                         self.provider)
+            valid = False
+        return valid
+
+    def _valid_spacel(self, name):
+        valid = True
+        if self.bastion_instance_type not in INSTANCE_TYPES:
+            logger.error('App "%s" has invalid "bastion_instance_type": %s',
+                         name, self.provider)
+            valid = False
+
+        if self.nat not in NAT_CONFIGURATIONS:
+            logger.error('App "%s" has invalid "nat": %s',
+                         name, self.provider)
+            valid = False
+        return valid
+
+    def _valid_gdh(self, name):
+        valid = True
+        if not self.deploy_stack:
+            logger.error('App "%s" is missing "deploy_stack".', name)
+            valid = False
+        if not self.parent_stack:
+            logger.error('App "%s" is missing "parent_stack".', name)
+            valid = False
+        return valid
 
 
 class OrbitRegionAz(object):
