@@ -4,9 +4,6 @@ from spacel.model.aws import VALID_REGIONS
 
 logger = logging.getLogger('spacel.model.orbit')
 
-GDH_PARENT = 'parent_stack'
-GDH_DEPLOY = 'deploy_stack'
-
 
 class Orbit(object):
     def __init__(self, name=None, regions=(), **kwargs):
@@ -16,7 +13,6 @@ class Orbit(object):
             if region in VALID_REGIONS:
                 self.regions[region] = OrbitRegion(self, region, **kwargs)
                 continue
-
             logger.warn('Orbit "%s" has invalid region "%s". Valid regions: %s',
                         name, region, ', '.join(VALID_REGIONS))
 
@@ -44,6 +40,7 @@ class OrbitRegion(object):
                  nat_enabled=True,
                  nat_per_az=False,
                  parent_stack=None,
+                 private_nat_gateway='enabled',
                  private_network='192.168',
                  provider='spacel'):
         self.orbit = orbit
@@ -56,6 +53,7 @@ class OrbitRegion(object):
         self.nat_enabled = nat_enabled
         self.nat_per_az = nat_per_az
         self.parent_stack = parent_stack
+        self.private_nat_gateway = private_nat_gateway
         self.private_network = private_network
         self.provider = provider
 

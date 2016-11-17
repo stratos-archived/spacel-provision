@@ -16,6 +16,15 @@ class TestVpcTemplate(BaseTemplateTest):
         # No resources injected:
         self.assertEquals(self.base_resources, len(vpc['Resources']))
 
+    def test_vpc_no_private_nat_gateway(self):
+        self.orbit_region.private_nat_gateway = 'disabled'
+        vpc = self.cache.vpc(self.orbit_region)
+
+        # No nat gateway injected
+        vpc_resources = vpc['Resources']
+
+        self.assertNotIn('NatGateway01', vpc_resources)
+
     def test_vpc(self):
         self.vpc_regions('us-east-1a', 'us-east-1b')
         self.vpc_regions('us-east-1a', 'us-east-1b', 'us-east-1c')

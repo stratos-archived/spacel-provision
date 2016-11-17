@@ -42,7 +42,6 @@ class TestAppTemplate(BaseTemplateTest):
         resources = app['Resources']
 
         self.assertEquals(params['VirtualHostDomain']['Default'], 'test.com.')
-
         self.assertEquals(params['VirtualHost']['Default'], DOMAIN_NAME)
 
         block_devs = resources['Lc']['Properties']['BlockDeviceMappings']
@@ -80,9 +79,15 @@ class TestAppTemplate(BaseTemplateTest):
                        ['AssociatePublicIpAddress'])
         self.assertEqual(True, public_addr)
 
+    def test_app_availability_nat_gateway(self):
+        self.orbit_region.private_nat_gateway = 'disabled'
+        self.app_region.instance_availability = 'private'
+
+        app, _ = self.cache.app(self.app_region)
+        self.assertEqual(app, False)
+
     def test_app_no_load_balancer(self):
         self.app_region.elb_availability = 'disabled'
-
         app, _ = self.cache.app(self.app_region)
 
         self.assertEqual(False, app['Parameters']['PublicElb']['Default'])
