@@ -2,6 +2,19 @@ import logging
 
 logger = logging.getLogger('spacel.model.app')
 
+ON_PUBLIC_SUBNET = {
+    'multi-region',
+    'internet-facing'
+}
+
+INSTANCE_AVAILABILITY = ON_PUBLIC_SUBNET | {
+    'private',
+}
+
+ELB_AVAILABILITY = INSTANCE_AVAILABILITY | {
+    'disabled',
+}
+
 
 class SpaceApp(object):
     """
@@ -31,9 +44,21 @@ class SpaceApp(object):
 
     @property
     def valid(self):
-        if not self.name or not self.regions:
+        if not self.name:
+            logger.error('Application has no "name".')
             return False
-        return True
+
+        valid = True
+        if not self.regions:
+            logger.error('Application "%s" has no valid "regions".', self.name)
+            valid = False
+
+        for region, app_region in self.regions.items():
+            if not app_region.valid:
+                logger.error('Application "%s" has valid regions: "%s".',
+                             self.name, region)
+                valid = False
+        return valid
 
     @property
     def full_name(self):
@@ -78,7 +103,35 @@ class SpaceAppRegion(object):
 
     @property
     def load_balancer(self):
+        """Does app use load balancer?"""
         return self.elb_availability != 'disabled'
+
+    @property
+    def elb_public(self):
+        return self.elb_availability in ON_PUBLIC_SUBNET
+
+    @property
+    def instance_public(self):
+        return self.instance_availability in ON_PUBLIC_SUBNET
+
+    @property
+    def valid(self):
+        valid = True
+        if self.elb_availability not in ELB_AVAILABILITY:
+            self._invalid_value('elb_availability', self.elb_availability,
+                                ELB_AVAILABILITY)
+            valid = False
+        if self.instance_availability not in INSTANCE_AVAILABILITY:
+            self._invalid_value('instance_availability',
+                                self.instance_availability,
+                                INSTANCE_AVAILABILITY)
+            valid = False
+        return valid
+
+    def _invalid_value(self, key, value, values):
+        logger.error('Application "%s" has invalid "%s": "%s". Valid: %s',
+                     self.app.name, key, value,
+                     ', '.join('"%s"' % v for v in values))
 
 
 class SpaceServicePort(object):

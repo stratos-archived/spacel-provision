@@ -11,6 +11,15 @@ CUSTOM_KEYS = {
     'services'
 }
 
+TRUTH_VALUES = {
+    True,
+    '1',
+    'yes',
+    'enabled',
+    'true',
+    'please',  # en_CA support
+}
+
 
 class BaseJsonModelFactory(object):
     @staticmethod
@@ -27,4 +36,16 @@ class BaseJsonModelFactory(object):
                 if value is None:
                     value = defaults.get(region_key)
                 if value is not None:
+                    current_value = getattr(region_obj, region_key)
+                    if isinstance(current_value, bool):
+                        value = str(value).lower() in TRUTH_VALUES
+                    elif isinstance(current_value, int):
+                        try:
+                            value = int(value)
+                        except ValueError:
+                            logger.warning(
+                                'Invalid value for "%s": "%s". Expected int.',
+                                region_key, value)
+                            continue
+
                     setattr(region_obj, region_key, value)

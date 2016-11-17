@@ -148,8 +148,7 @@ class AppTemplate(BaseTemplateCache):
         private_instance_subnets = orbit_region.private_instance_subnets
         self._subnet_params(params, 'PrivateInstance',
                             private_instance_subnets)
-        if (app_region.instance_availability == 'internet-facing' or
-                    app_region.instance_availability == 'multi-region'):
+        if app_region.instance_public:
             self._asg_subnets(resources, 'PublicInstance',
                               public_instance_subnets)
             resources['Asg']['Properties']['VPCZoneIdentifier'][0] = {
@@ -158,8 +157,7 @@ class AppTemplate(BaseTemplateCache):
             # There is no other means of getting internet (out) otherwise!
             resources['Lc']['Properties']['AssociatePublicIpAddress'] = True
         else:
-            private_nat_gateway = orbit_region.private_nat_gateway == 'enabled'
-            if not private_nat_gateway:
+            if not orbit_region.private_nat_gateway:
                 logger.error('"private_nat_gateway" has been disabled in' +
                              ' orbit.json, availability "private" is not' +
                              ' possible while the nat gateway has been' +

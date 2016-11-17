@@ -1,4 +1,6 @@
-from spacel.model.app import SpaceApp, SpaceServicePort
+from mock import MagicMock
+
+from spacel.model.app import SpaceApp, SpaceAppRegion, SpaceServicePort
 from test import BaseSpaceAppTest, APP_NAME, ORBIT_REGION
 
 CONTAINER = 'pwagner/elasticsearch-aws'
@@ -23,11 +25,54 @@ class TestSpaceApp(BaseSpaceAppTest):
         self.assertFalse(self.app.valid)
 
     def test_valid_no_regions(self):
-        self.app.regions = ()
+        self.app.regions = {}
+        self.assertFalse(self.app.valid)
+
+    def test_valid_invalid_region(self):
+        invalid_region = MagicMock(spec=SpaceAppRegion)
+        invalid_region.valid = False
+        self.app.regions[ORBIT_REGION] = invalid_region
         self.assertFalse(self.app.valid)
 
     def test_full_name(self):
         self.assertEquals(self.app.full_name, 'test-orbit-test-app')
+
+
+class TestSpaceAppRegion(BaseSpaceAppTest):
+    def test_valid(self):
+        self.assertTrue(self.app_region.valid)
+
+    def test_valid_invalid_elb_availability(self):
+        self.app_region.elb_availability = 'meow'
+        self.assertFalse(self.app_region.valid)
+
+    def test_valid_invalid_instance_availability(self):
+        self.app_region.instance_availability = 'meow'
+        self.assertFalse(self.app_region.valid)
+
+    def test_load_balancer_true(self):
+        self.app_region.elb_availability = 'internet-facing'
+        self.assertTrue(self.app_region.load_balancer)
+
+    def test_load_balancer_false(self):
+        self.app_region.elb_availability = 'disabled'
+        self.assertFalse(self.app_region.load_balancer)
+
+    def test_elb_public_true(self):
+        self.app_region.elb_availability = 'internet-facing'
+        self.assertTrue(self.app_region.elb_public)
+
+    def test_elb_public_false(self):
+        self.app_region.elb_availability = 'disabled'
+        self.assertFalse(self.app_region.elb_public)
+
+    def test_instance_public_true(self):
+        self.app_region.instance_availability = 'internet-facing'
+        self.assertTrue(self.app_region.elb_public)
+
+    def test_instance_public_false(self):
+        self.app_region.instance_availability = 'disabled'
+        self.assertFalse(self.app_region.instance_public)
 
 
 class TestSpaceServicePort(BaseSpaceAppTest):

@@ -6,7 +6,6 @@ import six
 from spacel.model import (SpaceApp, SpaceDockerService, SpaceService,
                           SpaceServicePort)
 from spacel.model.json.base import BaseJsonModelFactory, NAME, REGIONS, ALL
-from spacel.provision import base64_encode
 
 logger = logging.getLogger('spacel.model.json.app')
 
@@ -91,8 +90,6 @@ class SpaceAppJsonModelFactory(BaseJsonModelFactory):
                                                                  **port_params)
 
             app_region.private_ports = merged_private_ports[app_region.region]
-
-        pass
 
     @staticmethod
     def _merged_map(regions, params, key, default=None):

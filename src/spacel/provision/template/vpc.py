@@ -28,8 +28,6 @@ class VpcTemplate(BaseTemplateCache):
         base_az = params['Az01']
         base_az['Default'] = azs[0]
 
-        private_nat_gateway = orbit_region.private_nat_gateway == 'enabled'
-
         base_nat_eip = resources['NatEip01']
         base_nat_gateway = resources['NatGateway01']
         base_default_route = resources['PrivateRouteTable01DefaultRoute']
@@ -73,7 +71,7 @@ class VpcTemplate(BaseTemplateCache):
             self._add_subnet(resources, outputs, az_index, az_param,
                              'PrivateRds', 180 + az_index, private_rt_resource)
 
-            if private_nat_gateway:
+            if orbit_region.private_nat_gateway:
                 # Each AZ _can_ have a NAT gateway:
                 nat_eip_clone = deepcopy(base_nat_eip)
                 nat_eip_clone['Condition'] = 'MultiAzNat'
@@ -112,7 +110,7 @@ class VpcTemplate(BaseTemplateCache):
         self._add_subnet_ids(resources, azs, 'PublicRds')
         self._add_subnet_ids(resources, azs, 'PrivateRds')
 
-        if not private_nat_gateway:
+        if not orbit_region.private_nat_gateway:
             private_route_table_default_route = (
                 resources['PrivateRouteTable01DefaultRoute']['Properties'])
             del (resources['NatGateway01'], resources['NatEip01'],

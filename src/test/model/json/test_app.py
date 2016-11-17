@@ -37,6 +37,18 @@ class TestSpaceAppJsonModelFactory(BaseSpaceAppTest):
         self.assertEquals({ORBIT_REGION}, set(app.regions.keys()))
         self.assertTrue(app.valid)
 
+    def test_app_elastic_ips(self):
+        self.params['all']['elastic_ips'] = 'true'
+        app = self.factory.app(self.orbit, self.params)
+        app_region = app.regions[ORBIT_REGION]
+        self.assertTrue(app_region.elastic_ips)
+
+    def test_app_elastic_ips_disabled(self):
+        self.params['all']['elastic_ips'] = 'false'
+        app = self.factory.app(self.orbit, self.params)
+        app_region = app.regions[ORBIT_REGION]
+        self.assertFalse(app_region.elastic_ips)
+
     def test_app_services_docker(self):
         app_region = self._services({
             'image': CONTAINER,

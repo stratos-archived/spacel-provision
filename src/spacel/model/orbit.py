@@ -40,7 +40,7 @@ class OrbitRegion(object):
                  nat_enabled=True,
                  nat_per_az=False,
                  parent_stack=None,
-                 private_nat_gateway='enabled',
+                 private_nat_gateway=True,
                  private_network='192.168',
                  provider='spacel'):
         self.orbit = orbit
