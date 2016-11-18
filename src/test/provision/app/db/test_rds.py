@@ -149,7 +149,7 @@ class TestRdsFactory(BaseDbTest):
                 'PhysicalResourceId': RDS_ID
             }
         }
-        rds_id = self.rds_factory._rds_id(self.app_region, 'DbTestDb')
+        rds_id = self.rds_factory._rds_id(self.app, ORBIT_REGION, 'DbTestDb')
         self.assertEquals(RDS_ID, rds_id)
 
     def test_rds_id_not_found(self):
@@ -157,10 +157,10 @@ class TestRdsFactory(BaseDbTest):
             'Error': {'Message': 'Stack does not exist'}},
             'DescribeStackResource')
 
-        rds_id = self.rds_factory._rds_id(self.app_region, 'DbTestDb')
+        rds_id = self.rds_factory._rds_id(self.app, ORBIT_REGION, 'DbTestDb')
         self.assertIsNone(rds_id)
 
     def test_rds_id_exception(self):
         self.cloudformation.describe_stack_resource.side_effect = CLIENT_ERROR
         self.assertRaises(ClientError, self.rds_factory._rds_id,
-                          self.app_region, 'DbTestDb')
+                          self.app, ORBIT_REGION, 'DbTestDb')

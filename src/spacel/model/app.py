@@ -101,6 +101,8 @@ class SpaceAppRegion(object):
         self.services = {}
         self.volumes = {}
 
+        self.alarm_endpoints = {}
+
     @property
     def load_balancer(self):
         """Does app use load balancer?"""

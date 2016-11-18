@@ -102,6 +102,8 @@ def setup_logging():
     logging.getLogger().addHandler(stream_out)
     logging.getLogger('boto3').setLevel(logging.CRITICAL)
     logging.getLogger('botocore').setLevel(logging.CRITICAL)
+    logging.getLogger('paramiko').setLevel(logging.CRITICAL)
+    logging.getLogger('requests').setLevel(logging.CRITICAL)
     logging.getLogger('tldextract').setLevel(logging.CRITICAL)
     logging.getLogger('spacel').setLevel(logging.DEBUG)
 

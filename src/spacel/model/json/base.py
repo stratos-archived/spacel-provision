@@ -8,7 +8,8 @@ ALL = 'all'
 
 CUSTOM_KEYS = {
     'orbit',
-    'services'
+    'services',
+    'alarm_endpoints'
 }
 
 TRUTH_VALUES = {

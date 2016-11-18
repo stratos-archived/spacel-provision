@@ -12,11 +12,18 @@ class AlarmFactory(object):
         self._endpoints = endpoints
         self._triggers = triggers
 
-    def add_alarms(self, template, alarms):
-        app_endpoints = alarms.get('endpoints', {})
-        app_triggers = alarms.get('triggers', {})
+    def add_alarms(self, app_region, template):
+        """
+        Add alarms to a template.
+        :param app_region: SpaceAppRegion
+        :param template: JSON template to update.
+        :return:
+        """
+        app_endpoints = app_region.alarms.get('endpoints', {})
+        app_triggers = app_region.alarms.get('triggers', {})
 
         endpoints = self._endpoints.add_endpoints(template, app_endpoints)
+        app_region.alarm_endpoints = endpoints
         self._triggers.add_triggers(template, app_triggers, endpoints)
 
     @staticmethod

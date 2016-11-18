@@ -56,13 +56,3 @@ class TestDeployPersistence(BaseIntegrationTest):
         self.assertEquals(POSTGRES_VERSION, postgres_info['server_version'])
 
         self._verify_counter('postgres', post_count=10)
-
-    def _verify_counter(self, counter_type, expected_count=0, post_count=10):
-        counter_url = '%s/counter' % counter_type
-        r = self._get(counter_url)
-        count = r.json()['count']
-        self.assertTrue(count >= expected_count)
-        for i in range(post_count):
-            r = self._post(counter_url)
-            count = r.json()['count']
-        return count

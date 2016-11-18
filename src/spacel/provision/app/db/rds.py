@@ -4,6 +4,7 @@ from botocore.exceptions import ClientError
 
 from spacel.provision import clean_name, bool_param
 from spacel.provision.app.db.base import BaseTemplateDecorator
+from spacel.provision.app.db.rds_alarm import RdsAlarmTriggerFactory
 
 logger = logging.getLogger('spacel.provision.rds.factory')
 
@@ -28,6 +29,7 @@ class RdsFactory(BaseTemplateDecorator):
         super(RdsFactory, self).__init__(ingress)
         self._clients = clients
         self._passwords = passwords
+        self._alarms = RdsAlarmTriggerFactory()
 
     def add_rds(self, app_region, template):
         if not app_region.databases:
@@ -102,7 +104,8 @@ class RdsFactory(BaseTemplateDecorator):
             storage_iops = db_params.get('iops', None)
             db_username = db_params.get('username', name)
 
-            public = bool_param(db_params, 'public', False)
+            public = (db_global == app_region.region
+                      or bool_param(db_params, 'public', False))
             db_subnet_group = '%sRdsSubnetGroup' % (public and 'Public'
                                                     or 'Private')
 
@@ -215,6 +218,10 @@ class RdsFactory(BaseTemplateDecorator):
                                        db_params, rds_sg_resource)
             secret_params[password_param] = plaintext_func
 
+            rds_alarms = db_params.get('alarms', {})
+            self._alarms.add_rds_alarms(app_region, resources, rds_alarms,
+                                        rds_resource)
+
         if iam_statements:
             resources['RdsPolicy'] = {
                 'DependsOn': 'Role',
@@ -233,10 +240,9 @@ class RdsFactory(BaseTemplateDecorator):
 
         return secret_params
 
-    def _rds_id(self, app_region, rds_resource):
-        region = app_region.region
-        app_name = app_region.app.name
-        orbit_name = app_region.orbit_region.orbit.name
+    def _rds_id(self, app, region, rds_resource):
+        app_name = app.name
+        orbit_name = app.orbit.name
         cloudformation = self._clients.cloudformation(region)
 
         stack_name = '%s-%s' % (orbit_name, app_name)
