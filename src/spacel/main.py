@@ -84,6 +84,11 @@ def provision(app):
 
 
 def setup_logging():
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            return
+
     formatter = ColoredFormatter(
         "%(log_color)s%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         datefmt='%Y-%m-%d %H:%M:%S',
@@ -99,7 +104,7 @@ def setup_logging():
     stream_out = logging.StreamHandler()
     stream_out.setLevel(logging.DEBUG)
     stream_out.setFormatter(formatter)
-    logging.getLogger().addHandler(stream_out)
+    root_logger.addHandler(stream_out)
     logging.getLogger('boto3').setLevel(logging.CRITICAL)
     logging.getLogger('botocore').setLevel(logging.CRITICAL)
     logging.getLogger('paramiko').setLevel(logging.CRITICAL)
