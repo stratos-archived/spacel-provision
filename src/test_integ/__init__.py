@@ -1,12 +1,12 @@
-import logging
 import unittest
 
 import requests
 
 from spacel.aws import ClientCache
 from spacel.main import provision
+from spacel.main import setup_logging
 from spacel.model import (Orbit, SpaceApp, SpaceDockerService, SpaceServicePort,
-                          SpaceService)
+                          SpaceService, OrbitRegion, SpaceAppRegion)
 from spacel.user import SpaceSshDb
 
 FORENSICS_USERS = {
@@ -22,8 +22,10 @@ FORENSICS_USERS = {
 APP_NAME = 'laika'
 ORBIT_NAME = 'sl-test'
 ORBIT_REGION = 'us-east-1'
-# ORBIT_REGIONS = ['us-east-1']
 ORBIT_DOMAIN = 'pebbledev.com'
+BASTION_INSTANCE_COUNT = 0
+
+SECOND_REGION = 'us-west-2'
 
 
 class BaseIntegrationTest(unittest.TestCase):
@@ -34,27 +36,26 @@ class BaseIntegrationTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        log_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
-        logging.basicConfig(level=logging.DEBUG, format=log_format)
-        logging.getLogger('boto3').setLevel(logging.CRITICAL)
-        logging.getLogger('botocore').setLevel(logging.CRITICAL)
-        logging.getLogger('paramiko').setLevel(logging.CRITICAL)
-        logging.getLogger('requests').setLevel(logging.CRITICAL)
-        logging.getLogger('spacel').setLevel(logging.DEBUG)
+        setup_logging()
 
     def setUp(self):
         self.orbit = Orbit(
             name=ORBIT_NAME,
             regions=[ORBIT_REGION],
             domain=ORBIT_DOMAIN,
-            bastion_instance_count=0
+            bastion_instance_count=BASTION_INSTANCE_COUNT
         )
         self.app = SpaceApp(
             self.orbit,
             name=APP_NAME,
             health_check='HTTP:80/'
         )
+        self._setup_app_regions()
 
+        self.clients = ClientCache()
+        self.ssh_db = SpaceSshDb(self.clients)
+
+    def _setup_app_regions(self):
         self.docker_service = SpaceDockerService('laika.service', None,
                                                  ports={80: 8080})
         http_port = SpaceServicePort(80)
@@ -63,10 +64,7 @@ class BaseIntegrationTest(unittest.TestCase):
             app_region.services['laika'] = self.docker_service
             app_region.public_ports[80] = http_port
             app_region.public_ports[443] = https_port
-
         self.image()
-        self.clients = ClientCache()
-        self.ssh_db = SpaceSshDb(self.clients)
 
     def image(self, version=APP_VERSION):
         docker_tag = 'pebbletech/spacel-laika:%s' % version
@@ -80,6 +78,17 @@ class BaseIntegrationTest(unittest.TestCase):
             self.ssh_db.add_key(self.orbit, user, key)
             self.ssh_db.grant(self.app, user)
 
+    def _second_region(self):
+        self.orbit_region_2 = OrbitRegion(
+            self.orbit, SECOND_REGION,
+            domain=ORBIT_DOMAIN,
+            bastion_instance_count=BASTION_INSTANCE_COUNT
+        )
+        self.orbit.regions[SECOND_REGION] = self.orbit_region_2
+        self.app.regions[SECOND_REGION] = SpaceAppRegion(self.app,
+                                                         self.orbit_region_2)
+        self._setup_app_regions()
+
     @staticmethod
     def _get(url, https=True):
         full_url = '%s/%s' % (BaseIntegrationTest.APP_URL, url)
@@ -91,6 +100,16 @@ class BaseIntegrationTest(unittest.TestCase):
     def _post(url):
         full_url = '%s/%s' % (BaseIntegrationTest.APP_URL, url)
         return requests.post(full_url)
+
+    def _verify_counter(self, counter_type, expected_count=0, post_count=10):
+        counter_url = '%s/counter' % counter_type
+        r = self._get(counter_url)
+        count = r.json()['count']
+        self.assertTrue(count >= expected_count)
+        for i in range(post_count):
+            r = self._post(counter_url)
+            count = r.json()['count']
+        return count
 
     def _set_unit_file(self, unit_file):
         for app_region in self.app.regions.values():

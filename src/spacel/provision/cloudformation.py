@@ -257,7 +257,8 @@ class BaseCloudFormationFactory(object):
                     status_reason = event.get('ResourceStatusReason', '')
                     if status_reason:
                         status_reason = ' (%s)' % status_reason
-                    logger.debug('Resource %s - %s%s at %s',
+                    logger.debug('Resource %s - %s - %s%s at %s',
+                                 region,
                                  resource_id,
                                  status,
                                  status_reason,

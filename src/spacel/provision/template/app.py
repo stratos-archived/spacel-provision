@@ -298,7 +298,7 @@ class AppTemplate(BaseTemplateCache):
                 del resources['DnsRecord']
 
         self._add_kms_iam_policy(app_region, resources)
-        self._alarm_factory.add_alarms(app_template, app_region.alarms)
+        self._alarm_factory.add_alarms(app_region, app_template)
         self._cache_factory.add_caches(app_region, app_template)
         secret_params = self._rds_factory.add_rds(app_region, app_template)
 

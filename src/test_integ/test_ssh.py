@@ -1,8 +1,6 @@
 import logging
 from paramiko import (SSHClient, RSAKey, AutoAddPolicy)
 
-from spacel.model.orbit import BASTION_INSTANCE_COUNT
-
 from test_integ import BaseIntegrationTest
 
 # Weak keys are quick to generate; we're only testing!
@@ -22,22 +20,23 @@ class TestSshAccess(BaseIntegrationTest):
 
     def setUp(self):
         super(TestSshAccess, self).setUp()
-        self.orbit_params['defaults'][BASTION_INSTANCE_COUNT] = 1
-        self.provisioned_app = self.provision()
+        for orbit_region in self.orbit.regions.values():
+            orbit_region.bastion_instance_count = 1
+        self.provision()
 
     def test_01_bastion_login(self):
         """Provision, log in to gateway."""
         encoded_key = 'ssh-rsa %s' % TestSshAccess.KEY.get_base64()
-        self.ssh_db.add_key(self.provisioned_app.orbit, USER_NAME, encoded_key)
-        self.ssh_db.grant(self.provisioned_app, USER_NAME)
+        self.ssh_db.add_key(self.orbit, USER_NAME, encoded_key)
+        self.ssh_db.grant(self.app, USER_NAME)
 
-        bastions = self._test_bastions(self.provisioned_app)
+        bastions = self._test_bastions(self.app)
         self.assertEquals(1, len(bastions))
 
     def test_02_bastion_denied(self):
         """Provision, get denied from gateway."""
-        self.ssh_db.revoke(self.provisioned_app, USER_NAME)
-        bastions = self._test_bastions(self.provisioned_app)
+        self.ssh_db.revoke(self.app, USER_NAME)
+        bastions = self._test_bastions(self.app)
         self.assertEquals(0, len(bastions))
 
     def _test_bastions(self, app):
@@ -75,6 +74,6 @@ class TestSshAccess(BaseIntegrationTest):
         bastion_ips = [o['OutputValue'] for o in stack['Outputs']
                        if o['OutputKey'].startswith('ElasticIp')]
 
-        expected_count = orbit._get_param(region, BASTION_INSTANCE_COUNT)
+        expected_count = orbit.regions[region].bastion_instance_count
         self.assertEquals(expected_count, len(bastion_ips))
         return bastion_ips

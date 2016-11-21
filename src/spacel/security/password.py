@@ -88,8 +88,8 @@ class PasswordManager(object):
             Key={'name': {'S': password_name}}
         ).get('Item')
         if existing_item:
-            logger.warning('Existing password found for %s in %s, skipping.',
-                           label, name)
+            logger.debug('Existing password found for %s in %s, skipping.',
+                         label, name)
             return False
 
         plaintext = password_func()
