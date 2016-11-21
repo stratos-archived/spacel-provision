@@ -1,0 +1,6 @@
+{
+	"dockerImage": "pebbletech/spacel-provision",
+	"dockerRegistry": "hub.docker.com",
+	"junitReport": "**/build/nosetests.xml",
+	"coberturaReport": "**/build/coverage.xml"
+}
