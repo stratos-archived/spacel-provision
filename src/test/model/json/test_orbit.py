@@ -3,7 +3,7 @@ import unittest
 
 from spacel.model.json.base import NAME, REGIONS, ALL
 from spacel.model.json.orbit import OrbitJsonModelFactory
-from test import ORBIT_NAME, ORBIT_REGION, ORBIT_DOMAIN
+from test import ORBIT_NAME, ORBIT_REGION, ORBIT_DOMAIN, OTHER_REGION
 
 ORBIT_NETWORK = '10.1'
 
@@ -40,6 +40,25 @@ class TestOrbitJsonModelFactory(unittest.TestCase):
     def test_orbit_valid(self):
         orbit = self.orbit_factory.orbit(self.params)
         self.assertTrue(orbit.valid)
+
+    def test_orbit_regions_noop(self):
+        self.params[REGIONS] = [ORBIT_REGION, OTHER_REGION]
+        orbit = self.orbit_factory.orbit(self.params)
+        self.assertEquals(2, len(orbit.regions))
+
+    def test_orbit_regions_filter(self):
+        self.params[REGIONS] = [ORBIT_REGION, OTHER_REGION]
+        orbit = self.orbit_factory.orbit(self.params,
+                                         regions=(ORBIT_REGION,))
+        # Region not in `params` skipped:
+        self.assertEquals(1, len(orbit.regions))
+
+    def test_orbit_regions_no_params(self):
+        del self.params[REGIONS]
+        orbit = self.orbit_factory.orbit(self.params,
+                                         regions=(ORBIT_REGION, OTHER_REGION))
+        # Without `params`, trust list:
+        self.assertEquals(2, len(orbit.regions))
 
     def test_sample_develop(self):
         orbit = self._load_sample('develop.json')
