@@ -1,4 +1,5 @@
 import json
+
 from spacel.provision import base64_decode, base64_encode
 
 
@@ -29,17 +30,24 @@ class EncryptedPayload(object):
             item['encoding']['S'])
 
     def json(self):
-        return json.dumps({
+        return json.dumps(self.obj(), sort_keys=True)
+
+    def obj(self):
+        return {
             'iv': base64_encode(self.iv),
             'key': base64_encode(self.key),
             'key_region': self.key_region,
             'ciphertext': base64_encode(self.ciphertext),
             'encoding': self.encoding,
-        }, sort_keys=True)
+        }
 
     @staticmethod
     def from_json(json_string):
         json_obj = json.loads(json_string)
+        return EncryptedPayload.from_obj(json_obj)
+
+    @staticmethod
+    def from_obj(json_obj):
         return EncryptedPayload(
             base64_decode(json_obj['iv']),
             base64_decode(json_obj['ciphertext']),

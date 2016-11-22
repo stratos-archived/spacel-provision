@@ -1,4 +1,3 @@
-import json
 import unittest
 
 from spacel.security.payload import EncryptedPayload
@@ -8,11 +7,13 @@ IV = b'0000000000000000'
 CIPHERTEXT = b'0000000000000000'
 KEY = b'0000000000000000'
 ENCODING = 'utf-8'
+ENCRYPTED_PAYLOAD = EncryptedPayload(IV, CIPHERTEXT, KEY, ORBIT_REGION,
+                                     ENCODING)
 
 
 class TestEncryptedPayload(unittest.TestCase):
     def setUp(self):
-        self.payload = EncryptedPayload(IV, CIPHERTEXT, KEY, ORBIT_REGION, ENCODING)
+        self.payload = ENCRYPTED_PAYLOAD
 
     def test_roundtrip_dynamodb(self):
         dynamodb_item = self.payload.dynamodb_item()

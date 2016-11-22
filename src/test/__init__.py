@@ -1,5 +1,7 @@
 import unittest
 
+from botocore.exceptions import ClientError
+
 from spacel.model import Orbit, OrbitRegion, SpaceApp, SpaceAppRegion, \
     SpaceServicePort
 
@@ -36,3 +38,7 @@ class BaseSpaceAppTest(unittest.TestCase):
     def _multi_region(self):
         self.orbit.regions[OTHER_REGION] = self.other_orbit_region
         self.app.regions[OTHER_REGION] = self.other_app_region
+
+    @staticmethod
+    def _client_error(message='Kaboom', operation='DescribeKey'):
+        return ClientError({'Error': {'Message': message}}, operation)
