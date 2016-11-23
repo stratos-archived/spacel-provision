@@ -2,7 +2,7 @@ import json
 import unittest
 
 from mock import patch, MagicMock
-from six import BytesIO, StringIO
+from six import BytesIO
 from six.moves.urllib.error import HTTPError
 from six.moves.urllib.parse import urlparse
 
@@ -62,7 +62,11 @@ class TestClickHelper(unittest.TestCase):
     @patch('spacel.cli.helper.isfile')
     def test_read_manifest_file(self, mock_isfile, mock_open):
         mock_isfile.return_value = True
-        mock_open.return_value = BytesIO(MAP_ENCODED)
+        mock_file = MagicMock()
+        mock_file.read.return_value = MAP_ENCODED
+        mock_fd = MagicMock()
+        mock_fd.__enter__.return_value = mock_file
+        mock_open.return_value = mock_fd
         manifest = self.helper.read_manifest(FILE_ORBIT, 'test')
         self.assertEquals(MAP_VALUES, manifest)
 
@@ -145,7 +149,7 @@ class TestClickHelper(unittest.TestCase):
     @patch('spacel.cli.helper.isfile')
     def test_write_manifest(self, mock_isfile, mock_open):
         mock_isfile.return_value = True
-        buf = StringIO()
+        buf = MagicMock()
         mock_open.return_value = buf
         written = self.helper.write_manifest(FILE_ORBIT, 'test', {})
         self.assertTrue(written)

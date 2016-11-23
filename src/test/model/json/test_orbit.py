@@ -77,6 +77,10 @@ class TestOrbitJsonModelFactory(unittest.TestCase):
         self.assertEquals(1, len(orbit.regions))
         self.assertTrue(orbit.valid)
 
+        orbit_east1 = orbit.regions['us-east-1']
+        self.assertEquals(1, orbit_east1.bastion_instance_count)
+        self.assertEquals('pebbledev.com', orbit_east1.domain)
+
     def _load_sample(self, sample_name):
         with open('../sample/orbit/%s' % sample_name) as sample_in:
             sample_json = json.load(sample_in)

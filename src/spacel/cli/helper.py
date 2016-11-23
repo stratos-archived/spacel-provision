@@ -2,8 +2,6 @@ import json
 import logging
 from os.path import isfile
 
-from json.decoder import JSONDecodeError
-
 import boto3
 from six.moves.urllib.error import HTTPError
 from six.moves.urllib.parse import urlparse
@@ -89,7 +87,7 @@ class ClickHelper(object):
                 manifest = json.loads(json_body.decode('utf-8'))
                 self._cache[path] = manifest
                 return manifest
-            except JSONDecodeError as e:
+            except ValueError as e:
                 logger.error('Unable to parse "%s" JSON: %s', label, e)
         return None
 

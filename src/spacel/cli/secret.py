@@ -121,7 +121,7 @@ def update_manifest(helper, app_json_path, key, cipher_texts):
             continue
 
         region_services = region_params.get('services', {})
-        for service_name, service_params in region_services.items():
+        for service_params in region_services.values():
             service_environment = service_params.get('environment')
             if not service_environment:
                 service_params['environment'] = service_environment = {}
