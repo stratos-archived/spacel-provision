@@ -1,6 +1,7 @@
 {
   "name": "laika",
   "all": {
+    "update_policy": "redblack",
     "health_check": "HTTP:80/",
     "instance_type": "t2.nano",
     "instance_min": 1,
@@ -16,16 +17,10 @@
     "public_ports": {
       "80": {
         "sources": ["0.0.0.0/0"]
-      }
-    },
-    "databases": {
-      "postgres": {
-        "encrypted": false,
-        "public": true,
-        "global": "us-east-1",
-        "clients": [
-          "0.0.0.0/0"
-        ]
+      },
+      "443": {
+        "sources": ["0.0.0.0/0"],
+        "internal_port": 80
       }
     }
   }

@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 import six
 
@@ -132,12 +133,23 @@ class AppTemplate(BaseTemplateCache):
                                 'Action': [
                                     'ec2:AssociateAddress',
                                     'ec2:DescribeAddresses',
-                                    'ec2:DescribeInstances'
+                                    'ec2:DescribeInstances',
+                                    'autoscaling:DescribeLaunchConfigurations'
                                 ],
                                 'Resource': '*'
                             }
                         ]
                     }
+                }
+            }
+
+        # Custom update policy:
+        if app_region.update_policy == 'disabled':
+            del resources['Asg']['UpdatePolicy']
+        if app_region.update_policy == 'redblack':
+            resources['Asg']['UpdatePolicy'] = {
+                'AutoScalingReplacingUpdate': {
+                    'WillReplace': 'true'
                 }
             }
 
