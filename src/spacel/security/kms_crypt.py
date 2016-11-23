@@ -24,11 +24,12 @@ class KmsCrypto(object):
         self._clients = clients
         self._random = Random.new()
 
-    def encrypt(self, app_region, plaintext):
+    def encrypt(self, app_region, plaintext, create_key=True):
         """
         Encrypt data for an application.
         :param app_region:  SpaceAppRegion.
         :param plaintext: Plaintext blob.
+        :param create_key: Create key if missing (else fail).
         :return: EncryptedPayload.
         """
         region = app_region.region
@@ -41,7 +42,7 @@ class KmsCrypto(object):
                                              KeySpec='AES_256')
         except ClientError as e:
             e_message = e.response['Error'].get('Message', '')
-            if 'is not found' in e_message:
+            if create_key and 'is not found' in e_message:
                 # Key not found, create and try again:
                 self._kms_key.create_key(app_region)
                 return self.encrypt(app_region, plaintext)

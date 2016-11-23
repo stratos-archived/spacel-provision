@@ -1,13 +1,19 @@
 {
-  "name": "laika",
   "all": {
     "update_policy": "redblack",
     "elastic_ips": "enabled",
     "elb_availability": "disabled",
     "instance_availability": "internet-facing",
-    "instance_type": "t2.nano",
-    "instance_min": 1,
     "instance_max": 1,
+    "instance_min": 1,
+    "instance_type": "t2.nano",
+    "public_ports": {
+      "80": {
+        "sources": [
+          "0.0.0.0/0"
+        ]
+      }
+    },
     "services": {
       "http-env-echo": {
         "image": "pebbletech/spacel-laika:latest",
@@ -15,11 +21,7 @@
           "80": 8080
         }
       }
-    },
-    "public_ports": {
-      "80": {
-        "sources": ["0.0.0.0/0"]
-      }
     }
-  }
+  },
+  "name": "laika"
 }

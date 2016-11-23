@@ -9,7 +9,9 @@ ALL = 'all'
 CUSTOM_KEYS = {
     'orbit',
     'services',
-    'alarm_endpoints'
+    'alarm_endpoints',
+    'private_ports',
+    'public_ports',
 }
 
 TRUTH_VALUES = {

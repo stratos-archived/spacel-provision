@@ -3,7 +3,7 @@ import unittest
 import requests
 
 from spacel.aws import ClientCache
-from spacel.main import provision
+from spacel.cli.provision import provision
 from spacel.main import setup_logging
 from spacel.model import (Orbit, SpaceApp, SpaceDockerService, SpaceServicePort,
                           SpaceService, OrbitRegion, SpaceAppRegion)
@@ -72,7 +72,10 @@ class BaseIntegrationTest(unittest.TestCase):
             app_region.services['laika'].image = docker_tag
 
     def provision(self, expected=0):
-        result = provision(self.app)
+        result = provision(self.app,
+                           lambda_bucket='spacel-pebbledev',
+                           lambda_region='us-east-1',
+                           spacel_agent_channel='latest')
         self.assertEquals(expected, result)
         for user, key in FORENSICS_USERS.items():
             self.ssh_db.add_key(self.orbit, user, key)

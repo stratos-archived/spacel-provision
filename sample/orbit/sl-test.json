@@ -1,6 +1,8 @@
 {
+  "all": {
+    "domain": "pebbledev.com"
+  },
   "name": "sl-test",
-  "domain": "pebbledev.com",
   "regions": [
     "us-east-1"
   ]

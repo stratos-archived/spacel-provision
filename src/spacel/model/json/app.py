@@ -28,7 +28,7 @@ class SpaceAppJsonModelFactory(BaseJsonModelFactory):
         merged_services = self._merged_map(app.regions, params, 'services')
 
         for region, app_region in app.regions.items():
-            region_services = merged_services[app_region.region]
+            region_services = merged_services[region]
             for service_name, service_params in region_services.items():
                 if not service_params:
                     continue
@@ -58,7 +58,7 @@ class SpaceAppJsonModelFactory(BaseJsonModelFactory):
     def _files(self, app, params):
         merged_files = self._merged_map(app.regions, params, 'files')
         for region, app_region in app.regions.items():
-            region_files = merged_files[app_region.region]
+            region_files = merged_files[region]
             for file_name, file_params in region_files.items():
                 if file_params is None or file_params == {}:
                     continue
@@ -84,12 +84,12 @@ class SpaceAppJsonModelFactory(BaseJsonModelFactory):
         merged_private_ports = self._merged_map(app.regions, params,
                                                 'private_ports')
         for region, app_region in app.regions.items():
-            region_public_ports = merged_public_ports[app_region.region]
+            region_public_ports = merged_public_ports[region]
             for port, port_params in region_public_ports.items():
                 app_region.public_ports[port] = SpaceServicePort(port,
                                                                  **port_params)
 
-            app_region.private_ports = merged_private_ports[app_region.region]
+            app_region.private_ports = merged_private_ports[region]
 
     @staticmethod
     def _merged_map(regions, params, key, default=None):

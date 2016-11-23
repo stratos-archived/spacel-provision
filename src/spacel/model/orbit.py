@@ -161,8 +161,7 @@ class OrbitRegionAz(object):
                  private_elb_subnet=None,
                  private_instance_subnet=None,
                  public_elb_subnet=None,
-                 public_instance_subnet=None
-                 ):
+                 public_instance_subnet=None):
         self.private_elb_subnet = private_elb_subnet
         self.private_instance_subnet = private_instance_subnet
         self.public_elb_subnet = public_elb_subnet
