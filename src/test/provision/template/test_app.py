@@ -277,6 +277,15 @@ class TestAppTemplate(BaseTemplateTest):
         user_data = self.cache._user_data(params, self.app_region)
         self.assertIn('meow==', user_data)
 
+    def test_user_data_stats_noop(self):
+        user_data = self.cache._user_data({}, self.app_region)
+        self.assertNotIn('"stats"', user_data)
+
+    def test_user_data_stats(self):
+        self.app_region.cw_stats = True
+        user_data = self.cache._user_data({}, self.app_region)
+        self.assertIn('"stats":true', user_data)
+
     def test_add_kms_iam_policy_noop(self):
         resources = {}
         self.cache._add_kms_iam_policy(self.app_region, resources)
@@ -290,3 +299,17 @@ class TestAppTemplate(BaseTemplateTest):
 
         self.assertEquals(1, len(resources))
         self.assertIn('KmsKeyPolicy', resources)
+
+    def test_add_cloudwatch_iam_policy_noop(self):
+        resources = {}
+        self.cache._add_cloudwatch_iam_policy(self.app_region, resources)
+
+        self.assertEquals({}, resources)
+
+    def test_add_cloudwatch_iam_policy(self):
+        self.app_region.cw_stats = True
+        resources = {}
+        self.cache._add_cloudwatch_iam_policy(self.app_region, resources)
+
+        self.assertEquals(1, len(resources))
+        self.assertIn('CloudWatchPutPolicy', resources)
