@@ -75,6 +75,7 @@ class SpaceAppRegion(object):
     def __init__(self,
                  app,
                  orbit_region,
+                 cw_stats=False,
                  elastic_ips=False,
                  elb_availability='internet-facing',
                  health_check='TCP:80',
@@ -89,6 +90,7 @@ class SpaceAppRegion(object):
         self.app = app
         self.orbit_region = orbit_region
         self.region = orbit_region.region
+        self.cw_stats = cw_stats
         self.elastic_ips = elastic_ips
         self.elb_availability = elb_availability
         self.health_check = health_check

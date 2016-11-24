@@ -310,6 +310,7 @@ class AppTemplate(BaseTemplateCache):
                 del resources['DnsRecord']
 
         self._add_kms_iam_policy(app_region, resources)
+        self._add_cloudwatch_iam_policy(app_region, resources)
         self._alarm_factory.add_alarms(app_region, app_template)
         self._cache_factory.add_caches(app_region, app_template)
         secret_params = self._rds_factory.add_rds(app_region, app_template)
@@ -334,6 +335,27 @@ class AppTemplate(BaseTemplateCache):
                         'Effect': 'Allow',
                         'Action': 'kms:Decrypt',
                         'Resource': kms_key
+                    }]
+                }
+            }
+        }
+
+    @staticmethod
+    def _add_cloudwatch_iam_policy(app_region, resources):
+        if not app_region.cw_stats:
+            return
+
+        resources['CloudWatchPutPolicy'] = {
+            'DependsOn': 'Role',
+            'Type': 'AWS::IAM::Policy',
+            'Properties': {
+                'PolicyName': 'CloudWatchPut',
+                'Roles': [{'Ref': 'Role'}],
+                'PolicyDocument': {
+                    'Statement': [{
+                        'Effect': 'Allow',
+                        'Action': 'cloudwatch:PutMetricData',
+                        'Resource': '*'
                     }]
                 }
             }
@@ -375,4 +397,7 @@ class AppTemplate(BaseTemplateCache):
             params['VolumeSupport']['Default'] = 'true'
             user_data += ',"volumes":' + json.dumps(app_region.volumes,
                                                     sort_keys=True)
+
+        if app_region.cw_stats:
+            user_data += ',"stats":true'
         return user_data
