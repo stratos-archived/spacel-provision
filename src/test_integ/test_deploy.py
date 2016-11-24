@@ -88,6 +88,7 @@ ExecStop=/usr/bin/docker stop %n
             app_region.elb_availability = 'disabled'
             app_region.instance_availability = 'internet-facing'
             app_region.elastic_ips = True
+            app_region.cw_stats = True
 
         self.provision()
         self._verify_deploy(https=False)
