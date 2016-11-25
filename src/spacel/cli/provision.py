@@ -27,7 +27,8 @@ def provision_cmd():  # pragma: no cover
     pass
 
 
-@provision_cmd.command(help='Provision/upgrade resources for deployment.')
+@provision_cmd.command(name='provision',
+                       help='Provision/upgrade resources for deployment.')
 @click.option('--orbit', type=click.STRING, help='Orbit name/path.',
               required=True)
 @click.option('--app', type=click.STRING, help='App name/path.', required=True)
@@ -53,10 +54,10 @@ def provision_cmd():  # pragma: no cover
               help='Spacel agent AMI cache bust.')
 @click.option('--log-level', default='INFO', type=click.Choice(LOG_LEVELS),
               help='Log level')
-def provision(orbit, app, region, lambda_bucket, lambda_region, template_bucket,
-              template_region, pagerduty_default, pagerduty_api_key,
-              spacel_agent_channel, spacel_agent_cache_bust,
-              log_level):  # pragma: no cover
+def provision_cli(orbit, app, region, lambda_bucket, lambda_region,
+                  template_bucket, template_region, pagerduty_default,
+                  pagerduty_api_key, spacel_agent_channel,
+                  spacel_agent_cache_bust, log_level):  # pragma: no cover
     provision_services(orbit, app, region,
                        lambda_bucket, lambda_region,
                        template_bucket, template_region,

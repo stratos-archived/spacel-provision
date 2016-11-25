@@ -19,8 +19,9 @@ class Orbit(object):
             if region in VALID_REGIONS:
                 self.regions[region] = OrbitRegion(self, region, **kwargs)
                 continue
-            logger.warn('Orbit "%s" has invalid region "%s". Valid regions: %s',
-                        name, region, ', '.join(VALID_REGIONS))
+            logger.warning(
+                'Orbit "%s" has invalid region "%s". Valid regions: %s',
+                name, region, ', '.join(VALID_REGIONS))
 
     @property
     def valid(self):

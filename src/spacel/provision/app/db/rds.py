@@ -3,7 +3,7 @@ import logging
 from botocore.exceptions import ClientError
 
 from spacel.provision import clean_name, bool_param
-from spacel.provision.app.db.base import BaseTemplateDecorator
+from spacel.provision.app.db.base import BaseDbTemplateDecorator
 from spacel.provision.app.db.rds_alarm import RdsAlarmTriggerFactory
 
 logger = logging.getLogger('spacel.provision.rds.factory')
@@ -24,7 +24,7 @@ DEFAULT_PORTS = {
 }
 
 
-class RdsFactory(BaseTemplateDecorator):
+class RdsFactory(BaseDbTemplateDecorator):
     def __init__(self, clients, ingress, passwords):
         super(RdsFactory, self).__init__(ingress)
         self._clients = clients

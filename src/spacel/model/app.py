@@ -41,7 +41,7 @@ class SpaceApp(object):
                                                           **kwargs)
                     continue
 
-                logger.warn(
+                logger.warning(
                     'App "%s" has invalid region "%s". Valid regions: %s',
                     name, region, ', '.join(orbit.regions))
         else:
@@ -106,6 +106,7 @@ class SpaceAppRegion(object):
         self.caches = {}
         self.databases = {}
         self.files = {}
+        self.logging = {}
         self.private_ports = {}
         self.public_ports = {}
         self.services = {}
@@ -157,8 +158,7 @@ class SpaceServicePort(object):
                  internal_port=None,
                  internal_scheme=None,
                  scheme=None,
-                 sources=('0.0.0.0/0',)
-                 ):
+                 sources=('0.0.0.0/0',)):
         self.certificate = certificate
         internal_port = internal_port or port
         self.internal_port = internal_port
