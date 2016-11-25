@@ -1,8 +1,8 @@
 import unittest
+
 from mock import patch, MagicMock
 
 from spacel.aws.clients import ClientCache
-
 from test import ORBIT_REGION
 
 
@@ -13,7 +13,8 @@ class TestClientCache(unittest.TestCase):
     @patch('spacel.aws.clients.boto3')
     def test_cloudformation(self, mock_boto3):
         self.clients.cloudformation(ORBIT_REGION)
-        mock_boto3.client.assert_called_once_with('cloudformation', ORBIT_REGION)
+        mock_boto3.client.assert_called_once_with('cloudformation',
+                                                  ORBIT_REGION)
 
     @patch('spacel.aws.clients.boto3')
     def test_ec2(self, mock_boto3):
@@ -51,3 +52,8 @@ class TestClientCache(unittest.TestCase):
         self.clients._client = MagicMock()
         self.clients.acm(ORBIT_REGION)
         self.clients._client.assert_called_with('acm', ORBIT_REGION)
+
+    def test_logs(self):
+        self.clients._client = MagicMock()
+        self.clients.logs(ORBIT_REGION)
+        self.clients._client.assert_called_with('logs', ORBIT_REGION)

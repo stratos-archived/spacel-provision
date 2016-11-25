@@ -25,10 +25,11 @@ class TestCloudWatchLogsDecorator(BaseTemplateDecoratorTest):
             '\"deploy\":{}',
             '} }'
         ]
+        self.base_resource = len(self.resources)
 
     def test_logs_noop(self):
         self.cwl.logs(self.app_region, self.resources)
-        self.assertEquals(2, len(self.resources))
+        self.assertEquals(self.base_resource, len(self.resources))
 
     def test_logs_docker(self):
         self.app_region.logging['docker'] = {
@@ -37,7 +38,7 @@ class TestCloudWatchLogsDecorator(BaseTemplateDecoratorTest):
         self.cwl.logs(self.app_region, self.resources)
 
         # LogGroup resource added:
-        self.assertEquals(3, len(self.resources))
+        self.assertEquals(self.base_resource + 1, len(self.resources))
         retention = (self.resources['DockerLogGroup']
                      ['Properties']
                      ['RetentionInDays'])
@@ -52,3 +53,21 @@ class TestCloudWatchLogsDecorator(BaseTemplateDecoratorTest):
                      .get('docker', {})
                      .get('group'))
         self.assertEquals('DockerLogGroup', log_group)
+
+    def test_logs_metrics(self):
+        self.app_region.logging['docker'] = {
+            'retention': RETENTION,
+            'metrics': {
+                'TestMetric': {
+                    'pattern': '*',
+                    'value': '1'
+                }
+            }
+        }
+        self.cwl.logs(self.app_region, self.resources)
+
+        self.assertEquals(self.base_resource + 2, len(self.resources))
+
+        filter_properties = (self.resources['TestMetricMetricFilter']
+                             ['Properties'])
+        self.assertEquals('*', filter_properties['FilterPattern'])
