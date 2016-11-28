@@ -516,7 +516,7 @@
                 "logs:PutLogEvents",
                 "logs:DescribeLogStreams"
               ],
-              "Resource": {"Fn::GetAtt": ["DeployLogGroup", "Arn"]}
+              "Resource": [{"Fn::GetAtt": ["DeployLogGroup", "Arn"]}]
             }
           ]
         }

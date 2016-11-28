@@ -30,7 +30,7 @@ SECOND_REGION = 'us-west-2'
 
 class BaseIntegrationTest(unittest.TestCase):
     APP_HOSTNAME = '%s-%s.%s' % (APP_NAME, ORBIT_NAME, ORBIT_DOMAIN)
-    APP_VERSION = '0.2.0'
+    APP_VERSION = '0.3.0'
     UPGRADE_VERSION = '0.1.1'
     APP_URL = 'https://%s' % APP_HOSTNAME
 
@@ -91,6 +91,13 @@ class BaseIntegrationTest(unittest.TestCase):
         self.app.regions[SECOND_REGION] = SpaceAppRegion(self.app,
                                                          self.orbit_region_2)
         self._setup_app_regions()
+
+    def _app_eip_only(self):
+        for app_region in self.app.regions.values():
+            app_region.instance_max = 1
+            app_region.elb_availability = 'disabled'
+            app_region.instance_availability = 'internet-facing'
+            app_region.elastic_ips = True
 
     @staticmethod
     def _get(url, https=True):

@@ -62,6 +62,14 @@ class ClientCache(object):
         """
         return self._client('acm', region)
 
+    def logs(self, region):
+        """
+        Get AWS CloudWatch Logs client.
+        :param region:  AWS region.
+        :return: CloudWatch Logs Client.
+        """
+        return self._client('logs', region)
+
     def _client(self, client_type, region):
         client_cache = self._clients[client_type]
         cached = client_cache.get(region)

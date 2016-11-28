@@ -1,11 +1,11 @@
 import json
 import logging
-import time
 
 import six
 
 from spacel.model.aws import INSTANCE_VOLUMES
 from spacel.provision import base64_encode
+from spacel.provision.app.cloudwatch_logs import CloudWatchLogsDecorator
 from spacel.provision.template.base import BaseTemplateCache
 
 SSL_SCHEMES = ('HTTPS', 'SSL')
@@ -23,6 +23,7 @@ class AppTemplate(BaseTemplateCache):
         self._spot_decorator = spot_decorator
         self._acm = acm
         self._kms_key = kms_key
+        self._cw_logs = CloudWatchLogsDecorator()
 
     def app(self, app_region):
         app_template = self.get('elb-service')
@@ -309,6 +310,7 @@ class AppTemplate(BaseTemplateCache):
                 # No ELB and no static IPs, give up
                 del resources['DnsRecord']
 
+        self._cw_logs.logs(app_region, resources)
         self._add_kms_iam_policy(app_region, resources)
         self._add_cloudwatch_iam_policy(app_region, resources)
         self._alarm_factory.add_alarms(app_region, app_template)

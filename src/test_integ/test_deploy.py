@@ -83,12 +83,7 @@ ExecStop=/usr/bin/docker stop %n
 
     def test_07_eip_no_elb(self):
         """Deploy a service without ELB and with Elastic IP, verify."""
-        for app_region in self.app.regions.values():
-            app_region.instance_max = 1
-            app_region.elb_availability = 'disabled'
-            app_region.instance_availability = 'internet-facing'
-            app_region.elastic_ips = True
-            app_region.cw_stats = True
+        self._app_eip_only()
 
         self.provision()
         self._verify_deploy(https=False)

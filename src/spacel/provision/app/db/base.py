@@ -1,10 +1,13 @@
 import logging
 
+from spacel.provision.app.base_decorator import BaseTemplateDecorator
+
 logger = logging.getLogger('spacel.provision.app.db')
 
 
-class BaseTemplateDecorator(object):
+class BaseDbTemplateDecorator(BaseTemplateDecorator):
     def __init__(self, ingress):
+        super(BaseDbTemplateDecorator, self).__init__()
         self._ingress = ingress
 
     def _add_client_resources(self, resources, app_region, port, params,
@@ -18,11 +21,3 @@ class BaseTemplateDecorator(object):
             sg_ref=sg_ref)
         logger.debug('Adding %s ingress rules.', len(ingress_resources))
         resources.update(ingress_resources)
-
-    @staticmethod
-    def _user_data(resources):
-        return (resources['Lc']
-                ['Properties']
-                ['UserData']
-                ['Fn::Base64']
-                ['Fn::Join'][1])

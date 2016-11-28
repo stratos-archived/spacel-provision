@@ -1,7 +1,7 @@
 import logging
 
 from spacel.provision import clean_name
-from spacel.provision.app.db.base import BaseTemplateDecorator
+from spacel.provision.app.db.base import BaseDbTemplateDecorator
 
 logger = logging.getLogger('spacel.provision.app.db.cache')
 
@@ -11,7 +11,7 @@ REDIS_PORT = '6379'
 REDIS_VERSION = '3.2.4'
 
 
-class CacheFactory(BaseTemplateDecorator):
+class CacheFactory(BaseDbTemplateDecorator):
     def add_caches(self, app_region, template):
         if not app_region.caches:
             logger.debug('No caches specified.')
