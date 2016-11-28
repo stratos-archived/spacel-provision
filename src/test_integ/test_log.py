@@ -48,15 +48,17 @@ class TestLogging(BaseIntegrationTest):
                 'retention': 7,
                 'metrics': {
                     'Count404': {
-                        'pattern': '{ $.res.statusCode = 404 }',
-                        'value': '1'
+                        'patterns': {
+                            '{ $.res.statusCode = 404 }': '1',
+                            '{ $.res.statusCode != 404 }': '0'
+                        }
                     },
                     'ResponseTime': {
-                        'pattern': '{ $.res.responseTime = * }',
-                        'value': '$.res.responseTime'
+                        'patterns': {
+                            '{ $.res.responseTime = * }': '$.res.responseTime'
+                        }
                     }
                 }
-
             }
         self.provision()
 

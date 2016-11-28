@@ -95,11 +95,7 @@ class AppTemplate(BaseTemplateCache):
             self._elb_subnets(resources, 'PrivateElb', private_elb_subnets)
 
         if app_region.elastic_ips and app_region.instance_max > 0:
-            eip_pos = (resources['Lc']
-                       ['Properties']
-                       ['UserData']
-                       ['Fn::Base64']
-                       ['Fn::Join'][1])
+            eip_pos = self._lc_user_data(resources)
             eip_pos.insert(1, '"eips":[')
             for instance_index in range(1, app_region.instance_max + 1):
                 eip_name = 'ElasticIp%02d' % instance_index
@@ -310,10 +306,12 @@ class AppTemplate(BaseTemplateCache):
                 # No ELB and no static IPs, give up
                 del resources['DnsRecord']
 
+        # Order matters: Alarms _first_ so other decorators can use endpoints:
+        self._alarm_factory.add_alarms(app_region, app_template)
+
         self._cw_logs.logs(app_region, resources)
         self._add_kms_iam_policy(app_region, resources)
         self._add_cloudwatch_iam_policy(app_region, resources)
-        self._alarm_factory.add_alarms(app_region, app_template)
         self._cache_factory.add_caches(app_region, app_template)
         secret_params = self._rds_factory.add_rds(app_region, app_template)
 

@@ -59,8 +59,9 @@ class TestCloudWatchLogsDecorator(BaseTemplateDecoratorTest):
             'retention': RETENTION,
             'metrics': {
                 'TestMetric': {
-                    'pattern': '*',
-                    'value': '1'
+                    'patterns': {
+                        '*': '1'
+                    }
                 }
             }
         }
@@ -68,6 +69,6 @@ class TestCloudWatchLogsDecorator(BaseTemplateDecoratorTest):
 
         self.assertEquals(self.base_resource + 2, len(self.resources))
 
-        filter_properties = (self.resources['TestMetricMetricFilter']
+        filter_properties = (self.resources['TestMetricMetricFilterSTAR']
                              ['Properties'])
         self.assertEquals('*', filter_properties['FilterPattern'])
