@@ -42,7 +42,7 @@ class RdsFactory(BaseDbTemplateDecorator):
         app_name = app.name
         orbit_name = app.orbit.name
 
-        user_data = self._user_data(resources)
+        user_data = self._lc_user_data(resources)
         db_intro = user_data.index('"databases":{') + 1
 
         added_databases = 0

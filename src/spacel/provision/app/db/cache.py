@@ -22,7 +22,7 @@ class CacheFactory(BaseDbTemplateDecorator):
         resources = template['Resources']
 
         # Get UserData components:
-        user_data = self._user_data(resources)
+        user_data = self._lc_user_data(resources)
         # Find the breadcrumb for the cache map:
         cache_intro = user_data.index('"caches":{') + 1
 

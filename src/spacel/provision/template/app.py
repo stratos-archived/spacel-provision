@@ -95,11 +95,7 @@ class AppTemplate(BaseTemplateCache):
             self._elb_subnets(resources, 'PrivateElb', private_elb_subnets)
 
         if app_region.elastic_ips and app_region.instance_max > 0:
-            eip_pos = (resources['Lc']
-                       ['Properties']
-                       ['UserData']
-                       ['Fn::Base64']
-                       ['Fn::Join'][1])
+            eip_pos = self._lc_user_data(resources)
             eip_pos.insert(1, '"eips":[')
             for instance_index in range(1, app_region.instance_max + 1):
                 eip_name = 'ElasticIp%02d' % instance_index

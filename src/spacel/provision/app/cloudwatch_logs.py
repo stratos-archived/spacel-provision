@@ -36,7 +36,7 @@ class CloudWatchLogsDecorator(BaseTemplateDecorator):
         log_resources.append({'Fn::GetAtt': [log_group_resource, 'Arn']})
 
     def _log_user_data(self, resources, log_group_resource):
-        user_data = self._user_data(resources)
+        user_data = self._lc_user_data(resources)
         logging_intro = user_data.index('"logging":{') + 1
         user_data.insert(logging_intro, '\"},')
         user_data.insert(logging_intro, {'Ref': log_group_resource})

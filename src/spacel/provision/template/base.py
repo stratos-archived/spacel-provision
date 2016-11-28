@@ -2,8 +2,10 @@ from copy import deepcopy
 import json
 import os
 
+from spacel.provision.app.base_decorator import BaseTemplateDecorator
 
-class BaseTemplateCache(object):
+
+class BaseTemplateCache(BaseTemplateDecorator):
     """
     Loads base templates from disk and tailors: to orbit, region, and/or
     application.

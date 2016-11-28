@@ -46,11 +46,7 @@ class BastionTemplate(BaseTemplateCache):
             eip_resource = resources['ElasticIp01']
             outputs = bastion_template['Outputs']
 
-            eip_list = (resources['Lc']
-                        ['Properties']
-                        ['UserData']
-                        ['Fn::Base64']
-                        ['Fn::Join'][1][1]
+            eip_list = (self._lc_user_data(resources)[1]
                         ['Fn::Join'][1])
 
             base_dns = resources['DnsRecord01']
