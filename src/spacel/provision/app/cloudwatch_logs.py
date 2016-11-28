@@ -1,5 +1,7 @@
 from spacel.provision import clean_name
 from spacel.provision.app.base_decorator import BaseTemplateDecorator
+from spacel.provision.app.cloudwatch_logs_alarm import \
+    CloudWatchLogsTriggerFactory
 
 
 class CloudWatchLogsDecorator(BaseTemplateDecorator):
@@ -47,27 +49,33 @@ class CloudWatchLogsDecorator(BaseTemplateDecorator):
         metrics = app_region.logging['docker'].get('metrics', {})
         app = app_region.app
         metric_namespace = 'LogMetrics/%s/%s' % (app.name, app.orbit.name)
+        trigger_factory = CloudWatchLogsTriggerFactory(metric_namespace)
         for metric_name, log_metric in metrics.items():
             self._metric(resources, log_group_resource, metric_namespace,
                          metric_name, log_metric)
-            # TODO: alarm
+            metric_alarms = log_metric.get('alarms', {})
+            trigger_factory.add_cloudwatch_alarm(app_region, resources,
+                                                 metric_name, metric_alarms)
 
     @staticmethod
     def _metric(resources, log_group_resource, metric_namespace,
                 metric_name, log_metric):
-        filter_pattern = log_metric['pattern']
-        metric_value = log_metric['value']
-        resource_name = '%sMetricFilter' % clean_name(metric_name)
-        resources[resource_name] = {
-            'Type': 'AWS::Logs::MetricFilter',
-            'Properties': {
-                'LogGroupName': {'Ref': log_group_resource},
-                'FilterPattern': filter_pattern,
-                'MetricTransformations': [{
-                    'MetricValue': metric_value,
-                    'MetricName': metric_name,
-                    'MetricNamespace': metric_namespace
-                }]
+        patterns = log_metric.get('patterns', {})
+        for pattern, value in patterns.items():
+            pattern_name = clean_name(pattern.replace('=', 'EQ')
+                                      .replace('!', 'NOT')
+                                      .replace('*', 'STAR'))
+            resource_name = '%sMetricFilter%s' % (clean_name(metric_name),
+                                                  pattern_name)
+            resources[resource_name] = {
+                'Type': 'AWS::Logs::MetricFilter',
+                'Properties': {
+                    'LogGroupName': {'Ref': log_group_resource},
+                    'FilterPattern': pattern,
+                    'MetricTransformations': [{
+                        'MetricValue': value,
+                        'MetricName': metric_name,
+                        'MetricNamespace': metric_namespace
+                    }]
+                }
             }
-        }
-        return resource_name

@@ -306,10 +306,12 @@ class AppTemplate(BaseTemplateCache):
                 # No ELB and no static IPs, give up
                 del resources['DnsRecord']
 
+        # Order matters: Alarms _first_ so other decorators can use endpoints:
+        self._alarm_factory.add_alarms(app_region, app_template)
+
         self._cw_logs.logs(app_region, resources)
         self._add_kms_iam_policy(app_region, resources)
         self._add_cloudwatch_iam_policy(app_region, resources)
-        self._alarm_factory.add_alarms(app_region, app_template)
         self._cache_factory.add_caches(app_region, app_template)
         secret_params = self._rds_factory.add_rds(app_region, app_template)
 
