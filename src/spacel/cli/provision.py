@@ -6,6 +6,7 @@ from spacel.model.aws import VALID_REGIONS
 from spacel.provision import (ChangeSetEstimator, LambdaUploader,
                               TemplateUploader)
 from spacel.provision.app import (AppSpotTemplateDecorator,
+                                  CloudWatchLogsDecorator,
                                   IngressResourceFactory)
 from spacel.provision.app import SpaceElevatorAppFactory
 from spacel.provision.app.alarm import AlarmFactory
@@ -114,13 +115,15 @@ def provision(app,
     password_manager = PasswordManager(clients, kms_crypto)
     cache_factory = CacheFactory(ingress_factory)
     rds_factory = RdsFactory(clients, ingress_factory, password_manager)
+    cw_logs = CloudWatchLogsDecorator()
     # Templates:
     ami_finder = AmiFinder(spacel_agent_channel,
                            cache_bust=spacel_agent_cache_bust)
     app_spot = AppSpotTemplateDecorator()
     acm = AcmCertificates(clients)
     app_template = AppTemplate(ami_finder, alarm_factory, cache_factory,
-                               rds_factory, app_spot, acm, kms_key_factory)
+                               rds_factory, app_spot, acm, kms_key_factory,
+                               cw_logs, ingress_factory)
     bastion_template = BastionTemplate(ami_finder)
     tables_template = TablesTemplate()
     vpc_template = VpcTemplate()
