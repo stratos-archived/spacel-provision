@@ -111,8 +111,7 @@ class TestIngressResourceFactory(BaseSpaceAppTest):
         self.assertEquals(0, len(eips))
 
     def _http_ingress(self, *args):
-        return self.ingress.ingress_resources(self.orbit, ORBIT_REGION, 80,
-                                              args)
+        return self.ingress.ingress_resources(self.app_region, 80, args)
 
     def _only(self, resources):
         self.assertEquals(1, len(resources))

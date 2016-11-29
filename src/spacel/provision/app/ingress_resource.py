@@ -13,12 +13,11 @@ class IngressResourceFactory(object):
     def __init__(self, clients):
         self._clients = clients
 
-    def ingress_resources(self, orbit, region, start_port, clients,
+    def ingress_resources(self, app_region, start_port, clients,
                           protocol='TCP', end_port=None, sg_ref='Sg'):
         """
         Return ingress resources for access from a list of clients.
-        :param orbit:  Orbit definition.
-        :param region: Region.
+        :param app_region:  AppRegion.
         :param start_port: First port to open
         :param clients: Client list.
         :param protocol: Protocol.
@@ -27,6 +26,8 @@ class IngressResourceFactory(object):
         :return: dict of {resource_name: cloudformation_resource}
         """
         # Parameter normalization:
+        orbit = app_region.orbit_region.orbit
+        region = app_region.orbit_region.region
         if not end_port:
             end_port = start_port
 
