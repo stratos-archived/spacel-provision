@@ -3,7 +3,9 @@ from mock import MagicMock
 from spacel.model import SpaceServicePort, SpaceDockerService
 from spacel.provision.app.alarm import AlarmFactory
 from spacel.provision.app.app_spot import AppSpotTemplateDecorator
+from spacel.provision.app.cloudwatch_logs import CloudWatchLogsDecorator
 from spacel.provision.app.db import CacheFactory, RdsFactory
+from spacel.provision.app.ingress_resource import IngressResourceFactory
 from spacel.provision.template.app import AppTemplate
 from spacel.security import AcmCertificates, KmsKeyFactory
 from test import ORBIT_REGION
@@ -30,8 +32,11 @@ class TestAppTemplate(BaseTemplateTest):
         self.acm = MagicMock(spec=AcmCertificates)
         self.kms_key = MagicMock(spec=KmsKeyFactory)
         self.kms_key.get_key.return_value = None
+        self.cw_logs = MagicMock(spec=CloudWatchLogsDecorator)
+        self.ingress = MagicMock(spec=IngressResourceFactory)
         return AppTemplate(ami_finder, self.alarms, self.caches, self.rds,
-                           self.spot, self.acm, self.kms_key)
+                           self.spot, self.acm, self.kms_key, self.cw_logs,
+                           self.ingress)
 
     def test_app(self):
         app, _ = self.cache.app(self.app_region)
@@ -97,13 +102,13 @@ class TestAppTemplate(BaseTemplateTest):
         self.assertNotIn('ElbSg', app['Resources'])
         self.assertNotIn('DnsRecord', app['Resources'])
         self.assertNotIn('ElbHealthPolicy', app['Resources'])
-        self.assertNotIn('LoadBalancerNames', app['Resources']['Asg']
-                                                 ['Properties'])
+        self.assertNotIn('LoadBalancerNames', (app['Resources']['Asg']
+                                               ['Properties']))
         self.assertNotIn('PrivateElbSubnet01', app['Parameters'])
         self.assertNotIn('PublicElbSubnet01', app['Parameters'])
         self.assertEqual('disabled', app['Parameters']['ElbScheme']['Default'])
-        self.assertEqual('EC2', app['Resources']['Asg']['Properties']
-                                   ['HealthCheckType'])
+        self.assertEqual('EC2', (app['Resources']['Asg']['Properties']
+                                 ['HealthCheckType']))
 
     def test_app_no_update_policy(self):
         self.app_region.update_policy = 'disabled'
@@ -115,8 +120,8 @@ class TestAppTemplate(BaseTemplateTest):
         self.app_region.update_policy = 'redblack'
         app, _ = self.cache.app(self.app_region)
 
-        self.assertIn('AutoScalingReplacingUpdate', app['Resources']['Asg']
-                                                       ['UpdatePolicy'])
+        self.assertIn('AutoScalingReplacingUpdate', (app['Resources']['Asg']
+                                                     ['UpdatePolicy']))
 
     def test_app_no_loadbalancer_elastic_ips(self):
         self.app_region.elb_availability = 'disabled'
@@ -126,10 +131,9 @@ class TestAppTemplate(BaseTemplateTest):
         app, _ = self.cache.app(self.app_region)
 
         self.assertIn('DnsRecord', app['Resources'])
-        self.assertIn(
-            'ElasticIp01',
-            app['Resources']['DnsRecord']['Properties']['RecordSets'][0]
-               ['ResourceRecords'][0]['Ref'])
+        self.assertIn('ElasticIp01', (app['Resources']['DnsRecord']
+                                      ['Properties']['RecordSets'][0]
+                                      ['ResourceRecords'][0]['Ref']))
 
     def test_app_no_loadbalancer_no_elastic_ips(self):
         self.app_region.elb_availability = 'disabled'

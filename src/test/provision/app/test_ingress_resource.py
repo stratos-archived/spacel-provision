@@ -3,11 +3,13 @@ from botocore.exceptions import ClientError
 from mock import MagicMock
 
 from spacel.aws import ClientCache
-from spacel.provision.app.ingress_resource import IngressResourceFactory
+from spacel.provision.app.ingress_resource import (IngressResourceFactory,
+                                                   IP_BLOCK)
 from test import BaseSpaceAppTest, ORBIT_REGION
 
 OTHER_REGION = 'us-east-1'
-IP_BLOCK = '127.0.0.1/32'
+PUBLIC_IP_BLOCK = '8.8.8.8/32'
+PRIVATE_IP_BLOCK = '192.168.0.0/16'
 SECURITY_GROUP = 'sg-123456'
 ELASTIC_IP = '1.1.1.1'
 
@@ -24,12 +26,12 @@ class TestIngressResourceFactory(BaseSpaceAppTest):
         self._multi_region()
 
     def test_ingress_resources_ip_block(self):
-        resource = self._only(self._http_ingress(IP_BLOCK))
-        self.assertEquals(IP_BLOCK, resource['Properties']['CidrIp'])
+        resource = self._only(self._http_ingress(PUBLIC_IP_BLOCK))
+        self.assertEquals(PUBLIC_IP_BLOCK, resource['Properties']['CidrIp'])
 
     def test_ingress_resources_region(self):
         resource = self._only(self._http_ingress(ORBIT_REGION))
-        self.assertEquals('192.168.0.0/16', resource['Properties']['CidrIp'])
+        self.assertEquals(PRIVATE_IP_BLOCK, resource['Properties']['CidrIp'])
 
     def test_ingress_resources_other_region_nat(self):
         self.ingress._app_eips = MagicMock(return_value=[])
@@ -110,9 +112,31 @@ class TestIngressResourceFactory(BaseSpaceAppTest):
         eips = self.ingress._app_eips(self.orbit_region, 'test-app')
         self.assertEquals(0, len(eips))
 
-    def _http_ingress(self, *args):
-        return self.ingress.ingress_resources(self.orbit, ORBIT_REGION, 80,
-                                              args)
+    def test_ingress_resources_availability_internet(self):
+        self._availability(PUBLIC_IP_BLOCK, 'internet-facing', True)
+        self._availability(PRIVATE_IP_BLOCK, 'internet-facing', True)
+
+    def test_ingress_resources_availability_multiregion(self):
+        self._availability(PUBLIC_IP_BLOCK, 'multi-region', False)
+        self._availability(PRIVATE_IP_BLOCK, 'multi-region', True)
+
+    def test_ingress_resources_availability_private(self):
+        self._availability(PUBLIC_IP_BLOCK, 'private', False)
+        self._availability(PRIVATE_IP_BLOCK, 'private', True)
+
+    def test_is_rfc1918(self):
+        self.assertTrue(self._rfc1918(PRIVATE_IP_BLOCK))
+        self.assertTrue(self._rfc1918('10.0.0.0/8'))
+        self.assertTrue(self._rfc1918('172.16.0.0/12'))
+        self.assertTrue(self._rfc1918('192.168.0.0/16'))
+
+        self.assertFalse(self._rfc1918(PUBLIC_IP_BLOCK))
+        self.assertFalse(self._rfc1918('172.15.0.0/24'))
+        self.assertFalse(self._rfc1918('192.167.0.0/24'))
+
+    def _http_ingress(self, *args, **kwargs):
+        return self.ingress.ingress_resources(self.app_region, 80, args,
+                                              **kwargs)
 
     def _only(self, resources):
         self.assertEquals(1, len(resources))
@@ -124,3 +148,11 @@ class TestIngressResourceFactory(BaseSpaceAppTest):
                 'Message': message
             }
         }, 'CreateSubnet')
+
+    def _availability(self, param, availability, allowed):
+        resources = self._http_ingress(param, availability=availability)
+        self.assertEquals(allowed and 1 or 0, len(resources))
+
+    def _rfc1918(self, ip_block):
+        ip_match = IP_BLOCK.match(ip_block)
+        return self.ingress._is_rfc1918(ip_match)

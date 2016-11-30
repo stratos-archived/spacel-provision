@@ -5,28 +5,37 @@ from botocore.exceptions import ClientError
 
 from spacel.provision import clean_name
 
-IP_BLOCK = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}'
+IP_BLOCK = re.compile('(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3}/\d{1,3})')
 logger = logging.getLogger('spacel.provision.ingress_resource')
+
+# See: INSTANCE_AVAILABILITY and ELB_AVAILABILITY in SpaceAppRegion.
+AVAILABILITY_NOT_PUBLIC = {
+    'multi-region',
+    'private'
+}
 
 
 class IngressResourceFactory(object):
     def __init__(self, clients):
         self._clients = clients
 
-    def ingress_resources(self, orbit, region, start_port, clients,
-                          protocol='TCP', end_port=None, sg_ref='Sg'):
+    def ingress_resources(self, app_region, start_port, clients,
+                          protocol='TCP', end_port=None, sg_ref='Sg',
+                          availability=None):
         """
         Return ingress resources for access from a list of clients.
-        :param orbit:  Orbit definition.
-        :param region: Region.
+        :param app_region:  AppRegion.
         :param start_port: First port to open
         :param clients: Client list.
         :param protocol: Protocol.
         :param end_port: Last port to open (defaults to start_port if not set).
         :param sg_ref: Security group name.
+        :param availability: Resource availability.
         :return: dict of {resource_name: cloudformation_resource}
         """
         # Parameter normalization:
+        orbit = app_region.orbit_region.orbit
+        region = app_region.orbit_region.region
         if not end_port:
             end_port = start_port
 
@@ -55,7 +64,14 @@ class IngressResourceFactory(object):
         # Clients can be...
         for client in clients:
             # An IP block:
-            if re.match(IP_BLOCK, client):
+            ip_match = IP_BLOCK.match(client)
+            if ip_match:
+                rfc1918 = self._is_rfc1918(ip_match)
+                if not rfc1918 and availability in AVAILABILITY_NOT_PUBLIC:
+                    logger.warning('Ignoring IP %s for %s service.', client,
+                                   availability)
+                    continue
+
                 logger.debug('Adding access from %s.', client)
                 ingress_resource(client, CidrIp=client)
                 continue
@@ -130,3 +146,14 @@ class IngressResourceFactory(object):
             if 'does not exist' in e_message:
                 return eips
             raise e
+
+    @staticmethod
+    def _is_rfc1918(ip_match):
+        first_octet = ip_match.group(1)
+        if first_octet == '10':
+            return True
+        if first_octet == '172':
+            return 16 <= int(ip_match.group(2)) < 32
+        if first_octet == '192':
+            return ip_match.group(2) == '168'
+        return False

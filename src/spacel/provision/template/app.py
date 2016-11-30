@@ -5,7 +5,6 @@ import six
 
 from spacel.model.aws import INSTANCE_VOLUMES
 from spacel.provision import base64_encode
-from spacel.provision.app.cloudwatch_logs import CloudWatchLogsDecorator
 from spacel.provision.template.base import BaseTemplateCache
 
 SSL_SCHEMES = ('HTTPS', 'SSL')
@@ -15,7 +14,7 @@ logger = logging.getLogger('spacel.provision.template.app')
 
 class AppTemplate(BaseTemplateCache):
     def __init__(self, ami_finder, alarm_factory, cache_factory, rds_factory,
-                 spot_decorator, acm, kms_key):
+                 spot_decorator, acm, kms_key, cw_logs, ingress):
         super(AppTemplate, self).__init__(ami_finder=ami_finder)
         self._alarm_factory = alarm_factory
         self._cache_factory = cache_factory
@@ -23,7 +22,8 @@ class AppTemplate(BaseTemplateCache):
         self._spot_decorator = spot_decorator
         self._acm = acm
         self._kms_key = kms_key
-        self._cw_logs = CloudWatchLogsDecorator()
+        self._cw_logs = cw_logs
+        self._ingress = ingress
 
     def app(self, app_region):
         app_template = self.get('elb-service')
@@ -177,65 +177,34 @@ class AppTemplate(BaseTemplateCache):
                               private_instance_subnets)
 
         # Public ports:
-        elb_ingress = resources['ElbSg']['Properties']['SecurityGroupIngress']
-        instance_ingress = resources['Sg']['Properties']['SecurityGroupIngress']
+        instance_in = resources['Sg']['Properties']['SecurityGroupIngress']
         public_elb = resources['PublicElb']['Properties']['Listeners']
         private_elb = resources['PrivateElb']['Properties']['Listeners']
-        elb_ingress_ports = set()
+        elb_internal_ports = set()
         for port_number, port_config in sorted(app_region.public_ports.items()):
-            if not app_region.load_balancer:
-                for ip_source in port_config.sources:
-                    instance_ingress.append({
-                        'IpProtocol': 'tcp',
-                        'FromPort': port_number,
-                        'ToPort': port_number,
-                        'CidrIp': ip_source
-                    })
-            else:
-                # Allow all sources into ELB:
-                for ip_source in port_config.sources:
-                    elb_ingress.append({
-                        'IpProtocol': 'tcp',
-                        'FromPort': port_number,
-                        'ToPort': port_number,
-                        'CidrIp': ip_source
-                    })
+            if app_region.load_balancer:
+                # Ingress rules apply to ELB:
+                sg_ref = 'ElbSg'
+                availability = app_region.elb_availability
 
-                # Allow ELB->Instance
-                internal_port = port_config.internal_port
-                if internal_port not in elb_ingress_ports:
-                    instance_ingress.append({
-                        'IpProtocol': 'tcp',
-                        'FromPort': internal_port,
-                        'ToPort': internal_port,
-                        'SourceSecurityGroupId': {'Ref': 'ElbSg'}
-                    })
-                    elb_ingress_ports.add(internal_port)
+                self._elb_to_instance(port_config, elb_internal_ports,
+                                      instance_in)
 
-                elb_listener = {
-                    'InstancePort': str(internal_port),
-                    'LoadBalancerPort': port_number,
-                    'Protocol': port_config.scheme,
-                    'InstanceProtocol': port_config.internal_scheme
-                }
-
-                if port_config.scheme in SSL_SCHEMES:
-                    cert = port_config.certificate
-                    if not cert:
-                        cert = self._acm.get_certificate(orbit_region.region,
-                                                         app_hostname)
-                    if not cert:
-                        logger.warning(
-                            'Unable to find certificate for %s. ' +
-                            'Specify a "certificate" or request in ACM.',
-                            app_hostname)
-                        raise Exception(
-                            'Public_port %s is missing certificate.' %
-                            port_number)
-                    elb_listener['SSLCertificateId'] = cert
-
+                elb_listener = self._elb_listener(orbit_region, app_hostname,
+                                                  port_number, port_config)
                 public_elb.append(elb_listener)
                 private_elb.append(elb_listener)
+            else:
+                # Ingress rules apply directly to instance:
+                sg_ref = 'Sg'
+                availability = app_region.instance_availability
+
+            resources.update(self._ingress.ingress_resources(
+                app_region,
+                port_number,
+                port_config.sources,
+                sg_ref=sg_ref,
+                availability=availability))
 
         # Private ports:
         for private_port, protocols in sorted(app_region.private_ports.items()):
@@ -272,7 +241,7 @@ class AppTemplate(BaseTemplateCache):
                     'VirtualName': 'ephemeral%d' % volume_index
                 })
 
-        # Clean up loadbalancer if it's unwanted
+        # Clean up load balancer if it's unwanted
         if not app_region.load_balancer:
             params['PublicElb'] = {
                 'Type': 'String',
@@ -319,6 +288,44 @@ class AppTemplate(BaseTemplateCache):
         self._spot_decorator.spotify(app_region, app_template)
 
         return app_template, secret_params
+
+    def _elb_listener(self, orbit_region, app_hostname, port_number,
+                      port_config):
+        internal_port = port_config.internal_port
+        elb_listener = {
+            'InstancePort': str(internal_port),
+            'LoadBalancerPort': port_number,
+            'Protocol': port_config.scheme,
+            'InstanceProtocol': port_config.internal_scheme
+        }
+        if port_config.scheme in SSL_SCHEMES:
+            cert = port_config.certificate
+            if not cert:
+                cert = self._acm.get_certificate(orbit_region.region,
+                                                 app_hostname)
+            if not cert:
+                logger.warning(
+                    'Unable to find certificate for %s. ' +
+                    'Specify a "certificate" or request in ACM.',
+                    app_hostname)
+                raise Exception(
+                    'Public_port %s is missing certificate.' %
+                    port_number)
+            elb_listener['SSLCertificateId'] = cert
+        return elb_listener
+
+    @staticmethod
+    def _elb_to_instance(port_config, elb_ingress_ports,
+                         instance_ingress):
+        internal_port = port_config.internal_port
+        if internal_port not in elb_ingress_ports:
+            instance_ingress.append({
+                'IpProtocol': 'tcp',
+                'FromPort': internal_port,
+                'ToPort': internal_port,
+                'SourceSecurityGroupId': {'Ref': 'ElbSg'}
+            })
+            elb_ingress_ports.add(internal_port)
 
     def _add_kms_iam_policy(self, app_region, resources):
         kms_key = self._kms_key.get_key(app_region, create=False)
