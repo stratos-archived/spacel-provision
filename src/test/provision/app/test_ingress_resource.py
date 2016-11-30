@@ -127,6 +127,7 @@ class TestIngressResourceFactory(BaseSpaceAppTest):
     def test_is_rfc1918(self):
         self.assertTrue(self._rfc1918(PRIVATE_IP_BLOCK))
         self.assertTrue(self._rfc1918('10.0.0.0/8'))
+        self.assertTrue(self._rfc1918('010.010.010.010/8'))
         self.assertTrue(self._rfc1918('172.16.0.0/12'))
         self.assertTrue(self._rfc1918('192.168.0.0/16'))
 

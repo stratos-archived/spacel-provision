@@ -149,11 +149,11 @@ class IngressResourceFactory(object):
 
     @staticmethod
     def _is_rfc1918(ip_match):
-        first_octet = ip_match.group(1)
-        if first_octet == '10':
+        first_octet = int(ip_match.group(1))
+        if first_octet == 10:
             return True
-        if first_octet == '172':
+        if first_octet == 172:
             return 16 <= int(ip_match.group(2)) < 32
-        if first_octet == '192':
-            return ip_match.group(2) == '168'
+        if first_octet == 192:
+            return int(ip_match.group(2)) == 168
         return False
