@@ -1,7 +1,6 @@
 import json
 import uuid
 
-from spacel.provision import base64_encode
 from test_integ import BaseIntegrationTest
 
 ENCRYPTED_ENV = {
@@ -81,7 +80,16 @@ ExecStop=/usr/bin/docker stop %n
         self.provision()
         self._verify_message('top secret')
 
-    def test_07_eip_no_elb(self):
+    def test_07_encrypted_environment(self):
+        """Encrypted file is decrypted."""
+        for app_region in self.app.regions.values():
+            app_region.services['laika'].environment = {
+                'MESSAGE': ENCRYPTED_ENV
+            }
+        self.provision()
+        self._verify_message('top secret')
+
+    def test_08_eip_no_elb(self):
         """Deploy a service without ELB and with Elastic IP, verify."""
         self._app_eip_only()
 

@@ -6,6 +6,7 @@ import six
 from spacel.model.aws import INSTANCE_VOLUMES
 from spacel.provision import base64_encode
 from spacel.provision.template.base import BaseTemplateCache
+from spacel.security import EncryptedPayload
 
 SSL_SCHEMES = ('HTTPS', 'SSL')
 
@@ -379,9 +380,14 @@ class AppTemplate(BaseTemplateCache):
                     'body': base64_encode(unit_file)
                 }
                 if service.environment:
-                    environment_file = '\n'.join('%s=%s' % (key, value)
-                                                 for key, value in
-                                                 service.environment.items())
+                    environment_file = ''
+                    for key, value in service.environment.items():
+                        environment_file += '%s=' % key
+                        if isinstance(value, EncryptedPayload):
+                            environment_file += value.json()
+                        else:
+                            environment_file += value
+                        environment_file += '\n'
                     files['%s.env' % service_name] = {
                         'body': base64_encode(environment_file.encode('utf-8'))
                     }
