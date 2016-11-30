@@ -1,6 +1,6 @@
 import json
 import logging
-from os.path import isfile
+from os.path import isfile, isdir
 
 import boto3
 from six.moves.urllib.error import HTTPError
@@ -9,6 +9,7 @@ from six.moves.urllib.request import urlopen
 
 from spacel.main import setup_logging
 from spacel.model import Orbit, SpaceApp
+from spacel.model.files import SpaceAppFilesModelFactory
 from spacel.model.json import OrbitJsonModelFactory, SpaceAppJsonModelFactory
 
 logger = logging.getLogger('spacel.cli')
@@ -25,7 +26,8 @@ LOG_LEVELS = (
 class ClickHelper(object):
     def __init__(self):
         self._orbit_factory = OrbitJsonModelFactory()
-        self._app_factory = SpaceAppJsonModelFactory()
+        self._app_json_factory = SpaceAppJsonModelFactory()
+        self._app_files_factory = SpaceAppFilesModelFactory()
         self._cache = {}
 
     @staticmethod
@@ -42,7 +44,12 @@ class ClickHelper(object):
     def app(self, orbit, app_param):
         app_params = self.read_manifest(app_param, 'app')
         if app_params:
-            return self._app_factory.app(orbit, app_params)
+            return self._app_json_factory.app(orbit, app_params)
+
+        url = urlparse(app_param)
+        if isdir(url.path):
+            return self._app_files_factory.app(orbit, url.path)
+
         return SpaceApp(orbit, name=app_param)
 
     def read_manifest(self, path, label):
