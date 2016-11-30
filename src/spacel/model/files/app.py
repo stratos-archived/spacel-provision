@@ -62,8 +62,7 @@ class SpaceAppFilesModelFactory(object):
                     app_json[region] = json.loads(file_data)
                     continue
                 elif ext == '.env':
-                    base_file = space_file[:-4]  # Trim ".env" suffix
-                    env_files[region][base_file] = self._env_map(file_data)
+                    env_files[region][space_file] = self._env_map(file_data)
                 elif ext == '.crypt':
                     payload = EncryptedPayload.from_json(file_data)
                     if payload:
@@ -116,9 +115,10 @@ class SpaceAppFilesModelFactory(object):
         global_env = environment[None]
         app_region_env = environment[region]
         for service_name, service in app_region.services.items():
+            service_env_file = os.path.splitext(service_name)[0] + '.env'
             service_env = service.environment
-            service_env.update(global_env.get(service_name, {}))
-            service_env.update(app_region_env.get(service_name, {}))
+            service_env.update(global_env.get(service_env_file, {}))
+            service_env.update(app_region_env.get(service_env_file, {}))
 
     @staticmethod
     def _splice_files(region, app_region, other_files):

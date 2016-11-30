@@ -85,6 +85,8 @@ class ClickHelper(object):
         elif isfile(url.path):
             with open(path, 'rb') as file_in:
                 json_body = file_in.read()
+        elif isdir(url.path):  # pragma: no cover
+            return None
         else:
             logger.debug('Unable to parse "%s" manifest path: %s', label, path)
             return None
