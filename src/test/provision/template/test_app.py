@@ -2,7 +2,7 @@ import json
 
 from mock import MagicMock
 
-from spacel.model import SpaceServicePort, SpaceDockerService
+from spacel.model import SpaceService, SpaceServicePort, SpaceDockerService
 from spacel.provision import base64_decode
 from spacel.provision.app.alarm import AlarmFactory
 from spacel.provision.app.app_spot import AppSpotTemplateDecorator
@@ -266,7 +266,7 @@ class TestAppTemplate(BaseTemplateTest):
 
     def test_user_data_services_env_encrypted(self):
         params = {'VolumeSupport': {}}
-        environment = {'FOO': ENCRYPTED_PAYLOAD}
+        environment = {'FOO': ENCRYPTED_PAYLOAD.obj()}
         self.app_region.services = {
             'test.service': SpaceDockerService('test.service', 'test/test',
                                                environment=environment)
@@ -280,6 +280,16 @@ class TestAppTemplate(BaseTemplateTest):
                                     ['body']).decode('utf-8')
         encoded_environment = 'FOO=%s' % ENCRYPTED_PAYLOAD.json()
         self.assertIn(encoded_environment, service_env)
+
+    def test_user_data_services_unit_encrypted(self):
+        params = {'VolumeSupport': {}}
+        self.app_region.services = {
+            'test.service': SpaceService('test.service',
+                                         {'body': 'meow=='})
+        }
+
+        user_data = self.cache._user_data(params, self.app_region)
+        self.assertIn('meow==', user_data)
 
     def test_user_data_volumes(self):
         params = {'VolumeSupport': {}}

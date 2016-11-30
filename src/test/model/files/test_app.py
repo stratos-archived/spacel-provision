@@ -1,6 +1,8 @@
 import os
 from copy import deepcopy
 
+import six
+
 from spacel.model.files.app import SpaceAppFilesModelFactory
 from test import BaseSpaceAppTest, ORBIT_REGION, OTHER_REGION
 
@@ -82,3 +84,19 @@ class TestSpaceAppFilesModelFactory(BaseSpaceAppTest):
         # Service can be added:
         self.assertNotIn('other-region.service', orbit_region.services)
         self.assertIn('other-region.service', other_region.services)
+
+    def test_encrypted_payloads(self):
+        app = self.factory.app(self.orbit, 'apps/encrypted')
+        orbit_region = app.regions[ORBIT_REGION]
+
+        # `valid` is parsed; `invalid` is passed through
+        self.assertEquals(2, len(orbit_region.files))
+        valid_crypt = orbit_region.files['valid.bin']
+        self.assertIsInstance(valid_crypt, dict)
+        invalid_crypt = orbit_region.files['invalid.bin.crypt']
+        self.assertIsInstance(invalid_crypt, six.string_types)
+
+        # `every-region` is handled as a service (with encrypted .unit_file)
+        self.assertEquals(1, len(orbit_region.services))
+        every_region = orbit_region.services['every-region.service']
+        self.assertIsInstance(every_region.unit_file, dict)

@@ -5,6 +5,7 @@ from collections import defaultdict
 
 from spacel.model import SpaceService
 from spacel.model.json import SpaceAppJsonModelFactory
+from spacel.security import EncryptedPayload
 
 logger = logging.getLogger('spacel.model.files.app')
 
@@ -59,11 +60,24 @@ class SpaceAppFilesModelFactory(object):
                 file_data = self._read(os.path.join(root, space_file))
                 if space_file == 'app.json':
                     app_json[region] = json.loads(file_data)
-                elif ext == '.service' or ext == '.timer':
-                    systemd[region][space_file] = file_data
+                    continue
                 elif ext == '.env':
                     base_file = space_file[:-4]  # Trim ".env" suffix
                     env_files[region][base_file] = self._env_map(file_data)
+                elif ext == '.crypt':
+                    payload = EncryptedPayload.from_json(file_data)
+                    if payload:
+                        space_file = space_file[:-6]  # Trim ".crypt" suffix
+                        ext = os.path.splitext(space_file)[1]
+                        if ext == '.env':  # pragma: no cover
+                            logger.warning('Encrypting full .env files (like' +
+                                           ' %s) is not recommended, as local' +
+                                           ' decryption is required to merge.',
+                                           space_file)
+                        file_data = payload.obj()
+
+                if ext == '.service' or ext == '.timer':
+                    systemd[region][space_file] = file_data
                 else:
                     other_files[region][space_file] = file_data
 
