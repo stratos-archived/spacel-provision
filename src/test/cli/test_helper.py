@@ -7,7 +7,7 @@ from six.moves.urllib.error import HTTPError
 from six.moves.urllib.parse import urlparse
 
 from spacel.cli.helper import ClickHelper
-from test import ORBIT_NAME
+from test import ORBIT_NAME, ORBIT_REGION
 
 HTTP_ORBIT = 'http://test.com/orbit'
 FILE_ORBIT = 'test.json'
@@ -38,6 +38,27 @@ class TestClickHelper(unittest.TestCase):
         orbit = MagicMock()
         app = self.helper.app(orbit, 'from-manifest')
         self.assertEquals(ORBIT_NAME, app.name)
+
+    def test_app_from_manifest_version(self):
+        self.helper.read_manifest = MagicMock(return_value={
+            'name': ORBIT_NAME,
+            'all': {
+                'services': {
+                    'test': {
+                        'image': 'test/test:latest'
+                    }
+                }
+            }
+        })
+        orbit = MagicMock()
+        orbit.regions = {ORBIT_REGION: MagicMock()}
+        app = self.helper.app(orbit, 'from-manifest', '1.0.0')
+        found_service = False
+        for app_region in app.regions.values():
+            for service in app_region.services.values():
+                found_service = True
+                self.assertEquals('1.0.0', service.version)
+        self.assertTrue(found_service)
 
     def test_app_from_parameters(self):
         self.helper.read_manifest = MagicMock(return_value=None)

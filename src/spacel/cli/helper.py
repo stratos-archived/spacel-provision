@@ -41,15 +41,21 @@ class ClickHelper(object):
             return self._orbit_factory.orbit(orbit_params, regions=regions)
         return Orbit(name=orbit_param, regions=regions)
 
-    def app(self, orbit, app_param):
+    def app(self, orbit, app_param, version=None):
+        app = self._app(orbit, app_param)
+        if version:
+            for app_region in app.regions.values():
+                for service in app_region.services.values():
+                    service.version = version
+        return app
+
+    def _app(self, orbit, app_param):
         app_params = self.read_manifest(app_param, 'app')
         if app_params:
             return self._app_json_factory.app(orbit, app_params)
-
         url = urlparse(app_param)
         if isdir(url.path):
             return self._app_files_factory.app(orbit, url.path)
-
         return SpaceApp(orbit, name=app_param)
 
     def read_manifest(self, path, label):
