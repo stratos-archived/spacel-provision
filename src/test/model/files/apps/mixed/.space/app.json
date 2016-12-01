@@ -1,0 +1,15 @@
+{
+  "name": "laika",
+  "all": {
+    "instance_type": "t2.nano",
+    "services": {
+      "laika": {
+        "image": "pebbletech/spacel-laika:latest",
+        "environment": {
+          "FOO": "bar",
+          "FOZ": "baz"
+        }
+      }
+    }
+  }
+}

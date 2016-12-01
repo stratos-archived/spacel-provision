@@ -1,6 +1,9 @@
+import json
+
 from mock import MagicMock
 
-from spacel.model import SpaceServicePort, SpaceDockerService
+from spacel.model import SpaceService, SpaceServicePort, SpaceDockerService
+from spacel.provision import base64_decode
 from spacel.provision.app.alarm import AlarmFactory
 from spacel.provision.app.app_spot import AppSpotTemplateDecorator
 from spacel.provision.app.cloudwatch_logs import CloudWatchLogsDecorator
@@ -11,6 +14,7 @@ from spacel.security import AcmCertificates, KmsKeyFactory
 from test import ORBIT_REGION
 from test.provision.template import BaseTemplateTest
 from test.security import KEY_ARN
+from test.security.test_payload import ENCRYPTED_PAYLOAD
 
 DOMAIN_NAME = 'test-app-test-orbit.test.com'
 SUBNET_GROUP = 'subnet-123456'
@@ -259,6 +263,33 @@ class TestAppTemplate(BaseTemplateTest):
 
         self.assertIn('"test.service"', user_data)
         self.assertNotIn('Default', params['VolumeSupport'])
+
+    def test_user_data_services_env_encrypted(self):
+        params = {'VolumeSupport': {}}
+        environment = {'FOO': ENCRYPTED_PAYLOAD.obj()}
+        self.app_region.services = {
+            'test.service': SpaceDockerService('test.service', 'test/test',
+                                               environment=environment)
+        }
+
+        user_data = self.cache._user_data(params, self.app_region)
+        parsed_user_data = json.loads('{"foo":"bar"%s}' % user_data)
+        service_env = base64_decode(parsed_user_data
+                                    ['files']
+                                    ['test.service.env']
+                                    ['body']).decode('utf-8')
+        encoded_environment = 'FOO=%s' % ENCRYPTED_PAYLOAD.json()
+        self.assertIn(encoded_environment, service_env)
+
+    def test_user_data_services_unit_encrypted(self):
+        params = {'VolumeSupport': {}}
+        self.app_region.services = {
+            'test.service': SpaceService('test.service',
+                                         {'body': 'meow=='})
+        }
+
+        user_data = self.cache._user_data(params, self.app_region)
+        self.assertIn('meow==', user_data)
 
     def test_user_data_volumes(self):
         params = {'VolumeSupport': {}}

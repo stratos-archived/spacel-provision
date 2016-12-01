@@ -45,6 +45,19 @@ class TestClickHelper(unittest.TestCase):
         app = self.helper.app(orbit, 'from-parameters')
         self.assertEquals('from-parameters', app.name)
 
+    @patch('spacel.cli.helper.isdir')
+    def test_app_from_dir(self, mock_isdir):
+        self.helper.read_manifest = MagicMock(return_value=None)
+        self.helper._app_files_factory = MagicMock()
+        orbit = MagicMock()
+        mock_isdir.return_value = True
+
+        self.helper.app(orbit, 'from-dir')
+
+        self.helper._app_files_factory.app.assert_called_with(
+            orbit, 'from-dir'
+        )
+
     def test_read_manifest_noop(self):
         manifest = self.helper.read_manifest(None, 'test')
         self.assertIsNone(manifest)

@@ -1,6 +1,8 @@
 import base64
 import re
 
+import six
+
 
 def clean_name(name):
     return re.sub('[^A-Za-z0-9]', '', name)
@@ -14,6 +16,9 @@ def bool_param(params, name, default):
 
 
 def base64_encode(some_data):
+    if isinstance(some_data, six.string_types):
+        some_data = some_data.encode('utf-8')
+
     return base64.b64encode(some_data).decode('utf-8').strip()
 
 

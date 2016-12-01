@@ -374,22 +374,31 @@ class AppTemplate(BaseTemplateCache):
         files = {}
         if app_region.services:
             for service_name, service in app_region.services.items():
-                unit_file = service.unit_file.encode('utf-8')
-                systemd[service.name] = {
-                    'body': base64_encode(unit_file)
-                }
+                if isinstance(service.unit_file, six.string_types):
+                    encoded_body = base64_encode(service.unit_file)
+                    systemd[service.name] = {'body': encoded_body}
+                else:
+                    systemd[service.name] = service.unit_file
+
                 if service.environment:
-                    environment_file = '\n'.join('%s=%s' % (key, value)
-                                                 for key, value in
-                                                 service.environment.items())
+                    environment_file = ''
+                    for key, value in service.environment.items():
+                        environment_file += '%s=' % key
+                        if isinstance(value, six.string_types):
+                            environment_file += value
+                        else:
+                            environment_file += json.dumps(value,
+                                                           sort_keys=True)
+
+                        environment_file += '\n'
                     files['%s.env' % service_name] = {
-                        'body': base64_encode(environment_file.encode('utf-8'))
+                        'body': base64_encode(environment_file)
                     }
 
         if app_region.files:
             for file_name, file_params in app_region.files.items():
                 if isinstance(file_params, six.string_types):
-                    encoded_body = base64_encode(file_params.encode('utf-8'))
+                    encoded_body = base64_encode(file_params)
                     files[file_name] = {'body': encoded_body}
                 else:
                     files[file_name] = file_params

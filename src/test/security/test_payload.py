@@ -15,7 +15,7 @@ class TestEncryptedPayload(unittest.TestCase):
     def setUp(self):
         self.payload = ENCRYPTED_PAYLOAD
 
-    def test_roundtrip_dynamodb(self):
+    def test_round_trip_dynamodb(self):
         dynamodb_item = self.payload.dynamodb_item()
         payload = EncryptedPayload.from_dynamodb_item(dynamodb_item)
         self.assertEquals(IV, payload.iv)
@@ -24,7 +24,7 @@ class TestEncryptedPayload(unittest.TestCase):
         self.assertEquals(ORBIT_REGION, payload.key_region)
         self.assertEquals(ENCODING, payload.encoding)
 
-    def test_roundtrip_json(self):
+    def test_round_trip_json(self):
         as_json = self.payload.json()
         payload = EncryptedPayload.from_json(as_json)
         self.assertEquals(IV, payload.iv)
@@ -32,3 +32,11 @@ class TestEncryptedPayload(unittest.TestCase):
         self.assertEquals(KEY, payload.key)
         self.assertEquals(ORBIT_REGION, payload.key_region)
         self.assertEquals(ENCODING, payload.encoding)
+
+    def test_from_json_not_json(self):
+        payload = EncryptedPayload.from_json('meow')
+        self.assertIsNone(payload)
+
+    def test_from_json_invalid_json(self):
+        payload = EncryptedPayload.from_json('{}')
+        self.assertIsNone(payload)
