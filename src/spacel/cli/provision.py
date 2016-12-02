@@ -55,16 +55,18 @@ def provision_cmd():  # pragma: no cover
               help='Spacel agent AMI cache bust.')
 @click.option('--log-level', default='INFO', type=click.Choice(LOG_LEVELS),
               help='Log level')
+@click.option('--version', type=click.STRING, help='Version to deploy')
 def provision_cli(orbit, app, region, lambda_bucket, lambda_region,
                   template_bucket, template_region, pagerduty_default,
                   pagerduty_api_key, spacel_agent_channel,
-                  spacel_agent_cache_bust, log_level):  # pragma: no cover
+                  spacel_agent_cache_bust, log_level,
+                  version):  # pragma: no cover
     provision_services(orbit, app, region,
                        lambda_bucket, lambda_region,
                        template_bucket, template_region,
                        pagerduty_default, pagerduty_api_key,
                        spacel_agent_channel, spacel_agent_cache_bust,
-                       log_level)
+                       log_level, version)
 
 
 def provision_services(orbit_path, app_path, regions,
@@ -72,7 +74,7 @@ def provision_services(orbit_path, app_path, regions,
                        template_bucket, template_region,
                        pagerduty_default, pagerduty_api_key,
                        spacel_agent_channel, spacel_agent_cache_bust,
-                       log_level):
+                       log_level, version):
     helper = ClickHelper()
     helper.setup_logging(log_level)
 
@@ -80,7 +82,7 @@ def provision_services(orbit_path, app_path, regions,
     orbit = helper.orbit(orbit_path, regions)
     if not orbit.valid:
         return -1
-    app = helper.app(orbit, app_path)
+    app = helper.app(orbit, app_path, version)
     if not app.valid:
         return -1
 
