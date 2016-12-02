@@ -167,7 +167,7 @@ class AppTemplate(BaseTemplateCache):
             resources['Lc']['Properties']['AssociatePublicIpAddress'] = True
         else:
             if not orbit_region.private_nat_gateway:
-                logger.error('"private_nat_gateway" has been disabled in' +
+                logger.error('"nat" has been "disabled" in' +
                              ' orbit.json, availability "private" is not' +
                              ' possible while the nat gateway has been' +
                              ' disabled!')

@@ -250,6 +250,11 @@ class TestSpaceAppJsonModelFactory(BaseSpaceAppTest):
         app = self._load_sample('laika-systemd.json')
         self.assertLaika(app, docker=False)
 
+    def test_sample_minimum(self):
+        app = self._load_sample('laika-bare-minimum.json')
+        for app_region in app.regions.values():
+            self.assertTrue(app_region.instance_public)
+
     def assertLaika(self, app, docker=True):
         self.assertEquals('laika', app.name)
         self.assertEquals(1, len(app.regions))
