@@ -1,3 +1,5 @@
+import logging
+
 import click
 
 from spacel.aws import AmiFinder, ClientCache
@@ -17,6 +19,8 @@ from spacel.provision.template import (AppTemplate, BastionTemplate,
 from spacel.security import (AcmCertificates, KmsCrypto, KmsKeyFactory,
                              PasswordManager)
 
+logger = logging.getLogger('spacel')
+
 SPACEL_AGENT_CHANNELS = (
     'stable',
     'latest'
@@ -31,8 +35,9 @@ def provision_cmd():  # pragma: no cover
 @provision_cmd.command(name='provision',
                        help='Provision/upgrade resources for deployment.')
 @click.option('--orbit', type=click.STRING, help='Orbit name/path.',
-              required=True)
-@click.option('--app', type=click.STRING, help='App name/path.', required=True)
+              envvar='SPACEL_ORBIT', required=True)
+@click.option('--app', type=click.STRING, help='App name/path.',
+              envvar='SPACEL_APP', required=True, default='/pwd')
 @click.option('--region', '-r', multiple=True, type=click.Choice(VALID_REGIONS),
               help='Regions to encrypt secret in.')
 @click.option('--lambda-bucket', type=click.STRING, envvar='LAMBDA_BUCKET',
@@ -54,7 +59,7 @@ def provision_cmd():  # pragma: no cover
               envvar='SPACEL_AGENT_CACHE_BUST',
               help='Spacel agent AMI cache bust.')
 @click.option('--log-level', default='INFO', type=click.Choice(LOG_LEVELS),
-              help='Log level')
+              envvar='SPACEL_LOG_LEVEL', help='Log level')
 @click.option('--version', type=click.STRING, help='Version to deploy')
 def provision_cli(orbit, app, region, lambda_bucket, lambda_region,
                   template_bucket, template_region, pagerduty_default,
@@ -81,9 +86,11 @@ def provision_services(orbit_path, app_path, regions,
     # Parameters:
     orbit = helper.orbit(orbit_path, regions)
     if not orbit.valid:
+        logger.error('Orbit %s is not valid.', orbit_path)
         return -1
     app = helper.app(orbit, app_path, version)
-    if not app.valid:
+    if not app or not app.valid:
+        logger.error('Application %s is not valid.', app_path)
         return -1
 
     return provision(app, lambda_bucket, lambda_region, template_bucket,

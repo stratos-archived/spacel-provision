@@ -43,7 +43,7 @@ class ClickHelper(object):
 
     def app(self, orbit, app_param, version=None):
         app = self._app(orbit, app_param)
-        if version:
+        if app and version:
             for app_region in app.regions.values():
                 for service in app_region.services.values():
                     service.version = version

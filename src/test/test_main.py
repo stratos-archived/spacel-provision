@@ -1,7 +1,7 @@
 import logging
 import unittest
 
-from spacel.main import setup_logging, legacy_args
+from spacel.main import setup_logging
 
 
 class TestMain(unittest.TestCase):
@@ -23,13 +23,3 @@ class TestMain(unittest.TestCase):
         setup_logging(logging.DEBUG)
         stream_handler = self.root_logger.handlers[0]
         self.assertEquals(logging.DEBUG, stream_handler.level)
-
-    def test_main_passthrough(self):
-        args = ['provision', '--orbit', 'foo', '--app', 'bar']
-        legacy_args(args)
-        self.assertEquals(['provision', '--orbit', 'foo', '--app', 'bar'], args)
-
-    def test_main_legacy(self):
-        args = ['foo', 'bar']
-        legacy_args(args)
-        self.assertEquals(['provision', '--orbit', 'foo', '--app', 'bar'], args)
