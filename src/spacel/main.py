@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import logging
-import sys
 
 from colorlog import ColoredFormatter
 
@@ -41,18 +40,7 @@ def setup_logging(level=logging.DEBUG):
     logging.getLogger('spacel').setLevel(logging.DEBUG)
 
 
-def legacy_args(args):
-    # Legacy support: map 2 simple args to `provision` subcommand
-    if len(args) == 2:
-        no_dash = [arg for arg in args if not arg.startswith('--')]
-        if len(no_dash) == 2:
-            args.insert(0, 'provision')
-            args.insert(1, '--orbit')
-            args.insert(3, '--app')
-
-
 if __name__ == '__main__':  # pragma: no cover
     from spacel.cli import cli
 
-    legacy_args(sys.argv)
-    cli()
+    cli(prog_name='spacel')

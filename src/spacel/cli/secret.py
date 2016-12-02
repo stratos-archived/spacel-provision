@@ -19,8 +19,9 @@ def secret_cmd():  # pragma: no cover
 
 @secret_cmd.command(help='Encrypt secrets.')
 @click.option('--orbit', type=click.STRING, help='Orbit name/path.',
-              required=True)
-@click.option('--app', type=click.STRING, help='App name/path.', required=True)
+              envvar='SPACEL_ORBIT', required=True)
+@click.option('--app', type=click.STRING, help='App name/path.',
+              envvar='SPACEL_APP', required=True, default='/pwd')
 @click.option('--region', '-r', multiple=True, type=click.Choice(VALID_REGIONS),
               help='Regions to encrypt secret in.')
 @click.option('--create', '--create-key', is_flag=True,
@@ -29,8 +30,8 @@ def secret_cmd():  # pragma: no cover
               help='Write secrets directly to file.')
 @click.option('--key', type=click.STRING, help='Environment variable key.')
 @click.option('--value', type=click.STRING, help='Secret value')
-@click.option('--log-level', default='WARNING', type=click.Choice(LOG_LEVELS),
-              help='Log level')
+@click.option('--log-level', default='INFO', type=click.Choice(LOG_LEVELS),
+              envvar='SPACEL_LOG_LEVEL', help='Log level')
 def secret(orbit, app, region, create_key, modify, key, value,
            log_level):  # pragma: no cover
     handle_secret(orbit, app, region, create_key, modify, key, value, log_level,
