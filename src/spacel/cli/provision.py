@@ -61,17 +61,18 @@ def provision_cmd():  # pragma: no cover
 @click.option('--log-level', default='INFO', type=click.Choice(LOG_LEVELS),
               envvar='SPACEL_LOG_LEVEL', help='Log level')
 @click.option('--version', type=click.STRING, help='Version to deploy')
+@click.option('--force', is_flag=True, help='Force redeploy.')
 def provision_cli(orbit, app, region, lambda_bucket, lambda_region,
                   template_bucket, template_region, pagerduty_default,
                   pagerduty_api_key, spacel_agent_channel,
                   spacel_agent_cache_bust, log_level,
-                  version):  # pragma: no cover
+                  version, force):  # pragma: no cover
     provision_services(orbit, app, region,
                        lambda_bucket, lambda_region,
                        template_bucket, template_region,
                        pagerduty_default, pagerduty_api_key,
                        spacel_agent_channel, spacel_agent_cache_bust,
-                       log_level, version)
+                       log_level, version, force)
 
 
 def provision_services(orbit_path, app_path, regions,
@@ -79,7 +80,7 @@ def provision_services(orbit_path, app_path, regions,
                        template_bucket, template_region,
                        pagerduty_default, pagerduty_api_key,
                        spacel_agent_channel, spacel_agent_cache_bust,
-                       log_level, version):
+                       log_level, version, force_redeploy):
     helper = ClickHelper()
     helper.setup_logging(log_level)
 
@@ -95,7 +96,8 @@ def provision_services(orbit_path, app_path, regions,
 
     return provision(app, lambda_bucket, lambda_region, template_bucket,
                      template_region, pagerduty_default, pagerduty_api_key,
-                     spacel_agent_channel, spacel_agent_cache_bust)
+                     spacel_agent_channel, spacel_agent_cache_bust,
+                     force_redeploy)
 
 
 def provision(app,
@@ -106,7 +108,8 @@ def provision(app,
               pagerduty_default=None,
               pagerduty_api_key=None,
               spacel_agent_channel=None,
-              spacel_agent_cache_bust=False):  # pragma: no cover
+              spacel_agent_cache_bust=False,
+              force_redeploy=False):  # pragma: no cover
     clients = ClientCache()
 
     # Lambda function storage
@@ -144,6 +147,6 @@ def provision(app,
     orbit_factory.orbit(app.orbit)
     provisioner = SpaceElevatorAppFactory(clients, change_sets, template_up,
                                           app_template)
-    if not provisioner.app(app):
+    if not provisioner.app(app, force_redeploy=force_redeploy):
         return 1
     return 0

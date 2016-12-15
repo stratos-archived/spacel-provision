@@ -153,7 +153,8 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
     def test_stack_exception(self):
         self.cloudformation.create_change_set.side_effect = CLIENT_ERROR
 
-        self.assertRaises(ClientError, self.cf_factory._stack, NAME, ORBIT_REGION,
+        self.assertRaises(ClientError, self.cf_factory._stack, NAME,
+                          ORBIT_REGION,
                           TEMPLATE)
 
     def test_stack_rollback_complete(self):
@@ -197,6 +198,20 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
 
         secret_func = MagicMock()
         self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE,
+                               secret_parameters={
+                                   'TopSecret': secret_func
+                               })
+        secret_func.assert_not_called()
+
+    def test_stack_secret_param_ignored(self):
+        self.cloudformation.describe_change_set.return_value = \
+            {'Status': 'CREATE_COMPLETE', 'Changes': []}
+
+        secret_func = MagicMock()
+        self.cf_factory._stack(NAME, ORBIT_REGION, TEMPLATE,
+                               parameters={
+                                   'TopSecret': 'foo'
+                               },
                                secret_parameters={
                                    'TopSecret': secret_func
                                })
@@ -262,7 +277,8 @@ class TestBaseCloudFormationFactory(unittest.TestCase):
     def test_wait_for_updates_does_not_exist_delete(self):
         self.cloudformation.describe_stack_events.side_effect = NOT_FOUND
 
-        updated = self.cf_factory._wait_for_updates(NAME, {ORBIT_REGION: 'delete'})
+        updated = self.cf_factory._wait_for_updates(NAME,
+                                                    {ORBIT_REGION: 'delete'})
         self.assertTrue(updated)
 
     def test_wait_for_updates_does_not_exist_update(self):
