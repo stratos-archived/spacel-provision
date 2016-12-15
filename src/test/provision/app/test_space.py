@@ -1,4 +1,4 @@
-from mock import MagicMock
+from mock import MagicMock, ANY
 
 from spacel.aws import ClientCache
 from spacel.model import OrbitRegion, SpaceAppRegion
@@ -38,6 +38,16 @@ class TestSpaceElevatorAppFactory(BaseSpaceAppTest):
 
         self.assertEquals(2, self.provisioner._stack.call_count)
         self.assertEquals(1, self.provisioner._wait_for_updates.call_count)
+
+    def test_app_redeploy(self):
+        self.provisioner._stack.return_value = 'create'
+
+        self.provisioner.app(self.app, force_redeploy=True)
+
+        self.provisioner._stack.assert_called_with(ANY, ANY, ANY,
+                                                   parameters={
+                                                       'UniqueToken': ANY
+                                                   }, secret_parameters=ANY)
 
     def test_app_delete(self):
         self.provisioner._stack.return_value = 'delete'

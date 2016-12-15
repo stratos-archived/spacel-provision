@@ -17,7 +17,7 @@ class TestProvisionCommand(BaseSpaceAppTest):
         helper_factory.return_value = helper
 
         provision_services(ORBIT_NAME, APP_NAME, (), None, None, None, None,
-                           None, None, None, None, 'CRITICAL', None)
+                           None, None, None, None, 'CRITICAL', None, False)
         mock_provision.assert_not_called()
 
     @patch('spacel.cli.provision.ClickHelper')
@@ -32,7 +32,7 @@ class TestProvisionCommand(BaseSpaceAppTest):
         helper_factory.return_value = helper
 
         provision_services(ORBIT_NAME, APP_NAME, (), None, None, None, None,
-                           None, None, None, None, 'CRITICAL', None)
+                           None, None, None, None, 'CRITICAL', None, False)
         mock_provision.assert_not_called()
 
     @patch('spacel.cli.provision.ClickHelper')
@@ -44,6 +44,6 @@ class TestProvisionCommand(BaseSpaceAppTest):
         helper_factory.return_value = helper
 
         provision_services(ORBIT_NAME, APP_NAME, (), None, None, None, None,
-                           None, None, None, None, 'CRITICAL', None)
+                           None, None, None, None, 'CRITICAL', None, False)
         mock_provision.assert_called_once_with(ANY, None, None, None, None,
-                                               None, None, None, None)
+                                               None, None, None, None, False)

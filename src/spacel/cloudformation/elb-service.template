@@ -103,6 +103,11 @@
       "Description": "Private RDS subnet group",
       "Type": "String",
       "Default": ""
+    },
+    "UniqueToken": {
+      "Description": "Unique token. Provide a new value to force ASG redeploy.",
+      "Type": "String",
+      "Default": ""
     }
   },
   "Conditions": {
@@ -577,7 +582,10 @@
                 {"Ref": "DeployLogGroup"},
                 "\",",
                 "\"level\":\"DEBUG\"",
-                "}}",
+                "}},",
+                "\"unique_token\":\"",
+                {"Ref": "UniqueToken"},
+                "\"",
                 {"Ref": "UserData"},
                 "}"
               ]

@@ -48,22 +48,24 @@ class BaseCloudFormationFactory(object):
             template_url = self._uploader.upload(template_body, name)
         else:
             template_url = None
-        parameters = [{'ParameterKey': k, 'ParameterValue': v}
-                      for k, v in parameters.items()]
+        cf_parameters = [{'ParameterKey': k, 'ParameterValue': v}
+                         for k, v in parameters.items()]
 
         if secret_parameters:
             existing_params = self._existing_params(cf, name)
             for secret_param, value_func in secret_parameters.items():
+                if secret_param in parameters:
+                    continue
                 if secret_param in existing_params:
                     # Param exists in CloudFormation, re-use previous value:
-                    parameters.append({
+                    cf_parameters.append({
                         'ParameterKey': secret_param,
                         'UsePreviousValue': True
                     })
                 else:
                     # Parameter does not exist, generate a fresh value/lookup:
                     secret_value = value_func()
-                    parameters.append({
+                    cf_parameters.append({
                         'ParameterKey': secret_param,
                         'ParameterValue': secret_value
                     })
@@ -74,7 +76,7 @@ class BaseCloudFormationFactory(object):
             create_params = {
                 'StackName': name,
                 'ChangeSetName': set_name,
-                'Parameters': parameters,
+                'Parameters': cf_parameters,
                 'Capabilities': CAPABILITIES
             }
             if template_url:
@@ -123,7 +125,7 @@ class BaseCloudFormationFactory(object):
 
                 create_params = {
                     'StackName': name,
-                    'Parameters': parameters,
+                    'Parameters': cf_parameters,
                     'Capabilities': CAPABILITIES
                 }
                 if template_url:
